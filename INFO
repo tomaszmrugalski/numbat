@@ -2,7 +2,12 @@
   WiMax, DHCPv6 and Mobile IPv6 extenstions to Omnet++
  ------------------------------------------------------
  
- by Tomasz Mrugalski
+ Authors: Tomasz Mrugalski <thomson@klub.com.pl>
  
- published under GNU GPL v2 licence
- 
+ Published under GNU GPL v2 (or later) licence.
+
+ By commiting any source code to this repository, you allow its maintainers or
+ other users to redistribute it under GPL v2 (or later, when newer license
+ version will become available).
+
+ Please use meaningful commit comments. 
