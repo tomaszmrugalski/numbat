@@ -4,6 +4,10 @@ cplusplus {{
 
 struct WMaxMapIE;
 
+// ********************************************************************************
+// *** real WiMAX MAC messages ****************************************************
+// ********************************************************************************
+
 message WMaxMsgDlMap
 {
     fields:
@@ -28,5 +32,16 @@ message WMaxMsgUCD
 {
     fields:
 	int confChangeCount;
+
+};
+
+
+// ********************************************************************************
+// *** fake messages used to communicate between modules **************************
+// ********************************************************************************
+
+// this message is sent once every 5ms from MAC to PHY to initiate next frame
+message WMaxPhyDummyFrameStart
+{
 
 };

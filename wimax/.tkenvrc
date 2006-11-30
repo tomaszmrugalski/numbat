@@ -29,7 +29,7 @@ config editor-findstring	{}
 config rununtil-time	{}
 config dontshow	{}
 config editor-regexp	{0}
-config filtobjlist-class	{}
+config filtobjlist-class	{WMaxPhyDummyFrameStart}
 config rununtil-mode	{Express (tracing off)}
 config filtobjlist-name	{}
 config confirm-exit	{1}
@@ -39,5 +39,6 @@ config timeline-maxnumevents	{1000}
 config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
-inspector "physim.bsPhy" "WMaxPhyBS" "1" "460x315+76+470"
+inspector "physim" "PhySim" "2" "536x240+0+51"
+inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
 

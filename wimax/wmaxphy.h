@@ -40,7 +40,6 @@ class WMaxPhyBS : public WMaxPhy
 
     WMaxMsgDlMap * DlMap;
     WMaxMsgUlMap * UlMap;
-    cMessage *TxStart; // sent periodically to trigger next frame start
     int       FrameCnt;
 };
 

@@ -11,6 +11,7 @@
 
 #include <omnetpp.h>
 #include "wmaxphy.h"
+#include "wmaxmsg_m.h"
 
 /********************************************************************************/
 /*** WMax PHY BS ****************************************************************/
@@ -30,11 +31,9 @@ WMaxPhyBS::~WMaxPhyBS()
 
 void WMaxPhyBS::initialize()
 {
-    TxStart = new cMessage("TxStart");
-    ev << "FrameLength=" << par("FrameLength") << endl;
-    this->FrameCnt = 0;
     this->UlMap = 0;
     this->DlMap = 0;
+    this->FrameCnt = 0;
 }
 
 void WMaxPhyBS::handleMessage(cMessage *msg)
@@ -47,16 +46,11 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	this->UlMap = check_and_cast<WMaxMsgUlMap*>(msg);
 	ev << "UL-MAP ready to send." << endl;
-
-	if (this->FrameCnt==0) {
-	    // this is first frame (initiate transmission)
-	    scheduleAt(0.0, TxStart);
-	}
-
 	return;
     }
-    if (msg==TxStart) {
+    if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
 	beginFrame();
+	delete msg;
 	return;
     }
 
@@ -66,8 +60,6 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
 
 void WMaxPhyBS::beginFrame()
 {
-    scheduleAt(par("FrameLength"), TxStart);
-
     FrameCnt++;
     ev << "Frame number: " << FrameCnt << endl;
 

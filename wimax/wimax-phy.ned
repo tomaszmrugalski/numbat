@@ -38,7 +38,7 @@ module PhySim
             display: "p=400,120;b=40,28";
         MacDummy1: MacDummy;
             display: "p=112,40;b=40,28";
-        MacDummy2: WMaxMacBS;
+        bsMac: WMaxMacBS;
             display: "p=400,40;b=40,28";
     connections:
         ssPhy.rfOut --> bsPhy.rfIn;
@@ -47,8 +47,8 @@ module PhySim
         MacDummy1.phyOut --> ssPhy.phyIn;
         ssPhy.phyOut --> MacDummy1.phyIn;
 
-        MacDummy2.phyOut --> bsPhy.phyIn;
-        bsPhy.phyOut --> MacDummy2.phyIn;
+        bsMac.phyOut --> bsPhy.phyIn;
+        bsPhy.phyOut --> bsMac.phyIn;
 
 endmodule
 

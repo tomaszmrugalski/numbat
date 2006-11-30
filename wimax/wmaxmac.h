@@ -9,7 +9,6 @@
  */
 
 #include <omnetpp.h>
-#include "wmaxmsg_m.h"
 
 #ifndef WMAXMAC_H
 #define WMAXMAC_H
