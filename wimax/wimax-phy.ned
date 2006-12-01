@@ -30,13 +30,19 @@ simple WMaxMacBS
         out: phyOut;
 endsimple
 
+simple WMaxMacSS
+    gates:
+        in: phyIn;
+        out: phyOut;
+endsimple
+
 module PhySim
     submodules:
         ssPhy: WMaxPhySS;
             display: "p=112,120;b=40,28";
         bsPhy: WMaxPhyBS;
             display: "p=400,120;b=40,28";
-        MacDummy1: MacDummy;
+        ssMac: WMaxMacSS;
             display: "p=112,40;b=40,28";
         bsMac: WMaxMacBS;
             display: "p=400,40;b=40,28";
@@ -44,8 +50,8 @@ module PhySim
         ssPhy.rfOut --> bsPhy.rfIn;
         bsPhy.rfOut --> ssPhy.rfIn;
 
-        MacDummy1.phyOut --> ssPhy.phyIn;
-        ssPhy.phyOut --> MacDummy1.phyIn;
+        ssMac.phyOut --> ssPhy.phyIn;
+        ssPhy.phyOut --> ssMac.phyIn;
 
         bsMac.phyOut --> bsPhy.phyIn;
         bsPhy.phyOut --> bsMac.phyIn;

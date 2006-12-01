@@ -5,8 +5,8 @@
 
 /* Information Element (simplified version) */
 struct WMaxMapIE {
-    int cid;
-    int dataLen;
+    uint16_t cid;
+    uint32_t dataLen;
 };
 
 

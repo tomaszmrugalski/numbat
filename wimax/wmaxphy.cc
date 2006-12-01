@@ -38,6 +38,16 @@ void WMaxPhyBS::initialize()
 
 void WMaxPhyBS::handleMessage(cMessage *msg)
 {
+    cGate * gate = msg->arrivalGate();
+    // uplink message
+    ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
+    if (!strcmp(gate->fullName(),"rfIn")) {
+	// deliver message immediately
+	send(msg, "phyOut");
+	return;
+    }
+
+    // downlink message
     if ( dynamic_cast<WMaxMsgDlMap*>(msg) ) {
 	this->DlMap = check_and_cast<WMaxMsgDlMap*>(msg);
 	ev << "DL-MAP ready to send." << endl;
@@ -54,14 +64,14 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
 	return;
     }
 
-    ev << "Received message: " << *msg << endl;
-    delete msg;
+    // store message for sending
+    SendQueue.insert(msg);
 }
 
 void WMaxPhyBS::beginFrame()
 {
     FrameCnt++;
-    ev << "Frame number: " << FrameCnt << endl;
+    ev << fullName() << ": Frame number: " << FrameCnt << ", " << SendQueue.length() << " message(s) to send. " << endl;
 
     if (this->DlMap) {
 	send(DlMap, "rfOut");
@@ -74,6 +84,11 @@ void WMaxPhyBS::beginFrame()
 	this->UlMap = 0;
     } else {
 	ev << "UL-MAP not set. Send skipped" << endl;
+    }
+
+    while (!SendQueue.empty()) {
+	cMessage * msg = (cMessage*)SendQueue.pop();
+	send(msg, "rfOut");
     }
 }
 
@@ -95,13 +110,35 @@ WMaxPhySS::~WMaxPhySS()
 
 void WMaxPhySS::initialize()
 {
+    SendQueue.clear();
+}
 
+void WMaxPhySS::beginFrame()
+{
+    while (!SendQueue.empty()) {
+	cMessage * msg = (cMessage*)SendQueue.pop();
+	send(msg, "rfOut");
+    }
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
 {
-    //@todo - if this message is received via RF gate,
-    // then deliver it immediately.
-    ev << "Received message: " << *msg << endl;
-    delete msg;
+    cGate * gate = msg->arrivalGate();
+
+    // uplink message
+    ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
+    if (!strcmp(gate->fullName(),"rfIn")) {
+	// deliver message immediately
+	send(msg, "phyOut");
+	return;
+    }
+
+    if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
+	beginFrame();
+	delete msg;
+	return;
+    }
+
+    // downlink message
+    SendQueue.insert(msg);
 }

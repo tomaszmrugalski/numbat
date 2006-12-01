@@ -51,5 +51,6 @@ class WMaxPhySS : public WMaxPhy//@}
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    void beginFrame();
 };
 
