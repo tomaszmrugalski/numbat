@@ -82,7 +82,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= wimax-phy_n.o wmaxmsg_m.o macDummy.o wmaxphy.o wmaxmac.o
+OBJS= wimax-phy_n.o wmaxmsg_m.o macDummy.o wmaxphy.o wmaxmac.o ipv6node.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -171,3 +171,5 @@ wmaxphy.o: wmaxphy.cc \
   wmaxphy.h \
   wmaxmsg_m.h \
   wmaxmsg.h
+ipv6node.o: ipv6node.c \
+  ipv6node.h

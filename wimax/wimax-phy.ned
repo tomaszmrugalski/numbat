@@ -1,7 +1,5 @@
 //ssPhy
 simple WMaxPhySS
-    parameters:
-        FrameLength: numeric;
     gates:
         out: rfOut;
         in: rfIn;
@@ -9,8 +7,6 @@ simple WMaxPhySS
         out: phyOut;
 endsimple
 simple WMaxPhyBS
-    parameters:
-        FrameLength: numeric;
     gates:
         in: rfIn;
         out: rfOut;
@@ -25,27 +21,45 @@ simple MacDummy
 endsimple
 
 simple WMaxMacBS
+    parameters:
+        FrameLength: numeric;
     gates:
         in: phyIn;
         out: phyOut;
+        in: ipIn;
+        out: ipOut;
 endsimple
 
 simple WMaxMacSS
+    parameters:
+        FrameLength: numeric;
     gates:
         in: phyIn;
         out: phyOut;
+        in: ipIn;
+        out: ipOut;
+endsimple
+
+simple IPv6Node
+    gates:
+        out: ipOut;
+        in: ipIn;
 endsimple
 
 module PhySim
     submodules:
         ssPhy: WMaxPhySS;
-            display: "p=112,120;b=40,28";
+            display: "i=abstract/accesspoint,#ce1821;p=112,256";
         bsPhy: WMaxPhyBS;
-            display: "p=400,120;b=40,28";
+            display: "i=abstract/accesspoint,#40e221;p=400,256";
         ssMac: WMaxMacSS;
-            display: "p=112,40;b=40,28";
+            display: "i=block/control,#ce1821;p=112,160";
         bsMac: WMaxMacBS;
-            display: "p=400,40;b=40,28";
+            display: "i=block/control,#40e221;p=400,152";
+        ssIPv6: IPv6Node;
+            display: "i=block/app,#ce1821;p=112,64";
+        bsIPv6: IPv6Node;
+            display: "i=block/app,#40e221;p=400,56";
     connections:
         ssPhy.rfOut --> bsPhy.rfIn;
         bsPhy.rfOut --> ssPhy.rfIn;
@@ -56,8 +70,14 @@ module PhySim
         bsMac.phyOut --> bsPhy.phyIn;
         bsPhy.phyOut --> bsMac.phyIn;
 
+        ssIPv6.ipOut --> ssMac.ipIn;
+        ssMac.ipOut --> ssIPv6.ipIn;
+
+        bsIPv6.ipOut --> bsMac.ipIn;
+        bsMac.ipOut --> bsIPv6.ipIn;
 endmodule
 
 network physim : PhySim
 endnetwork
+
 

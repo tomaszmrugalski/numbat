@@ -5,7 +5,7 @@
  * 
  * @brief  WMax PHY layer definitions
  * 
- * 
+ * Published under GNU GPLv2 or later 
  */
 
 #include <omnetpp.h>
