@@ -1,0 +1,6 @@
+
+ Changelog
+-----------
+
+- added ipv6node module and 2 instantiations: ssIPv6 and bsIPv6.
+- fixed problem with frames all starting at 0.005 ms.

@@ -22,7 +22,16 @@ bool WMaxMac::addConn(WMaxConn conn)
 {
     /// @todo - check if CID and sfid are unique
     Conns.push_back(conn);
-    ev << "Adding sfid=" << conn.sfid << endl;
+    ev << "Connection sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
+    switch (conn.type) {
+    case WMAX_CONN_TYPE_UGS:
+	ev << "UGS";
+	break;
+    case WMAX_CONN_TYPE_BE:
+	ev << "BestEffort";
+	break;
+    }
+    ev << " configured." << endl;
     //setDisplayString("Conns"); // this doesn't work. Strange
     return true;
 }
@@ -62,7 +71,7 @@ void WMaxMacBS::handleMessage(cMessage *msg)
 {
     if (msg==TxStart) {
 	schedule();
-	scheduleAt(0.005, TxStart);
+	scheduleAt(simTime()+(double)par("FrameLength"), TxStart);
     }
 }
 
