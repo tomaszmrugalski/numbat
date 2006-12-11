@@ -49,45 +49,74 @@ Define_Module(WMaxMacBS);
 
 void WMaxMacBS::initialize()
 {
+    SendQueue.setName("SendQueue");
+
     TxStart = new cMessage("TxStart");
     scheduleAt(0.0, TxStart);
 
     Conns.clear();
 
-
     WMaxConn conn;
     conn.type= WMAX_CONN_TYPE_UGS;
     conn.sfid = 1;
     conn.cid = 1024;
+    conn.dataLen = 100;
     addConn(conn);
     
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = 2;
     conn.cid = 1025;
+    conn.dataLen = 100;
     addConn(conn);
 }
 
 void WMaxMacBS::handleMessage(cMessage *msg)
 {
+    cGate * gate = msg->arrivalGate();
     if (msg==TxStart) {
 	schedule();
 	scheduleAt(simTime()+(double)par("FrameLength"), TxStart);
+	return;
+    }
+    if (!strcmp(gate->fullName(),"phyIn")) {
+	handleUlMessage(msg);
+    }
+    if (!strcmp(gate->fullName(),"ipIn")) {
+	handleDlMessage(msg);
     }
 }
 
+
 void WMaxMacBS::schedule()
 {
+    int i;
+    int ieCnt = 0;
     /// @todo - write some scheduling module
 
     // prepare DL 
     WMaxMsgDlMap * dlmap = new WMaxMsgDlMap("DL-MAP");
     dlmap->setName("DL-MAP");
+    ieCnt = 0;
+    if (SendQueue.length()) {
+	for (i=0;i<1; i++) {
+	    /// @todo - fix this condition: use frame length instead of sending one simple frame
+	    ieCnt++;
+	    dlmap->setIEArraySize(ieCnt);
+	    cMessage * msg = (cMessage*)SendQueue.pop();
+	    WMaxMapIE ie;
+	    ie.cid = 0;
+	    ie.dataLen = msg->length();
+	    send(msg, "phyOut");
+	}
+    }
+
     ev << "Generating DL-MAP: " << dlmap->getIEArraySize() << "IE(s)" << endl;
     send(dlmap, "phyOut");
 
     // prepare UL
     WMaxMsgUlMap * ulmap = new WMaxMsgUlMap("UL-MAP");
-    int ieCnt = 0;
+    ieCnt = 0;
+    
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
 	// for each configured service flow, grant some bandwidth (if necessary)
 	ev << "#### type=" << it->type << ", sfid=" << it->sfid << ", cid=" << it->cid << endl;
@@ -117,12 +146,14 @@ void WMaxMacBS::schedule()
 
 void WMaxMacBS::handleDlMessage(cMessage *msg)
 {
-
+    SendQueue.insert(msg);
 }
 
 void WMaxMacBS::handleUlMessage(cMessage *msg)
 {
-
+    /// @todo - check if this really IPv6
+    ev << ": sending message to IPv6 layer." << endl;
+    send(msg, "ipOut");
 }
 
 /********************************************************************************/
@@ -132,7 +163,10 @@ Define_Module(WMaxMacSS);
 
 void WMaxMacSS::initialize()
 {
+    SendQueue.setName("SendQueue");
+
     Conns.clear();
+
 
 
     WMaxConn conn;
@@ -154,36 +188,60 @@ void WMaxMacSS::handleMessage(cMessage *msg)
     if (!strcmp(gate->fullName(),"phyIn")) {
 	handleUlMessage(msg);
     }
+    if (!strcmp(gate->fullName(),"ipIn")) {
+	handleDlMessage(msg);
+    }
 }
 
 void WMaxMacSS::handleDlMessage(cMessage *msg)
 {
-
+    ev << fullName() << ": Queueing message." << endl;
+    SendQueue.insert(msg);
 }
 
 void WMaxMacSS::handleUlMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
-	handleUlMap(dynamic_cast<WMaxMsgUlMap*>(msg));
+	schedule(dynamic_cast<WMaxMsgUlMap*>(msg));
 	return;
     }
 
-    delete msg;
+    if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
+	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
+	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;
+	delete msg;
+	return;
+    }
+
+    /// @todo - if packet is IPv6, then handle it to upper layer
+    send(msg, "ipOut");
 }
 
-void WMaxMacSS::handleUlMap(WMaxMsgUlMap * ulmap)
+void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
+    int bandwidth = 0;
     ev << "UL-MAP received with " << ulmap->getIEArraySize() << "IE(s)" << endl;
     int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxMapIE & ie = ulmap->getIE(i);
 	for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->cid==ie.cid) {
-		ev << "#### entry found for this SS" << endl;
+		bandwidth += ie.dataLen;
+		ev << "#### UL-MAP entry: dataLen=" << it->dataLen << ", total bandwidth=" << bandwidth << endl;
 	    }
 	    
 	}
     }
 
+    if (SendQueue.length()) {
+	ev << fullName() << ": Sending message" << endl;
+	cMessage * msg = (cMessage*)SendQueue.pop();
+	send(msg, "phyOut");
+    }
+
     delete ulmap;
+
+    WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
+    ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
+    send(frameStart, "phyOut");
 }

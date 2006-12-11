@@ -31,6 +31,9 @@ WMaxPhyBS::~WMaxPhyBS()
 
 void WMaxPhyBS::initialize()
 {
+    SendQueue.clear();
+    SendQueue.setName("SendQueue");
+
     this->UlMap = 0;
     this->DlMap = 0;
     this->FrameCnt = 0;
@@ -111,6 +114,7 @@ WMaxPhySS::~WMaxPhySS()
 void WMaxPhySS::initialize()
 {
     SendQueue.clear();
+    SendQueue.setName("SendQueue");
 }
 
 void WMaxPhySS::beginFrame()

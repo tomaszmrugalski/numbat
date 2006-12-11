@@ -49,13 +49,13 @@ endsimple
 module PhySim
     submodules:
         ssPhy: WMaxPhySS;
-            display: "i=abstract/accesspoint,#ce1821;p=112,256";
+            display: "i=abstract/accesspoint,#ce1821;p=112,256;q=SendQueue";
         bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=400,256";
+            display: "i=abstract/accesspoint,#40e221;p=400,256;q=SendQueue";
         ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=112,160";
+            display: "i=block/control,#ce1821;p=112,160;q=SendQueue";
         bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=400,152";
+            display: "i=block/control,#40e221;p=400,152;q=SendQueue";
         ssIPv6: IPv6Node;
             display: "i=block/app,#ce1821;p=112,64";
         bsIPv6: IPv6Node;

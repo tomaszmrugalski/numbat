@@ -46,6 +46,7 @@ class WMaxMac : public cSimpleModule
     bool addConn(WMaxConn conn);
     bool delConn(uint32_t sfid);
 
+    cQueue SendQueue;
     list<WMaxConn> Conns;
 };
 
@@ -55,12 +56,12 @@ class WMaxMacBS: public WMaxMac
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    virtual void schedule();
 
-    cMessage * TxStart;
  private:
+    virtual void schedule();
     virtual void handleDlMessage(cMessage *msg);
     virtual void handleUlMessage(cMessage *msg);
+    cMessage * TxStart;
 };
 
 class WMaxMacSS: public WMaxMac
@@ -68,11 +69,11 @@ class WMaxMacSS: public WMaxMac
 
  protected:
     virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    virtual void handleMessage(cMessage* msg);
  private:
-    virtual void handleDlMessage(cMessage *msg);
-    virtual void handleUlMessage(cMessage *msg);
-    void         handleUlMap(WMaxMsgUlMap * ulmap);
+    virtual void schedule(WMaxMsgUlMap* ulmap);
+    virtual void handleDlMessage(cMessage* msg);
+    void         handleUlMessage(cMessage* msg);
 };
 
 #endif

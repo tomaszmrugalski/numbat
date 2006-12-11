@@ -121,7 +121,6 @@ macDummy.o: macDummy.cc
 wmaxphy.o: wmaxphy.cc
 	$(CXX) -c $(COPTS) wmaxphy.cc
 
-
 #doc: neddoc doxy
 
 #neddoc:
@@ -173,3 +172,4 @@ wmaxphy.o: wmaxphy.cc \
   wmaxmsg.h
 ipv6node.o: ipv6node.c \
   ipv6node.h
+TAGS: tags

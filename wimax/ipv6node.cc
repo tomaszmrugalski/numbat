@@ -35,9 +35,18 @@ void IPv6Node::handleMessage(cMessage *msg)
 void IPv6Node::generateTraffic()
 {
     cMessage *m = new cMessage("IPv6 packet");
+    m->setLength(30);
     send(m, "ipOut");
 
-    scheduleAt(simTime()+(double)(0.012), sendTimer);
+    m = new cMessage("IPv6 packet");
+    m->setLength(40);
+    send(m, "ipOut");
+
+    m = new cMessage("IPv6 packet");
+    m->setLength(50);
+    send(m, "ipOut");
+
+    scheduleAt(simTime()+(double)(0.025), sendTimer);
 
     // reschedule this timer
 }
