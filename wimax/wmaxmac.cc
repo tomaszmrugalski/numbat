@@ -5,7 +5,7 @@
  * 
  * @brief  WMaxMAC implementation
  * 
- * 
+ * published under GNU GPLv2 or later
  */
 
 #include <omnetpp.h>
@@ -165,10 +165,9 @@ void WMaxMacSS::initialize()
 {
     SendQueue.setName("SendQueue");
 
+    CLEAR(&Stats);
+
     Conns.clear();
-
-
-
     WMaxConn conn;
     conn.type= WMAX_CONN_TYPE_UGS;
     conn.sfid = 1;
@@ -202,11 +201,13 @@ void WMaxMacSS::handleDlMessage(cMessage *msg)
 void WMaxMacSS::handleUlMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
+	Stats.ulmaps++;
 	schedule(dynamic_cast<WMaxMsgUlMap*>(msg));
 	return;
     }
 
     if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
+	Stats.dlmaps++;
 	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
 	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;
 	delete msg;
@@ -228,6 +229,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	    if (it->cid==ie.cid) {
 		bandwidth += ie.dataLen;
 		ev << "#### UL-MAP entry: dataLen=" << it->dataLen << ", total bandwidth=" << bandwidth << endl;
+		Stats.grants++;
 	    }
 	    
 	}
@@ -240,8 +242,19 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
     }
 
     delete ulmap;
+    Stats.bandwidth += bandwidth;
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
     ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
     send(frameStart, "phyOut");
+}
+
+void WMaxMacSS::finish()
+{
+    ev << " Stats for " << fullName() << endl;
+    ev << "-----------------------" << endl;
+    ev << "Grants            : " << Stats.grants << endl;
+    ev << "Bandwidth granted : " << Stats.bandwidth << endl;
+    ev << "UL-MAPs received  : " << Stats.ulmaps << endl;
+    ev << "DL-MAPs received  : " << Stats.dlmaps << endl;
 }

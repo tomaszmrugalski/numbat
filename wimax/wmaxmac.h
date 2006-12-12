@@ -17,6 +17,8 @@ using namespace std;
 #ifndef WMAXMAC_H
 #define WMAXMAC_H
 
+#define CLEAR(x) memset(x, 0, sizeof(*x));
+
 typedef enum
 {
     WMAX_CONN_TYPE_BE,  // best effort
@@ -64,16 +66,28 @@ class WMaxMacBS: public WMaxMac
     cMessage * TxStart;
 };
 
+class WMaxStatsSS 
+{
+public:
+    int grants;    /* number of grants received */
+    int bandwidth; /* total bandwidth granted */
+    int dlmaps;    /* number of dlmaps received */
+    int ulmaps;    /* number of ulmaps received */
+};
+
 class WMaxMacSS: public WMaxMac
 {
 
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage* msg);
+    virtual void finish();
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
     virtual void handleDlMessage(cMessage* msg);
     void         handleUlMessage(cMessage* msg);
+
+    WMaxStatsSS Stats;
 };
 
 #endif
