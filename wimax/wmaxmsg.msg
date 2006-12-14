@@ -2,7 +2,8 @@ cplusplus {{
 #include "wmaxmsg.h"
 }};
 
-struct WMaxMapIE;
+struct WMaxUlMapIE;
+struct WMaxDlMapIE;
 
 // ********************************************************************************
 // *** real WiMAX MAC messages ****************************************************
@@ -11,14 +12,14 @@ struct WMaxMapIE;
 message WMaxMsgDlMap
 {
     fields:
-	WMaxMapIE IE[];
+	WMaxDlMapIE IE[];
 };
 
 
 message WMaxMsgUlMap
 {
     fields:
-	WMaxMapIE IE[];
+	WMaxUlMapIE IE[];
 };
 
 message WMaxMsgDCD

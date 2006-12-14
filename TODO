@@ -1,0 +1,15 @@
+
+
+ This file contains list of tasks, which should be implemented.
+
+ TODO
+------
+- UGS support must be defined by MSR (in bits per second).
+- Implement radio channel support (so multiple SSes could be connected to one BS).
+- Implement CDMA codes support.
+- Implement best effort.
+- Make connections (in SS as well as BS) configurable.
+
+
+ Implemented/Not tested
+------------------------

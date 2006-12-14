@@ -103,10 +103,11 @@ void WMaxMacBS::schedule()
 	    ieCnt++;
 	    dlmap->setIEArraySize(ieCnt);
 	    cMessage * msg = (cMessage*)SendQueue.pop();
-	    WMaxMapIE ie;
-	    ie.cid = 0;
-	    ie.dataLen = msg->length();
-	    send(msg, "phyOut");
+	    WMaxDlMapIE ie;
+	    /// @todo - DL-MAP gemeration
+// 	    //ie.cid = 0;
+// 	    ie.dataLen = msg->length();
+// 	    send(msg, "phyOut");
 	}
     }
 
@@ -127,9 +128,10 @@ void WMaxMacBS::schedule()
 	case WMAX_CONN_TYPE_UGS:
 	    ieCnt++;
 	    ulmap->setIEArraySize(ieCnt);
-	    WMaxMapIE ie;
+	    WMaxUlMapIE ie;
+	    ie.uiuc = WMAX_ULMAP_UIUC_DATA_1;
 	    ie.cid = it->cid;
-	    ie.dataLen = it->dataLen;
+	    ie.dataIE.duration = it->dataLen;
 	    ulmap->setIE(ieCnt-1, ie);
 	    break;
 	}
@@ -224,12 +226,22 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
     ev << "UL-MAP received with " << ulmap->getIEArraySize() << "IE(s)" << endl;
     int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
-	WMaxMapIE & ie = ulmap->getIE(i);
+	WMaxUlMapIE & ie = ulmap->getIE(i);
 	for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->cid==ie.cid) {
-		bandwidth += ie.dataLen;
-		ev << "#### UL-MAP entry: dataLen=" << it->dataLen << ", total bandwidth=" << bandwidth << endl;
-		Stats.grants++;
+		//ev << "UL-MAP: IE[" << i << "] uiuc=" << end;
+		if (ie.uiuc>=WMAX_ULMAP_UIUC_DATA_1 || ie.uiuc<=WMAX_ULMAP_UIUC_DATA_10) {
+		    bandwidth = ie.dataIE.duration;
+		    Stats.grants++;
+		} else 
+                if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR) {
+
+
+		} else
+                if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_ALLOC) {
+
+
+		}
 	    }
 	    
 	}

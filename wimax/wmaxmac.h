@@ -19,11 +19,44 @@ using namespace std;
 
 #define CLEAR(x) memset(x, 0, sizeof(*x));
 
+/**************************************************************/
+/*** WIMAX CONSTANTS ******************************************/
+/**************************************************************/
+
+
+// minimum number of bytes in allocation
+#define MINIMUM_GRANT_SIZE 12
+
+
+// define frequency of the BWR CDMA slots (2 = one alloc per 2 frames)
+#define WMAX_CDMA_BWR_FREQ 2
+
+// define frequency of the initial ranging CDMA slots
+#define WMAX_CDMA_INIT_RNG_FREQ 3
+
+// define frequency of the handover CDMA slots
+#define WMAX_CDMA_HO_RNG_FREQ 10
+
+/**************************************************************/
+/*** STRUCTURES ***********************************************/
+/**************************************************************/
+
 typedef enum
 {
     WMAX_CONN_TYPE_BE,  // best effort
+    WMAX_CONN_NRT_PS,
+    WMAX_CONN_RT_PS,
     WMAX_CONN_TYPE_UGS  // ugs
 } WMaxConnType;
+
+typedef struct {
+    uint32_t mrr; // minimum sustained rate
+    uint32_t   latency; // in ms
+} WMaxConnUgs;
+
+typedef struct {
+    uint32_t msr; // maximum sustained traffic rate (bps)
+} WMaxConnBe;
 
 /** 
  * this structure represents connection
@@ -33,6 +66,11 @@ typedef struct {
     WMaxConnType type;
     uint32_t sfid;
     uint16_t cid;
+
+    union {
+	WMaxConnUgs   ugs;
+	WMaxConnBe    be;
+    } qos;
 
     uint32_t dataLen; /* per frame */
 } WMaxConn;
