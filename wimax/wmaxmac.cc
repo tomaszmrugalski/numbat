@@ -9,6 +9,7 @@
  */
 
 #include <omnetpp.h>
+#include <sstream>
 #include "wmaxmac.h"
 #include "wmaxmsg_m.h"
 
@@ -20,18 +21,27 @@ using namespace std;
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
+    stringstream tmp;
     /// @todo - check if CID and sfid are unique
     Conns.push_back(conn);
-    ev << "Connection sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
+    ev << fullName() << ": adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
     switch (conn.type) {
     case WMAX_CONN_TYPE_UGS:
-	ev << "UGS";
+	tmp << "UGS: msr=" << conn.qos.ugs.msr << ", latency=" << conn.qos.ugs.latency 
+	    << ", jitter=" << conn.qos.ugs.jitter;
 	break;
+    case WMAX_CONN_TYPE_RTPS:
+	tmp << "rtPS: msr=" << conn.qos.rtps.msr << ", mrr=" << conn.qos.rtps.mrr 
+	    << ", latency=" << conn.qos.rtps.latency;
+	break;
+    case WMAX_CONN_TYPE_NRTPS:
+	tmp << "nrtPS: msr=" << conn.qos.nrtps.msr << ", mrr=" << conn.qos.nrtps.mrr
+	    << ", priority=" << conn.qos.nrtps.priority;
     case WMAX_CONN_TYPE_BE:
-	ev << "BestEffort";
+	ev << "BestEffort: msr=" << conn.qos.be.msr;
 	break;
     }
-    ev << " configured." << endl;
+    ev << tmp.str() << endl;
     //setDisplayString("Conns"); // this doesn't work. Strange
     return true;
 }
@@ -50,6 +60,7 @@ Define_Module(WMaxMacBS);
 void WMaxMacBS::initialize()
 {
     SendQueue.setName("SendQueue");
+    FrameLength = par("FrameLength");
 
     TxStart = new cMessage("TxStart");
     scheduleAt(0.0, TxStart);
@@ -57,16 +68,18 @@ void WMaxMacBS::initialize()
     Conns.clear();
 
     WMaxConn conn;
+    CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_UGS;
     conn.sfid = 1;
     conn.cid = 1024;
-    conn.dataLen = 100;
+    conn.qos.ugs.msr = 80000; // 100kbps
     addConn(conn);
-    
+
+    CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = 2;
     conn.cid = 1025;
-    conn.dataLen = 100;
+    conn.qos.ugs.msr = 100000; // 100kbps
     addConn(conn);
 }
 
@@ -75,7 +88,7 @@ void WMaxMacBS::handleMessage(cMessage *msg)
     cGate * gate = msg->arrivalGate();
     if (msg==TxStart) {
 	schedule();
-	scheduleAt(simTime()+(double)par("FrameLength"), TxStart);
+	scheduleAt(simTime()+FrameLength, TxStart);
 	return;
     }
     if (!strcmp(gate->fullName(),"phyIn")) {
@@ -111,7 +124,7 @@ void WMaxMacBS::schedule()
 	}
     }
 
-    ev << "Generating DL-MAP: " << dlmap->getIEArraySize() << "IE(s)" << endl;
+    ev << "Generating DL-MAP: " << dlmap->getIEArraySize() << " IE(s)" << endl;
     send(dlmap, "phyOut");
 
     // prepare UL
@@ -120,20 +133,28 @@ void WMaxMacBS::schedule()
     
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
 	// for each configured service flow, grant some bandwidth (if necessary)
-	ev << "#### type=" << it->type << ", sfid=" << it->sfid << ", cid=" << it->cid << endl;
 	switch (it->type) {
 	case WMAX_CONN_TYPE_BE:
 	    /// @todo - best effort not supported yet
 	    break;
 	case WMAX_CONN_TYPE_UGS:
-	    ieCnt++;
-	    ulmap->setIEArraySize(ieCnt);
-	    WMaxUlMapIE ie;
-	    ie.uiuc = WMAX_ULMAP_UIUC_DATA_1;
-	    ie.cid = it->cid;
-	    ie.dataIE.duration = it->dataLen;
-	    ulmap->setIE(ieCnt-1, ie);
-	    break;
+	{
+	    uint32_t x = uint32_t(double(it->qos.ugs.msr)/8.0*FrameLength);
+	    it->bandwidth += x;
+
+	    if (it->bandwidth>WMAX_SCHEDULER_MIN_UGS_GRANT) {
+		ev << fullName() << ": Adding UGS grant." << endl;
+		ieCnt++;
+		ulmap->setIEArraySize(ieCnt);
+		WMaxUlMapIE ie;
+		ie.uiuc = WMAX_ULMAP_UIUC_DATA_1;
+		ie.cid = it->cid;
+		ie.dataIE.duration = it->bandwidth;
+		ulmap->setIE(ieCnt-1, ie);
+		it->bandwidth = 0;
+		break;
+	    }
+	}
 	}
     }
 
@@ -171,11 +192,13 @@ void WMaxMacSS::initialize()
 
     Conns.clear();
     WMaxConn conn;
+    CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_UGS;
     conn.sfid = 1;
     conn.cid = 1024;
     addConn(conn);
     
+    CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = 2;
     conn.cid = 1025;
@@ -223,13 +246,12 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
     int bandwidth = 0;
-    ev << "UL-MAP received with " << ulmap->getIEArraySize() << "IE(s)" << endl;
+    ev << fullName() << ": UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)" << endl;
     int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE & ie = ulmap->getIE(i);
 	for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->cid==ie.cid) {
-		//ev << "UL-MAP: IE[" << i << "] uiuc=" << end;
 		if (ie.uiuc>=WMAX_ULMAP_UIUC_DATA_1 || ie.uiuc<=WMAX_ULMAP_UIUC_DATA_10) {
 		    bandwidth = ie.dataIE.duration;
 		    Stats.grants++;

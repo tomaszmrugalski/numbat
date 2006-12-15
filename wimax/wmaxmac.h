@@ -37,25 +37,51 @@ using namespace std;
 // define frequency of the handover CDMA slots
 #define WMAX_CDMA_HO_RNG_FREQ 10
 
+// minimal UGS grant, which can be assigned
+#define WMAX_SCHEDULER_MIN_UGS_GRANT 120
+
 /**************************************************************/
 /*** STRUCTURES ***********************************************/
 /**************************************************************/
 
 typedef enum
 {
-    WMAX_CONN_TYPE_BE,  // best effort
-    WMAX_CONN_NRT_PS,
-    WMAX_CONN_RT_PS,
-    WMAX_CONN_TYPE_UGS  // ugs
+    WMAX_CONN_TYPE_BE,    // best effort
+    WMAX_CONN_TYPE_RTPS,
+    WMAX_CONN_TYPE_NRTPS, // Non-Real Time Packet Switched
+    WMAX_CONN_TYPE_UGS    // Unsolicited Grant Interval
 } WMaxConnType;
 
-typedef struct {
-    uint32_t mrr; // minimum sustained rate
-    uint32_t   latency; // in ms
-} WMaxConnUgs;
+typedef enum
+{
+    WMAX_DIRECTION_UL,
+    WMAX_DIRECTION_DL
+} WMaxConnDirection;
 
+// see 6.3.5.2.1, 802.16-2005 UGS connection
 typedef struct {
     uint32_t msr; // maximum sustained traffic rate (bps)
+    uint32_t latency; // in ms
+    uint32_t jitter;
+} WMaxConnUgs;
+
+// see 6.3.5.2.2, 802.16-2005 rtPS connection
+typedef struct {
+    uint32_t msr; // maximum sustained traffic rate (bps)
+    uint32_t mrr; // minimum reserver traffic rate (bps)
+    uint32_t latency; // max latency
+} WMaxConnRtps;
+
+// see 6.3.5.2.3, 802.16-2005
+typedef struct {
+    uint32_t msr;
+    uint32_t mrr;
+    uint8_t  priority;
+} WMaxConnNrtps;
+
+// 6.3.5.2.4, 802.16-2005 Best Effort connection
+typedef struct {
+    uint32_t msr; // maximum sustained traffic rate rate
 } WMaxConnBe;
 
 /** 
@@ -63,16 +89,21 @@ typedef struct {
  * 
  */
 typedef struct {
+
+    // configuration parameters
     WMaxConnType type;
     uint32_t sfid;
     uint16_t cid;
 
     union {
 	WMaxConnUgs   ugs;
+	WMaxConnRtps  rtps;
+	WMaxConnNrtps nrtps;
 	WMaxConnBe    be;
     } qos;
 
-    uint32_t dataLen; /* per frame */
+    // runtime parameters
+    uint32_t bandwidth;
 } WMaxConn;
 
 
@@ -88,6 +119,8 @@ class WMaxMac : public cSimpleModule
 
     cQueue SendQueue;
     list<WMaxConn> Conns;
+
+    double FrameLength;
 };
 
 
