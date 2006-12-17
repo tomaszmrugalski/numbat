@@ -24,9 +24,8 @@ using namespace std;
 /**************************************************************/
 
 
-// minimum number of bytes in allocation
-#define MINIMUM_GRANT_SIZE 12
-
+// minimum number of bytes in UGS allocation
+#define WMAX_SCHED_MIN_GRANT_SIZE 12
 
 // define frequency of the BWR CDMA slots (2 = one alloc per 2 frames)
 #define WMAX_CDMA_BWR_FREQ 2
@@ -39,6 +38,10 @@ using namespace std;
 
 // minimal UGS grant, which can be assigned
 #define WMAX_SCHEDULER_MIN_UGS_GRANT 120
+
+
+#define WMAX_CID_RANGING   0
+#define WMAX_CID_BROADCAST 0xffff
 
 /**************************************************************/
 /*** STRUCTURES ***********************************************/
@@ -102,7 +105,7 @@ typedef struct {
 	WMaxConnBe    be;
     } qos;
 
-    // runtime parameters
+    // --- runtime parameters ---
     uint32_t bandwidth;
 } WMaxConn;
 
@@ -117,10 +120,15 @@ class WMaxMac : public cSimpleModule
     bool addConn(WMaxConn conn);
     bool delConn(uint32_t sfid);
 
+    // --- runtime parameters ---
     cQueue SendQueue;
-    list<WMaxConn> Conns;
 
+    // --- configuration parameters ---
+    list<WMaxConn> Conns;
     double FrameLength;
+
+    virtual void printDlMap(WMaxMsgDlMap * dlmap);
+    virtual void printUlMap(WMaxMsgUlMap * ulmap);
 };
 
 
@@ -130,10 +138,29 @@ class WMaxMacBS: public WMaxMac
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
 
- private:
     virtual void schedule();
     virtual void handleDlMessage(cMessage *msg);
     virtual void handleUlMessage(cMessage *msg);
+
+    // --- configuration parameters ---
+    /// minimal size of granted bandwidth on UGS connection
+    uint32_t schedUgsMinGrantSize;
+
+    /// frequency of the initial ranging CDMA regions
+    uint32_t schedCdmaInitRngFreq;
+
+    /// frequency of the handover ranging CDMA regions
+    uint32_t schedCdmaHoRngFreq;
+
+    /// frequency of the bandwidth request CDMA regions
+    uint32_t schedCdmaBwrFreq;
+
+    // --- runtime parameters ---
+    uint32_t schedCdmaInitRngCnt; // counter
+    uint32_t schedCdmaHoRngCnt;
+    uint32_t schedCdmaBwrCnt;
+
+
     cMessage * TxStart;
 };
 

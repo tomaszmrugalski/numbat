@@ -52,6 +52,56 @@ bool WMaxMac::delConn(uint32_t sfid)
     return false;
 }
 
+
+void WMaxMac::printDlMap(WMaxMsgDlMap * dlmap)
+{
+    ev << fullName() << ": --- DL-MAP (" << dlmap->getIEArraySize() << " IE(s) ---" << endl;
+
+    for (int i=0; i<dlmap->getIEArraySize(); i++) {
+	WMaxDlMapIE &ie = dlmap->getIE(i);
+	ev << "IE[" << i << "]:";
+    }
+}
+
+void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
+{
+    ev << fullName() << ": --- UL-MAP (" << ulmap->getIEArraySize() << " IE(s) ---" << endl;
+
+    for (int i=0; i<ulmap->getIEArraySize(); i++) {
+	WMaxUlMapIE &ie = ulmap->getIE(i);
+	ev << "IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
+	switch (ie.uiuc) {
+	case WMAX_ULMAP_UIUC_FAST_FEEDBACK:
+	case WMAX_ULMAP_UIUC_EXTENDED2:
+	case WMAX_ULMAP_UIUC_PAPR:
+	case WMAX_ULMAP_UIUC_EXTENDED:
+	    ev << " NOT SUPPORTED IE TYPE" << endl;
+	    break;
+	case WMAX_ULMAP_UIUC_CDMA_BWR:
+	    ev << "(CDMA BWR): symbolOffset=" << ie.cdmaIE.symbolOffset << " ofdmaSymbols=" << ie.cdmaIE.ofdmaSymbols 
+	       << " subchannels=" << ie.cdmaIE.subchannels << " rangingMethod=" << ie.cdmaIE.rangingMethod;
+	    switch (ie.cdmaIE.rangingMethod) {
+	    case WMAX_RANGING_METHOD_INITIAL: 
+		ev << "initial ranging";
+		break;
+	    case WMAX_RANGING_METHOD_BWR:
+		ev << "bandwidth request";
+		break;
+	    }
+	    ev << endl;
+	    break;
+	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
+	    ev << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << ie.cdmaAllocIE.uiuc
+	       << " rangingCode=" << ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << ie.cdmaAllocIE.rangingSymbol
+	       << " rangingSubchannel=" << ie.cdmaAllocIE.rangingSubchannel << endl;
+	    break;
+	default:
+	    ev << "(DATA): duration=" << ie.dataIE.duration << endl;
+	    break;
+	}
+    }
+}
+
 /********************************************************************************/
 /*** WMax Mac BS ****************************************************************/
 /********************************************************************************/
@@ -67,6 +117,13 @@ void WMaxMacBS::initialize()
 
     Conns.clear();
 
+    // configure scheduler
+    schedUgsMinGrantSize = WMAX_SCHED_MIN_GRANT_SIZE;
+    schedCdmaInitRngFreq = WMAX_CDMA_INIT_RNG_FREQ;
+    schedCdmaBwrFreq     = WMAX_CDMA_BWR_FREQ;
+    schedCdmaHoRngFreq   = WMAX_CDMA_HO_RNG_FREQ;
+
+    // configure connections
     WMaxConn conn;
     CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_UGS;
@@ -111,16 +168,20 @@ void WMaxMacBS::schedule()
     dlmap->setName("DL-MAP");
     ieCnt = 0;
     if (SendQueue.length()) {
-	for (i=0;i<1; i++) {
+	for (i=0;i<SendQueue.length(); i++) {
 	    /// @todo - fix this condition: use frame length instead of sending one simple frame
 	    ieCnt++;
 	    dlmap->setIEArraySize(ieCnt);
-	    cMessage * msg = (cMessage*)SendQueue.pop();
-	    WMaxDlMapIE ie;
+
 	    /// @todo - DL-MAP gemeration
-// 	    //ie.cid = 0;
-// 	    ie.dataLen = msg->length();
-// 	    send(msg, "phyOut");
+	    WMaxDlMapIE ie;
+ 	    ie.cid    = 0;
+
+	    cMessage * msg = (cMessage*)SendQueue.pop();
+ 	    ie.length = msg->length();
+	    dlmap->setIE(ieCnt-1,ie);
+
+ 	    send(msg, "phyOut");
 	}
     }
 
@@ -130,6 +191,27 @@ void WMaxMacBS::schedule()
     // prepare UL
     WMaxMsgUlMap * ulmap = new WMaxMsgUlMap("UL-MAP");
     ieCnt = 0;
+
+    schedCdmaInitRngCnt++;
+    schedCdmaHoRngCnt++;
+    schedCdmaBwrCnt++;
+
+    if (schedCdmaBwrFreq && schedCdmaBwrFreq<=schedCdmaBwrCnt++) {
+	// append IE for CDMA bandwidth request
+	ieCnt++;
+	schedCdmaBwrCnt=0;
+	ulmap->setIEArraySize(ieCnt);
+	WMaxUlMapIE ie;
+	ie.cid  = WMAX_CID_BROADCAST;
+	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
+	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_BWR;
+	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
+	ulmap->setIEArraySize(ieCnt);
+    }
+
+    if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
+	
+    }
     
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
 	// for each configured service flow, grant some bandwidth (if necessary)
@@ -226,12 +308,14 @@ void WMaxMacSS::handleDlMessage(cMessage *msg)
 void WMaxMacSS::handleUlMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
+	printUlMap(dynamic_cast<WMaxMsgUlMap*>(msg));
 	Stats.ulmaps++;
 	schedule(dynamic_cast<WMaxMsgUlMap*>(msg));
 	return;
     }
 
     if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
+	printDlMap(dynamic_cast<WMaxMsgDlMap*>(msg));
 	Stats.dlmaps++;
 	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
 	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;

@@ -21,8 +21,14 @@ class IPv6Node : public cSimpleModule
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void generateTraffic();
+    virtual void updateStats();
  private:
     cMessage * sendTimer;
+
+    uint32_t sentBytes;
+    uint32_t sentPkts;
+    uint32_t rcvdBytes;
+    uint32_t rcvdPkts;
 };
 
 #endif

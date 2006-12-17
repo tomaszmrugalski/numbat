@@ -22,31 +22,60 @@ void IPv6Node::initialize()
 {
     sendTimer = new cMessage("IPv6 send");
     scheduleAt(0.010, sendTimer);
+
+    sentBytes = 0;
+    sentPkts  = 0;
+    rcvdBytes = 0;
+    rcvdPkts  = 0;
 }
 
 void IPv6Node::handleMessage(cMessage *msg)
 {
-    if (msg==sendTimer)
+    if (msg==sendTimer) {
 	generateTraffic();
+	return;
+    }
     
-    ev << "Message " << msg->fullName() << " received." << endl;
+    ev << fullName() << ": Message " << msg->fullName() << " received." << endl;
+    rcvdPkts++;
+    rcvdBytes += msg->length();
+    updateStats();
+
+    delete msg;
 }
 
 void IPv6Node::generateTraffic()
 {
     cMessage *m = new cMessage("IPv6 packet");
     m->setLength(30);
+    sentPkts++;
+    sentBytes += m->length();
     send(m, "ipOut");
 
     m = new cMessage("IPv6 packet");
     m->setLength(40);
+    sentPkts++;
+    sentBytes += m->length();
     send(m, "ipOut");
 
     m = new cMessage("IPv6 packet");
     m->setLength(50);
+    sentPkts++;
+    sentBytes += m->length();
     send(m, "ipOut");
+
+    updateStats();
 
     scheduleAt(simTime()+(double)(0.025), sendTimer);
 
     // reschedule this timer
+}
+
+void IPv6Node::updateStats()
+{
+    char buf[80];
+    sprintf(buf, "sent=%ld(%ld), rcvd=%ld(%ld)", 
+	    sentPkts, sentBytes, rcvdPkts, rcvdBytes);
+    if (ev.isGUI()) 
+	displayString().setTagArg("t",0,buf);
 }

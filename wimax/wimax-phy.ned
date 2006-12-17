@@ -57,9 +57,9 @@ module PhySim
         bsMac: WMaxMacBS;
             display: "i=block/control,#40e221;p=400,152;q=SendQueue";
         ssIPv6: IPv6Node;
-            display: "i=block/app,#ce1821;p=112,64";
+            display: "i=block/app,#ce1821;p=112,64;tx=Tx,rx=Rx";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=400,56";
+            display: "i=block/app,#40e221;p=400,56;tx=Tx,rx=Rx";
     connections:
         ssPhy.rfOut --> bsPhy.rfIn;
         bsPhy.rfOut --> ssPhy.rfIn;

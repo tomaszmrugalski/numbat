@@ -36,6 +36,17 @@ typedef struct  {
     uint8_t         rangingSubchannel;
 } WMaxCdmaAllocationIE;
 
+typedef enum {
+    WMAX_RANGING_METHOD_INITIAL = 0,
+    WMAX_RANGING_METHOD_BWR = 1
+} WMaxRangingMethod;
+
+typedef struct {
+    uint8_t symbolOffset;
+    uint8_t ofdmaSymbols;
+    uint8_t subchannels;
+    WMaxRangingMethod rangingMethod;
+} WMaxCdmaIE;
 
 // see table 287, IEEE 802.16-2004
 typedef struct {
@@ -45,11 +56,8 @@ typedef struct {
     // uiuc 1..11
     WMaxDataIE dataIE;
 
-    // uiuc=11
-    uint8_t symbolOffset;
-    uint8_t ofdmaSymbols;
-    uint8_t subchannes;
-    uint8_t rangingMethod;
+    // uiuc=12
+    WMaxCdmaIE cdmaIE;
 
     // uiuc=14 (cdma allocation IE)
     WMaxCdmaAllocationIE cdmaAllocIE;
@@ -60,7 +68,9 @@ typedef struct {
 
 
 typedef struct {
-
+    /// @todo - implement this for real
+    uint16_t cid;
+    uint32_t length;
 } WMaxDlMapIE;
 
 #endif

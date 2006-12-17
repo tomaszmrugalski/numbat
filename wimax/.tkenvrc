@@ -15,10 +15,10 @@ option animation_msgcolors	{1}
 option penguin_mode	{0}
 option showlayouting	{0}
 option bubbles	{1}
-option animation_speed	{2.12}
+option animation_speed	{1.94}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{998x427+195+85}
+config mainwin-geom	{998x427+349+34}
 config rununtil-event	{}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
@@ -40,7 +40,5 @@ config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim.bsMac" "WMaxMacBS" "3" "506x258+706+625"
-inspector "physim.ssMac" "WMaxMacSS" "3" "506x258+0+25"
-inspector "physim" "PhySim" "2" "536x388+17+388"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
 
