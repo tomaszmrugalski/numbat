@@ -3,3 +3,7 @@ opp_makemake
 make
 
 
+To gather statistics, compile, edit omnet.ini and verify that
+appropriate vectors (i.e. values changing over time) are enabled.
+Then run simulation. wimax.vec file wll be created. 
+That file can be processed by the plove tool. 

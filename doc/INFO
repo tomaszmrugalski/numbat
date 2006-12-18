@@ -1,0 +1,5 @@
+To generate those docs, LaTeX distribution is required.
+In Linux systems, it is usually sufficient to install tetex-base, tetex-bin and tetex-extra
+packages. Note that this is a distribution depantant.
+
+In Windows systems, MikTeX seems like good choice for LaTeX environment.

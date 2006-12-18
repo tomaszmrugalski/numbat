@@ -9,7 +9,10 @@
  */
 
 #include <omnetpp.h>
+#include <string>
 #include "ipv6node.h"
+
+using namespace std;
 
 /********************************************************************************/
 /*** IPv6 Node ******************************************************************/
@@ -23,10 +26,27 @@ void IPv6Node::initialize()
     sendTimer = new cMessage("IPv6 send");
     scheduleAt(0.010, sendTimer);
 
-    sentBytes = 0;
-    sentPkts  = 0;
-    rcvdBytes = 0;
-    rcvdPkts  = 0;
+    SentBytes = 0;
+    SentPkts  = 0;
+    RcvdBytes = 0;
+    RcvdPkts  = 0;
+    
+    std::string x;
+    x = fullName();
+    x = x+std::string(" Sent Packets");
+    SentPktsVector.setName(x.c_str());
+
+    x = fullName();
+    x = x+std::string(" Sent Bytes");
+    SentBytesVector.setName(x.c_str());
+
+    x = fullName();
+    x = x+std::string(" Received Packets");
+    RcvdPktsVector.setName(x.c_str());
+
+    x = fullName();
+    x = x+std::string(" Received Bytes");
+    RcvdBytesVector.setName(x.c_str());
 }
 
 void IPv6Node::handleMessage(cMessage *msg)
@@ -37,8 +57,8 @@ void IPv6Node::handleMessage(cMessage *msg)
     }
     
     ev << fullName() << ": Message " << msg->fullName() << " received." << endl;
-    rcvdPkts++;
-    rcvdBytes += msg->length();
+    RcvdPkts++;
+    RcvdBytes += msg->length();
     updateStats();
 
     delete msg;
@@ -47,21 +67,21 @@ void IPv6Node::handleMessage(cMessage *msg)
 void IPv6Node::generateTraffic()
 {
     cMessage *m = new cMessage("IPv6 packet");
-    m->setLength(30);
-    sentPkts++;
-    sentBytes += m->length();
+    m->setLength((long)exponential(100));
+    SentPkts++;
+    SentBytes += m->length();
     send(m, "ipOut");
 
     m = new cMessage("IPv6 packet");
-    m->setLength(40);
-    sentPkts++;
-    sentBytes += m->length();
+    m->setLength((long)exponential(100));
+    SentPkts++;
+    SentBytes += m->length();
     send(m, "ipOut");
 
     m = new cMessage("IPv6 packet");
-    m->setLength(50);
-    sentPkts++;
-    sentBytes += m->length();
+    m->setLength((long)exponential(100));
+    SentPkts++;
+    SentBytes += m->length();
     send(m, "ipOut");
 
     updateStats();
@@ -75,7 +95,12 @@ void IPv6Node::updateStats()
 {
     char buf[80];
     sprintf(buf, "sent=%ld(%ld), rcvd=%ld(%ld)", 
-	    sentPkts, sentBytes, rcvdPkts, rcvdBytes);
+	    SentPkts, SentBytes, RcvdPkts, RcvdBytes);
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);
+
+    SentPktsVector.record(SentPkts);
+    SentBytesVector.record(SentBytes);
+    RcvdPktsVector.record(RcvdPkts);
+    RcvdBytesVector.record(RcvdBytes);
 }

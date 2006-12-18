@@ -25,10 +25,15 @@ class IPv6Node : public cSimpleModule
  private:
     cMessage * sendTimer;
 
-    uint32_t sentBytes;
-    uint32_t sentPkts;
-    uint32_t rcvdBytes;
-    uint32_t rcvdPkts;
+    uint32_t SentBytes;
+    uint32_t SentPkts;
+    uint32_t RcvdBytes;
+    uint32_t RcvdPkts;
+
+    cOutVector SentPktsVector;
+    cOutVector SentBytesVector;
+    cOutVector RcvdPktsVector;
+    cOutVector RcvdBytesVector;
 };
 
 #endif

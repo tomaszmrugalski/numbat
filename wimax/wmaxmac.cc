@@ -65,21 +65,22 @@ void WMaxMac::printDlMap(WMaxMsgDlMap * dlmap)
 
 void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 {
-    ev << fullName() << ": --- UL-MAP (" << ulmap->getIEArraySize() << " IE(s) ---" << endl;
+    ev << fullName() << ": --- UL-MAP: " << ulmap->getIEArraySize() << " IE(s) ---" << endl;
 
     for (int i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE &ie = ulmap->getIE(i);
 	ev << "IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
+
 	switch (ie.uiuc) {
 	case WMAX_ULMAP_UIUC_FAST_FEEDBACK:
 	case WMAX_ULMAP_UIUC_EXTENDED2:
 	case WMAX_ULMAP_UIUC_PAPR:
 	case WMAX_ULMAP_UIUC_EXTENDED:
-	    ev << " NOT SUPPORTED IE TYPE" << endl;
+	    ev << " NOT SUPPORTED IE TYPE";
 	    break;
-	case WMAX_ULMAP_UIUC_CDMA_BWR:
-	    ev << "(CDMA BWR): symbolOffset=" << ie.cdmaIE.symbolOffset << " ofdmaSymbols=" << ie.cdmaIE.ofdmaSymbols 
-	       << " subchannels=" << ie.cdmaIE.subchannels << " rangingMethod=" << ie.cdmaIE.rangingMethod;
+	case WMAX_ULMAP_UIUC_CDMA_BWR: {
+	    ev << "(CDMA BWR): symbolOffset=" << (int)ie.cdmaIE.symbolOffset << " ofdmaSymbols=" << (int)ie.cdmaIE.ofdmaSymbols 
+	       << " subchannels=" << (int)ie.cdmaIE.subchannels << " rangingMethod=" << (int)ie.cdmaIE.rangingMethod;
 	    switch (ie.cdmaIE.rangingMethod) {
 	    case WMAX_RANGING_METHOD_INITIAL: 
 		ev << "initial ranging";
@@ -87,18 +88,21 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	    case WMAX_RANGING_METHOD_BWR:
 		ev << "bandwidth request";
 		break;
+	    default:
+		ev << "[unknown ranging method]";
 	    }
-	    ev << endl;
-	    break;
-	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
-	    ev << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << ie.cdmaAllocIE.uiuc
-	       << " rangingCode=" << ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << ie.cdmaAllocIE.rangingSymbol
-	       << " rangingSubchannel=" << ie.cdmaAllocIE.rangingSubchannel << endl;
-	    break;
-	default:
-	    ev << "(DATA): duration=" << ie.dataIE.duration << endl;
 	    break;
 	}
+	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
+	    ev << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
+	       << " rangingCode=" << ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << ie.cdmaAllocIE.rangingSymbol
+	       << " rangingSubchannel=" << ie.cdmaAllocIE.rangingSubchannel;
+	    break;
+	default:
+	    ev << "(DATA): duration=" << ie.dataIE.duration;
+	    break;
+	}
+	ev << endl;
     }
 }
 
@@ -202,11 +206,12 @@ void WMaxMacBS::schedule()
 	schedCdmaBwrCnt=0;
 	ulmap->setIEArraySize(ieCnt);
 	WMaxUlMapIE ie;
+	CLEAR(&ie);
 	ie.cid  = WMAX_CID_BROADCAST;
 	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
 	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_BWR;
 	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
-	ulmap->setIEArraySize(ieCnt);
+	ulmap->setIE(ieCnt-1,ie);
     }
 
     if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
@@ -229,6 +234,7 @@ void WMaxMacBS::schedule()
 		ieCnt++;
 		ulmap->setIEArraySize(ieCnt);
 		WMaxUlMapIE ie;
+		CLEAR(&ie);
 		ie.uiuc = WMAX_ULMAP_UIUC_DATA_1;
 		ie.cid = it->cid;
 		ie.dataIE.duration = it->bandwidth;
@@ -241,6 +247,7 @@ void WMaxMacBS::schedule()
     }
 
     ev << fullName() << ": Generating UL-MAP: " << ulmap->getIEArraySize() << "IE(s)" << endl;
+    printUlMap(ulmap);
     send(ulmap, "phyOut");
 
     // trigger PHY to start frame
