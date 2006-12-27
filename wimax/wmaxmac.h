@@ -107,8 +107,19 @@ typedef struct {
 
     // --- runtime parameters ---
     uint32_t bandwidth;
+
+    int gateIndex; // index of a gate associated with this connection
 } WMaxConn;
 
+class WMaxMacHeader : public cPolymorphic
+{
+public:
+    uint16_t cid;
+};
+
+/**************************************************************/
+/*** MODULE DEFINITIONS STRUCTURES ****************************/
+/**************************************************************/
 
 class WMaxMac : public cSimpleModule
 {
@@ -127,6 +138,8 @@ class WMaxMac : public cSimpleModule
     list<WMaxConn> Conns;
     double FrameLength;
 
+    virtual void handleUlMessage(cMessage *msg);
+    virtual void handleDlMessage(cMessage *msg);
     virtual void printDlMap(WMaxMsgDlMap * dlmap);
     virtual void printUlMap(WMaxMsgUlMap * ulmap);
 };
@@ -139,8 +152,6 @@ class WMaxMacBS: public WMaxMac
     virtual void handleMessage(cMessage *msg);
 
     virtual void schedule();
-    virtual void handleDlMessage(cMessage *msg);
-    virtual void handleUlMessage(cMessage *msg);
 
     // --- configuration parameters ---
     /// minimal size of granted bandwidth on UGS connection
@@ -182,7 +193,6 @@ class WMaxMacSS: public WMaxMac
     virtual void finish();
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
-    virtual void handleDlMessage(cMessage* msg);
     void         handleUlMessage(cMessage* msg);
 
     WMaxStatsSS Stats;

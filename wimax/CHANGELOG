@@ -2,9 +2,14 @@
  Changelog
 -----------
 
+tmrugals, 2006-12-27
+- IPv6 nodes traffic model is now configurable
+- partial support for multiple connections (ssPHY, bsPHY)
+- control info (WMaxMacHeader) added to messages
+
 tmrugals, 2006-12-11
 - uplink and downlink is now operational!
 
 tmrugals, some-time-ago
-- added ipv6node module and 2 instantiations: ssIPv6 and bsIPv6.
+- added ipv6node module and 2 instances: ssIPv6 and bsIPv6.
 - fixed problem with frames all starting at 0.005 ms.

@@ -30,6 +30,10 @@ void IPv6Node::initialize()
     SentPkts  = 0;
     RcvdBytes = 0;
     RcvdPkts  = 0;
+
+    this->BurstInterval   = (double)par("BurstInterval");
+    this->BurstSize       = (int)par("BurstSize");
+    this->BurstPacketSize = (int)par("BurstPacketSize");
     
     std::string x;
     x = fullName();
@@ -66,27 +70,20 @@ void IPv6Node::handleMessage(cMessage *msg)
 
 void IPv6Node::generateTraffic()
 {
-    cMessage *m = new cMessage("IPv6 packet");
-    m->setLength((long)exponential(100));
-    SentPkts++;
-    SentBytes += m->length();
-    send(m, "ipOut");
+    cMessage *m = 0;
 
-    m = new cMessage("IPv6 packet");
-    m->setLength((long)exponential(100));
-    SentPkts++;
-    SentBytes += m->length();
-    send(m, "ipOut");
-
-    m = new cMessage("IPv6 packet");
-    m->setLength((long)exponential(100));
-    SentPkts++;
-    SentBytes += m->length();
-    send(m, "ipOut");
+    for (int i=0; i<BurstSize; i++) 
+    {
+	m = new cMessage("IPv6 packet");
+	m->setLength((long)exponential(BurstPacketSize));
+	SentPkts++;
+	SentBytes += m->length();
+	send(m, "ipOut");
+    }
 
     updateStats();
 
-    scheduleAt(simTime()+(double)(0.025), sendTimer);
+    scheduleAt(simTime()+(double)(BurstInterval), sendTimer);
 
     // reschedule this timer
 }

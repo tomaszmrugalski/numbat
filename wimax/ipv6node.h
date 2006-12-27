@@ -25,6 +25,16 @@ class IPv6Node : public cSimpleModule
  private:
     cMessage * sendTimer;
 
+    // how often packets should be sent?
+    double BurstInterval;
+
+    // how many packets should be sent each time?
+    int BurstSize;
+
+    // how large packets can be?
+    int BurstPacketSize;
+
+    // stats 
     uint32_t SentBytes;
     uint32_t SentPkts;
     uint32_t RcvdBytes;

@@ -26,8 +26,8 @@ simple WMaxMacBS
     gates:
         in: phyIn;
         out: phyOut;
-        in: ipIn;
-        out: ipOut;
+        in: macIn[];
+        out: macOut[];
 endsimple
 
 simple WMaxMacSS
@@ -36,11 +36,15 @@ simple WMaxMacSS
     gates:
         in: phyIn;
         out: phyOut;
-        in: ipIn;
-        out: ipOut;
+        in: macIn[];
+        out: macOut[];
 endsimple
 
 simple IPv6Node
+    parameters:
+        BurstInterval: numeric,
+        BurstSize: numeric,
+        BurstPacketSize: numeric;
     gates:
         out: ipOut;
         in: ipIn;
@@ -57,9 +61,9 @@ module PhySim
         bsMac: WMaxMacBS;
             display: "i=block/control,#40e221;p=400,152;q=SendQueue";
         ssIPv6: IPv6Node;
-            display: "i=block/app,#ce1821;p=112,64;tx=Tx,rx=Rx";
+            display: "i=block/app,#ce1821;p=112,64;tx=Tx,rx";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=400,56;tx=Tx,rx=Rx";
+            display: "i=block/app,#40e221;p=400,56;tx=Tx,rx";
     connections:
         ssPhy.rfOut --> bsPhy.rfIn;
         bsPhy.rfOut --> ssPhy.rfIn;
@@ -70,11 +74,11 @@ module PhySim
         bsMac.phyOut --> bsPhy.phyIn;
         bsPhy.phyOut --> bsMac.phyIn;
 
-        ssIPv6.ipOut --> ssMac.ipIn;
-        ssMac.ipOut --> ssIPv6.ipIn;
+        ssIPv6.ipOut --> ssMac.macIn++;
+        ssMac.macOut++ --> ssIPv6.ipIn;
 
-        bsIPv6.ipOut --> bsMac.ipIn;
-        bsMac.ipOut --> bsIPv6.ipIn;
+        bsIPv6.ipOut --> bsMac.macIn++;
+        bsMac.macOut++ --> bsIPv6.ipIn;
 endmodule
 
 network physim : PhySim

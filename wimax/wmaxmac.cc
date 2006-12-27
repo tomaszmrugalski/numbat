@@ -21,9 +21,14 @@ using namespace std;
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
+    static int gate = 0;
+    conn.gateIndex = gate++;
+
     stringstream tmp;
     /// @todo - check if CID and sfid are unique
     Conns.push_back(conn);
+
+    
     ev << fullName() << ": adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
     switch (conn.type) {
     case WMAX_CONN_TYPE_UGS:
@@ -41,7 +46,7 @@ bool WMaxMac::addConn(WMaxConn conn)
 	ev << "BestEffort: msr=" << conn.qos.be.msr;
 	break;
     }
-    ev << tmp.str() << endl;
+    ev << tmp.str() << " gateIndex=" << conn.gateIndex << endl;
     //setDisplayString("Conns"); // this doesn't work. Strange
     return true;
 }
@@ -146,18 +151,20 @@ void WMaxMacBS::initialize()
 
 void WMaxMacBS::handleMessage(cMessage *msg)
 {
-    cGate * gate = msg->arrivalGate();
     if (msg==TxStart) {
 	schedule();
 	scheduleAt(simTime()+FrameLength, TxStart);
 	return;
     }
+
+    cGate * gate = msg->arrivalGate();
     if (!strcmp(gate->fullName(),"phyIn")) {
 	handleUlMessage(msg);
+	return;
     }
-    if (!strcmp(gate->fullName(),"ipIn")) {
-	handleDlMessage(msg);
-    }
+
+    // remaining gates must be downlink
+    handleDlMessage(msg);
 }
 
 
@@ -256,16 +263,34 @@ void WMaxMacBS::schedule()
     send(frameStart, "phyOut");
 }
 
-void WMaxMacBS::handleDlMessage(cMessage *msg)
+void WMaxMac::handleUlMessage(cMessage *msg)
 {
-    SendQueue.insert(msg);
-}
+    int cid = -1;
+    int gateIndex = -1;
+    if (dynamic_cast<WMaxMacHeader*>(msg->controlInfo())) {
+	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->removeControlInfo());
+	cid = hdr->cid;
+	delete hdr;
+    } else {
+	ev << fullName() << ": malformed message received. Uplink message without WMaxMacHeader structure" << endl;
+	return;
+    }
+    
+    for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
+	if (it->cid == cid) {
+	    gateIndex = it->gateIndex;
 
-void WMaxMacBS::handleUlMessage(cMessage *msg)
-{
-    /// @todo - check if this really IPv6
-    ev << ": sending message to IPv6 layer." << endl;
-    send(msg, "ipOut");
+	}
+    }
+
+
+    ev << fullName() << ": sending message to upper (IPv6) layer." << endl;
+
+    if (gateIndex != -1) {
+	send(msg, "macOut", 0);
+    } else {
+	ev << fullName() << ": Unable to find connection for CID=" << cid << ", message dropped." << endl;
+    }
 }
 
 /********************************************************************************/
@@ -300,14 +325,24 @@ void WMaxMacSS::handleMessage(cMessage *msg)
     ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
     if (!strcmp(gate->fullName(),"phyIn")) {
 	handleUlMessage(msg);
+	return;
     }
-    if (!strcmp(gate->fullName(),"ipIn")) {
-	handleDlMessage(msg);
-    }
+
+    // remaining gates must be downlink
+    handleDlMessage(msg);
+    return;
 }
 
-void WMaxMacSS::handleDlMessage(cMessage *msg)
+void WMaxMac::handleDlMessage(cMessage *msg)
 {
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+
+    /// @todo - find proper connection, not just get first one
+    list<WMaxConn>::iterator it = Conns.begin();
+
+    hdr->cid = it->cid;
+    msg->setControlInfo(hdr);
+
     ev << fullName() << ": Queueing message." << endl;
     SendQueue.insert(msg);
 }
@@ -330,8 +365,7 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	return;
     }
 
-    /// @todo - if packet is IPv6, then handle it to upper layer
-    send(msg, "ipOut");
+    WMaxMac::handleUlMessage(msg);
 }
 
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
