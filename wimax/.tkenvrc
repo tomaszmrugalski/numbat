@@ -18,7 +18,7 @@ option bubbles	{1}
 option animation_speed	{1.94}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{998x427+349+34}
+config mainwin-geom	{998x427+348+34}
 config rununtil-event	{}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
@@ -39,6 +39,9 @@ config timeline-maxnumevents	{1000}
 config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
+inspector "physim.bsMac.SendQueue" "cQueue" "1" "418x493+5+73"
+inspector "physim.bsMac" "WMaxMacBS" "1" "460x315+0+49"
 inspector "physim" "PhySim" "2" "536x388+82+589"
+inspector "physim.bsMac.SendQueue.IPv6 packet" "cMessage" "1" "460x315+10+97"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
 

@@ -18,11 +18,15 @@ using namespace std;
 /********************************************************************************/
 /*** WMax Mac (common for BS/SS) ************************************************/
 /********************************************************************************/
+WMaxMac::WMaxMac()
+{
+    GateIndex = 0;
+}
+
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
-    static int gate = 0;
-    conn.gateIndex = gate++;
+    conn.gateIndex = GateIndex++;
 
     stringstream tmp;
     /// @todo - check if CID and sfid are unique
@@ -275,19 +279,19 @@ void WMaxMac::handleUlMessage(cMessage *msg)
 	ev << fullName() << ": malformed message received. Uplink message without WMaxMacHeader structure" << endl;
 	return;
     }
-    
+
+    // check if there is such connection (cid has to match)
     for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	if (it->cid == cid) {
 	    gateIndex = it->gateIndex;
-
+	    break;
 	}
     }
 
-
-    ev << fullName() << ": sending message to upper (IPv6) layer." << endl;
-
     if (gateIndex != -1) {
-	send(msg, "macOut", 0);
+	ev << fullName() << ": sending message to upper (IPv6) layer (CID=" << cid << ", gateIndex=" 
+	   << gateIndex << ")" << endl;
+	send(msg, "macOut", gateIndex);
     } else {
 	ev << fullName() << ": Unable to find connection for CID=" << cid << ", message dropped." << endl;
     }

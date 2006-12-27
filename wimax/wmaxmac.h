@@ -124,6 +124,7 @@ public:
 class WMaxMac : public cSimpleModule
 {
  public:
+    WMaxMac();
 
  protected:
     virtual void initialize() = 0;
@@ -133,6 +134,7 @@ class WMaxMac : public cSimpleModule
 
     // --- runtime parameters ---
     cQueue SendQueue;
+    int GateIndex;
 
     // --- configuration parameters ---
     list<WMaxConn> Conns;
