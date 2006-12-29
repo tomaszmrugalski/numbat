@@ -53,17 +53,29 @@ endsimple
 module PhySim
     submodules:
         ssPhy: WMaxPhySS;
-            display: "i=abstract/accesspoint,#ce1821;p=112,256;q=SendQueue";
+            display: "i=abstract/accesspoint,#ce1821;p=120,336;q=SendQueue";
         bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=400,256;q=SendQueue";
+            display: "i=abstract/accesspoint,#40e221;p=400,336;q=SendQueue";
         ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=112,160;q=SendQueue";
+            display: "i=block/control,#ce1821;p=120,184;q=SendQueue";
         bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=400,152;q=SendQueue";
+            display: "i=block/control,#40e221;p=400,176;q=SendQueue";
         ssIPv6: IPv6Node;
-            display: "i=block/app,#ce1821;p=112,64;tx=Tx,rx";
+            display: "i=block/app,#ce1821;p=72,96;tx=Tx,rx";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=400,56;tx=Tx,rx";
+            display: "i=block/app,#40e221;p=448,48;tx=Tx,rx";
+        ssIPv6_1: IPv6Node;
+            parameters:
+                BurstInterval = 0.026, // TBD
+                BurstSize = 1, // TBD
+                BurstPacketSize = 500; // TBD
+            display: "i=block/app,#ce1821;p=168,56";
+        bsIPv6_1: IPv6Node;
+            parameters:
+                BurstInterval = 0.027, // TBD
+                BurstSize = 1, // TBD
+                BurstPacketSize = 400; // TBD
+            display: "i=block/app,#40e221;p=344,96";
     connections:
         ssPhy.rfOut --> bsPhy.rfIn;
         bsPhy.rfOut --> ssPhy.rfIn;
@@ -77,8 +89,15 @@ module PhySim
         ssIPv6.ipOut --> ssMac.macIn++;
         ssMac.macOut++ --> ssIPv6.ipIn;
 
+        ssMac.macOut++ --> ssIPv6_1.ipIn;
+        ssIPv6_1.ipOut --> ssMac.macIn++;
+
         bsIPv6.ipOut --> bsMac.macIn++;
         bsMac.macOut++ --> bsIPv6.ipIn;
+
+        bsIPv6_1.ipOut --> bsMac.macIn++;
+        bsMac.macOut++ --> bsIPv6_1.ipIn;
+    display: "b=600,400";
 endmodule
 
 network physim : PhySim

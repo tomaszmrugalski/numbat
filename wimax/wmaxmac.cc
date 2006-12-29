@@ -137,20 +137,30 @@ void WMaxMacBS::initialize()
     schedCdmaHoRngFreq   = WMAX_CDMA_HO_RNG_FREQ;
 
     // configure connections
-    WMaxConn conn;
-    CLEAR(&conn);
-    conn.type= WMAX_CONN_TYPE_UGS;
-    conn.sfid = 1;
-    conn.cid = 1024;
-    conn.qos.ugs.msr = 80000; // 100kbps
-    addConn(conn);
+    int conns = gateSize("macOut");
+    int cid  = 1024;
+    int sfid = 1;
+    ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
+    for (int i=0; i<conns; i++) {
+	WMaxConn conn;
+	CLEAR(&conn);
+	conn.type= WMAX_CONN_TYPE_UGS;
+	conn.sfid = sfid++;
+	conn.cid  = cid++;
+	conn.gateIndex = i;
+	conn.qos.ugs.msr = 80000; // 100kbps
+	addConn(conn);
+    }
 
+#if 0
+    /// @todo - Best Effort is not supported yet
     CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = 2;
     conn.cid = 1025;
     conn.qos.ugs.msr = 100000; // 100kbps
     addConn(conn);
+#endif
 }
 
 void WMaxMacBS::handleMessage(cMessage *msg)
@@ -341,13 +351,23 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 {
     WMaxMacHeader * hdr = new WMaxMacHeader();
 
-    /// @todo - find proper connection, not just get first one
-    list<WMaxConn>::iterator it = Conns.begin();
+    // find proper connection, not just get first one
+    cGate * gate = msg->arrivalGate();
+    list<WMaxConn>::iterator it;
+    for (it = Conns.begin(); it!=Conns.end(); it++) {
+	if (it->gateIndex == gate->index()) {
+	    break;
+	}
+    }
+    if (it==Conns.end()) {
+	ev << fullName() << ": Unable to find connection for gateIndex=" << gate->index() << endl;
+	return;
+    }
 
     hdr->cid = it->cid;
     msg->setControlInfo(hdr);
 
-    ev << fullName() << ": Queueing message." << endl;
+    ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ")." << endl;
     SendQueue.insert(msg);
 }
 
