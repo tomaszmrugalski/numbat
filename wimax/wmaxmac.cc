@@ -318,19 +318,20 @@ void WMaxMacSS::initialize()
 
     CLEAR(&Stats);
 
-    Conns.clear();
-    WMaxConn conn;
-    CLEAR(&conn);
-    conn.type= WMAX_CONN_TYPE_UGS;
-    conn.sfid = 1;
-    conn.cid = 1024;
-    addConn(conn);
-    
-    CLEAR(&conn);
-    conn.type= WMAX_CONN_TYPE_BE;
-    conn.sfid = 2;
-    conn.cid = 1025;
-    addConn(conn);
+    int conns = gateSize("macOut");
+    int cid  = 1024;
+    int sfid = 1;
+    ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
+    for (int i=0; i<conns; i++) {
+	WMaxConn conn;
+	CLEAR(&conn);
+	conn.type= WMAX_CONN_TYPE_UGS;
+	conn.sfid = sfid++;
+	conn.cid  = cid++;
+	conn.gateIndex = i;
+	conn.qos.ugs.msr = 80000; // 100kbps
+	addConn(conn);
+    }
 }
 
 void WMaxMacSS::handleMessage(cMessage *msg)
