@@ -14,22 +14,22 @@ class FsmEvent
 public:
     FsmEvent(int type, std::string name)
 	:type(type), name(name) { };
+    std::string fullName();
     int type;
     std::string name;
 };
 
 typedef int FsmStateType;
+typedef int FsmEventType;
 
-typedef FsmState& onEventFunc(Fsm *fsm, FsmEvent e, cMessage *msg);
-typedef FsmState& onEnterFunc(Fsm *fsm, FsmStateType oldState);
-typedef FsmState& onExitFunc (Fsm *fsm, FsmStateType toState);
+typedef FsmStateType onEventFunc(Fsm *fsm, FsmEventType e, cMessage *msg);
+typedef FsmStateType onEnterFunc(Fsm *fsm);
+typedef FsmStateType onExitFunc (Fsm *fsm);
 
 class FsmState
 {
 public:
-FsmState(int type, std::string name, onEventFunc *onEvent)
-    :type(type), name(name), onEvent(onEvent) { };
-
+    bool inited;
     int type;
     std::string name;
     onEventFunc *onEvent;
@@ -38,12 +38,13 @@ FsmState(int type, std::string name, onEventFunc *onEvent)
     Fsm * fsm;
 };
 
-class Fsm {
+class Fsm : public cSimpleModule {
 protected:
     virtual void fsmInit() = 0;
     bool stateVerify();
     bool eventVerify();
-    virtual void onEvent(FsmEvent e, cMessage *msg);
+    void statesEventsInit(int statesCnt, int eventsCnt);
+    virtual void onEvent(FsmEventType e, cMessage *msg);
     virtual void stateInit(int type, std::string name, onEventFunc func); // stationary state
     virtual void stateInit(int type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state
     virtual void stateInit(int type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit); // transitive state
@@ -51,14 +52,17 @@ protected:
 
     std::vector<FsmState> States;
     std::vector<FsmEvent> Events;
+    int StatesCnt;
+    int EventsCnt;
 
-    FsmState *State;
+    FsmStateType CurrentState;
 };
 
-class WMaxCtrlSsFsm : public Fsm
+class WMaxCtrlSSFsm : public Fsm
 {
 
-    void fsmInit();
+    void initialize();
+    void handleMessage(cMessage *msg);
 
     // --- STATES ---
     typedef enum {
@@ -93,14 +97,14 @@ class WMaxCtrlSsFsm : public Fsm
     } State;
 
     // wait for CDMA opportunity state
-    static FsmState& onEventState_WaitForCdma(Fsm * fsm, FsmEvent s, cMessage *msg);
+    static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType s, cMessage *msg);
 
     // send CDMA code state
-    static FsmState &onEnterState_WaitAnonRngRsp(Fsm * fsm, FsmStateType oldState);
-    static FsmState &onExitState_WaitAnonRngRsp(Fsm * fsm, FsmStateType toState);
+    static FsmStateType onEnterState_WaitAnonRngRsp(Fsm * fsm);
+    static FsmStateType onExitState_WaitAnonRngRsp(Fsm * fsm);
 
     // wait for anonymous RNG-RSP state
-    static FsmState& onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEvent s, cMessage *msg);
+    static FsmStateType onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
     
 
     // --- EVENTS ---
@@ -109,7 +113,7 @@ class WMaxCtrlSsFsm : public Fsm
 	EVENT_NUM
     } Event;
 
-    FsmState& onEvent_CdmaCode(cMessage *msg);
+    FsmStateType onEvent_CdmaCode(cMessage *msg);
 
 };
 
