@@ -5,32 +5,52 @@
 
 #include <omnetpp.h>
 
-class Fsm;
-class FsmEvent;
-class FsmState;
+#define TIMER(name, time, descr)                              \
+    Timer##name##Value = time;			              \
+    Timer##name        = new cMessage(descr);
 
-class FsmEvent
-{
-public:
-    FsmEvent(int type, std::string name)
-	:type(type), name(name) { };
-    std::string fullName();
-    int type;
-    std::string name;
-};
+#define TIMER_START(name)                                     \
+    scheduleAt(simTime() + Timer##name##Value, Timer##name);
+
+#define TIMER_STOP(name)                                      \
+    if (Timer##name ->isScheduled())                          \
+        cancelEvent(Timer##name);
+
+#define TIMER_DEF(name)    \
+    double Timer##name##Value; \
+    cMessage* Timer##name;
+
+#define IF_TIMER(name, event)                                  \
+    if (msg==Timer##name)                                      \
+       onEvent(event, msg);
 
 typedef int FsmStateType;
 typedef int FsmEventType;
+
+class Fsm;
+class FsmEvent;
+class FsmState;
 
 typedef FsmStateType onEventFunc(Fsm *fsm, FsmEventType e, cMessage *msg);
 typedef FsmStateType onEnterFunc(Fsm *fsm);
 typedef FsmStateType onExitFunc (Fsm *fsm);
 
+
+class FsmEvent
+{
+public:
+    std::string fullName();
+    FsmEventType type;
+    std::string name;
+    bool inited;
+};
+
+
 class FsmState
 {
 public:
     bool inited;
-    int type;
+    FsmStateType type;
     std::string name;
     onEventFunc *onEvent;
     onEnterFunc *onEnter;
@@ -39,16 +59,18 @@ public:
 };
 
 class Fsm : public cSimpleModule {
+public:
+    FsmStateType State() { return CurrentState; }
 protected:
     virtual void fsmInit() = 0;
     bool stateVerify();
     bool eventVerify();
     void statesEventsInit(int statesCnt, int eventsCnt);
     virtual void onEvent(FsmEventType e, cMessage *msg);
-    virtual void stateInit(int type, std::string name, onEventFunc func); // stationary state
-    virtual void stateInit(int type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state
-    virtual void stateInit(int type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit); // transitive state
-    void eventInit(int type, std::string name);
+    virtual void stateInit(FsmStateType type, std::string name, onEventFunc func); // stationary state
+    virtual void stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state
+    virtual void stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit); // transitive state
+    void eventInit(FsmEventType type, std::string name);
 
     std::vector<FsmState> States;
     std::vector<FsmEvent> Events;
@@ -58,8 +80,11 @@ protected:
     FsmStateType CurrentState;
 };
 
-class WMaxCtrlSSFsm : public Fsm
+#if 0
+class WMaxCtrlSS : public Fsm
 {
+public:
+    WMaxCtrlSS();
 
     void initialize();
     void handleMessage(cMessage *msg);
@@ -110,12 +135,14 @@ class WMaxCtrlSSFsm : public Fsm
     // --- EVENTS ---
     typedef enum {
 	EVENT_CDMA_CODE,
+	EVENT_HANDOVER_START,
 	EVENT_NUM
     } Event;
 
     FsmStateType onEvent_CdmaCode(cMessage *msg);
 
 };
+#endif 
 
 #endif
 

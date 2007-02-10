@@ -25,44 +25,76 @@ void Fsm::stateInit(int type, std::string name, onEventFunc func)
     States[type].onEvent = func;
 }
 
+void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit)
+{
+    States[type].inited = true;
+    States[type].type = type;
+    States[type].name = name;
+    States[type].onEvent = onEvent;
+}
+
+// transitive state
+void Fsm::stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit)
+{
+    States[type].inited = true;
+    States[type].type = type;
+    States[type].name = name;
+    States[type].onEvent = 0;
+}
+
+void Fsm::eventInit(FsmEventType type, std::string name)
+{
+    Events[type].inited = true;
+    Events[type].type   = type;
+    Events[type].name   = name;
+
+}
+
 void Fsm::statesEventsInit(int statesCnt, int eventsCnt)
 {
+    int i;
     States.clear();
     Events.clear();
-    States.reserve(statesCnt);
-    Events.reserve(eventsCnt);
+
+    for (i=0; i<statesCnt; i++) {
+	FsmState * s = new FsmState();
+	s->inited = false;
+	States.push_back( *s );
+    }
+    for (i=0; i<eventsCnt; i++) {
+	FsmEvent * e = new FsmEvent();
+	e->inited = false;
+	Events.push_back( *e );
+    }
 
     StatesCnt = statesCnt;
     EventsCnt = eventsCnt;
 }
 
-void WMaxCtrlSSFsm::initialize() {
-    statesEventsInit(WMaxCtrlSSFsm::STATE_NUM, WMaxCtrlSSFsm::EVENT_NUM);
-
-    // state init
-    stateInit(STATE_WAIT_FOR_CDMA, "Waiting for CDMA opportunity", onEventState_WaitForCdma);
-    stateInit(STATE_SEND_CDMA,     "Send CDMA code", STATE_WAIT_ANON_RNG_RSP,
- 	      onEnterState_WaitAnonRngRsp, onExitState_WaitAnonRngRsp);
-    stateInit(STATE_WAIT_ANON_RNG_RSP, "Waiting for anonymous RNG-RSP", onEventState_WaitForAnonRngRsp);
-    stateVerify();
-
-    // event init
-    eventInit(EVENT_CDMA_CODE, "CDMA code received");
-    eventVerify();
-}
-
 
 bool Fsm::stateVerify() {
-
+    bool error = false;
     for (int i=0; i<StatesCnt; i++) {
 	if (!States[i].inited) {
 	    ev << fullName() << ": State " << i << " has not been inited properly." << endl;
-	    /// @todo: throw exception here
+	    error = true;
 	}
     }
+    if (error)
+	opp_error("%s: Not all states have been inited properly.", fullName() );
+    return true;
 }
 
 bool Fsm::eventVerify() {
+    bool error = false;
+    for (int i=0; i<EventsCnt; i++) {
+	if (!Events[i].inited) {
+	    ev << fullName() << ": Event " << i << " has not been inited properly." << endl;
+	    error = true;
+	}
+    }
+    if (error)
+	opp_error("%s: Not all events have been inited properly.", fullName() );
 
     return true;
 }
@@ -70,6 +102,10 @@ bool Fsm::eventVerify() {
 void Fsm::onEvent(FsmEventType e, cMessage *msg)
 {
     FsmStateType newState;
+    if ( (e<0) || (e>StatesCnt) ) {
+	opp_error("%s: Invalid event type %d specified (0..%d allowed)\n", fullName(), e, StatesCnt);
+    }
+
     newState = States[CurrentState].onEvent(this, e, msg);
 
     if (newState != CurrentState) {
@@ -83,36 +119,3 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
     }
 }
 
-/********************************************************************************/
-/*** CtrlSS FSM implementation **************************************************/
-/********************************************************************************/
-
-void WMaxCtrlSSFsm::handleMessage(cMessage *msg) 
-{
-
-    if (1) {
-	onEvent(EVENT_CDMA_CODE, msg);
-	return;
-    }
-}
-
-FsmStateType WMaxCtrlSSFsm::onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg) 
-{
-    WMaxCtrlSSFsm * f = dynamic_cast<WMaxCtrlSSFsm*>(fsm);
-
-    switch (e) {
-	case EVENT_CDMA_CODE:
-	return f->onEvent_CdmaCode(msg);
-    default:
-	std::cout << f->fullName() << ": event " 
-		  << f->Events[e].fullName() << " ignored in state " 
-		  << f->CurrentState << endl;
-	return f->CurrentState;
-	int x;
-    }
-}
-
-FsmStateType WMaxCtrlSSFsm::onEvent_CdmaCode(cMessage *msg)
-{
-    return WMaxCtrlSSFsm::STATE_SEND_CDMA;
-}

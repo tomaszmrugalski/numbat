@@ -40,6 +40,6 @@ config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim" "PhySim" "2" "644x499+501+543"
-inspector "physim.WMaxCtrlSS" "WMaxCtrlSS" "3" "506x258+62+493"
+inspector "physim.WMaxCtrlSS" "WMaxCtrlSS" "3" "506x258+573+513"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
 
