@@ -24,6 +24,13 @@
     if (msg==Timer##name)                                      \
        onEvent(event, msg);
 
+#define CASE_IGNORE(e)                                                 \
+	std::cout << fsm->fullName() << ": event "                     \
+		  << fsm->Events[e].fullName() << " ignored in state " \
+ 	<< fsm->CurrentStateGet()->fullName() << endl; \
+        return fsm->State();
+     
+
 typedef int FsmStateType;
 typedef int FsmEventType;
 
@@ -55,12 +62,17 @@ public:
     onEventFunc *onEvent;
     onEnterFunc *onEnter;
     onExitFunc  *onExit;
-    Fsm * fsm;
+    std::string fullName();
+//    Fsm * fsm;
 };
 
 class Fsm : public cSimpleModule {
 public:
     FsmStateType State() { return CurrentState; }
+    FsmState * CurrentStateGet() { return &States[CurrentState]; }
+    std::vector<FsmState> States;
+    std::vector<FsmEvent> Events;
+
 protected:
     virtual void fsmInit() = 0;
     bool stateVerify();
@@ -71,9 +83,8 @@ protected:
     virtual void stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state
     virtual void stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit); // transitive state
     void eventInit(FsmEventType type, std::string name);
+    void stateSet(FsmStateType state);
 
-    std::vector<FsmState> States;
-    std::vector<FsmEvent> Events;
     int StatesCnt;
     int EventsCnt;
 

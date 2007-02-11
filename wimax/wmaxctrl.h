@@ -44,6 +44,7 @@ protected:
 
     // --- STATES ---
     typedef enum {
+	// 1. network entry phase
 	STATE_WAIT_FOR_CDMA,
 	STATE_SEND_CDMA,            // send CDMA code
 	STATE_WAIT_ANON_RNG_RSP,    // wait for anonymous RNG-RSP
@@ -51,24 +52,26 @@ protected:
 	STATE_WAIT_RNG_RSP,               // wait for RNG-RSP
 	STATE_SEND_SBC_REQ,               // send SBC-REQ
 	STATE_WAIT_SBC_RSP,               // wait for SBC-RSP
-	/// @todo: PKM (TEKs)
+	/// @todo: implement PKM (TEKs) support
 	STATE_SEND_REG_REQ,               // send REG-REQ
 	STATE_WAIT_REG_RSP,               // wait for REG-RSP
 
-	// service flow creation
-	/// @todo - service flow creation
+	// 2. service flow creation phase
+	/// @todo - implement service flow creation
 	// STATE_INITIATE_SVC_FLOW_CREATION, // initialize service flow creation (i.e. start new FSMs for each flow)
 	// STATE_WAIT_FOR_SVC_FLOW_COMPLETE, // wait for service flow creation completion
 
 	STATE_OPERATIONAL,                // network entry completed, service flows created, normal operation
 
+	/// @todo - implement neighbor advertisements support
+
 	/// @todo - implement scanning
 
 	// handover
-/* 	STATE_SEND_MSHO_REQ,              // send MSHO-REQ */
-/* 	STATE_WAIT_BSHO_RSP,              // wait for BSHO-RSP */
-/* 	STATE_SEND_HO_IND,                // send HO-IND */
-/* 	STATE_HANDOVER_COMPLETE,          // handover complete */
+	STATE_SEND_MSHO_REQ,              // send MSHO-REQ
+	STATE_WAIT_BSHO_RSP,              // wait for BSHO-RSP
+	STATE_SEND_HO_IND,                // send HO-IND
+	STATE_HANDOVER_COMPLETE,          // handover complete
 	
 	STATE_NUM
     } State;
@@ -104,10 +107,23 @@ protected:
     // operational state
     static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType s, cMessage *msg);
 
+    // send MSHO-REQ state
+    static FsmStateType onEnterState_SendMshoReq(Fsm *fsm);
+
+    // wait for BSHO-RSP state
+    static FsmStateType onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+
+    // sent HO-IND state
+    static FsmStateType onEnterState_SendHoInd(Fsm *fsm);
+    
+    // handover complete state
+    static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg);
+
     // --- EVENTS ---
     typedef enum {
 	EVENT_CDMA_CODE,
 	EVENT_HANDOVER_START,
+	EVENT_BSHO_RSP_RECEIVED,
 	EVENT_NUM
     } Event;
 
@@ -119,63 +135,8 @@ protected:
 };
 
 #if 0
-class WMaxCtrlSS : public WMaxCtrl
-{
-public:
-    WMaxCtrlSS();
-protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
-
-    /******************************************/
-    /*** Finite State Machine *****************/
-    /******************************************/
-    cFSM fsm;
-    typedef enum {
-	INIT = 0,
-
-	// notice: transitive and steady states are numbered separately
-
-	// network entry
-	SEND_CDMA         = FSM_Transient(1),    // send CDMA code
-	WAIT_ANON_RNG_RSP = FSM_Steady(1),       // wait for anonymous RNG-RSP
-	SEND_RNG_REQ      = FSM_Transient(2),    // send RNG-REQ
-	WAIT_RNG_RSP      = FSM_Steady(2),       // wait for RNG-RSP
-	SEND_SBC_REQ      = FSM_Transient(3),    // send SBC-REQ
-	WAIT_SBC_RSP      = FSM_Steady(3),       // wait for SBC-RSP
-
-	/// @todo: PKM (TEKs)
-	SEND_REG_REQ      = FSM_Transient(4),    // send REG-REQ
-	WAIT_REG_RSP      = FSM_Steady(4),       // wait for REG-RSP
-
-	// service flow creation
-	INITIATE_SVC_FLOW_CREATION = FSM_Transient(5), // initialize service flow creation (i.e. start new FSMs for each flow)
-	WAIT_FOR_SVC_FLOW_COMPLETE = FSM_Steady(5),    // wait for service flow creation completion
-
-	OPERATIONAL       = FSM_Steady(6),             // network entry completed, service flows created, normal operation
-
-	// scanning
-	/// @todo - implement scanning
-
-	// handover
-	SEND_MSHO_REQ     = FSM_Transient(6),    // send MSHO-REQ
-	WAIT_BSHO_RSP     = FSM_Steady(7),       // wait for BSHO-RSP
-	SEND_HO_IND       = FSM_Transient(7),    // send HO-IND
-	HANDOVER_COMPLETE = FSM_Steady(8)        // handover complete
-    } State;
-
-    State OperationalOnEnter();
-    State OperationalOnExit();
-    State SendMshoReqOnEnter();
-    State SendMshoReqOnExit();
-
-    /******************************************/
-    /*** Finite State Machine *****************/
-    /******************************************/
-
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);
-};
 #endif
 
 class WMaxCtrlBS : public Fsm

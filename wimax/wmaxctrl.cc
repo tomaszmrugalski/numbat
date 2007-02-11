@@ -39,19 +39,27 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_SEND_REG_REQ,      "Sending REG-REQ", STATE_WAIT_REG_RSP, onEnterState_SendRegReq, 0);
     stateInit(STATE_WAIT_REG_RSP,      "Waiting for REG-RSP", onEventState_WaitForRegRsp);
     stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational);
+    stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq, 0);
+    stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
+    stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", STATE_HANDOVER_COMPLETE, onEnterState_SendHoInd, 0);
+    stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", onEventState_HandoverComplete);
 
     stateVerify();
 
     // event init
     eventInit(EVENT_CDMA_CODE, "CDMA code received");
     eventInit(EVENT_HANDOVER_START, "Begin handover procedure");
+    eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventVerify();
 
     TIMER(NetworkEntry, 0.0, "Start Network entry");
     TIMER(Handover, 0.1, "Start handover");
 
-    TIMER_START(NetworkEntry);
-    TIMER_STOP(Handover);
+    //TIMER_START(NetworkEntry);
+    TIMER_START(Handover);
+
+    /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
+    stateSet(STATE_OPERATIONAL);
 }
 
 void WMaxCtrlSS::initialize() {
@@ -80,11 +88,9 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMe
     switch (e) {
 	case EVENT_CDMA_CODE:
 	return f->onEvent_CdmaCode(msg);
+	
     default:
-	std::cout << f->fullName() << ": event " 
-		  << f->Events[e].fullName() << " ignored in state " 
-		  << f->CurrentState << endl;
-	return f->CurrentState;
+	CASE_IGNORE(e);
     }
 }
 
@@ -111,42 +117,71 @@ FsmStateType WMaxCtrlSS::onEvent_CdmaCode(cMessage *msg)
 
 FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 {
-
+    return fsm->State();
 }
 
 // wait for RNG-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
 {
-
+    return fsm->State();
 }
 
 // send SBC-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
-
+    return fsm->State();
 }
 
 // wait for SBC-RSP state
-FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
-
+    return fsm->State();
 }
 
 // send REG-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
-
+    return fsm->State();
 }
 
 // wait for REG-RSP state
-FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
-
+    return fsm->State();
 }
 
-FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType s, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_HANDOVER_START:
+	return STATE_SEND_MSHO_REQ;
+    default:
+	CASE_IGNORE(e);
+    }
+}
 
+// send MSHO-REQ state
+FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
+{
+    return fsm->State();
+}
+
+// wait for BSHO-RSP state
+FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
+{
+    return fsm->State();
+}
+
+// sent HO-IND state
+FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
+{
+    return fsm->State();
+}
+    
+// handover complete state
+FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg)
+{
+    return fsm->State();
 }
 
 /********************************************************************************/

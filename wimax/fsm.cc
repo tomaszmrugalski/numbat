@@ -16,6 +16,14 @@ std::string FsmEvent::fullName() {
 	+ ")";
 }
 
+std::string FsmState::fullName() {
+    std::ostringstream x;
+    x << type;
+    return std::string(name) 
+	+ "(" 
+	+ x.str() 
+	+ ")";
+}
 
 void Fsm::stateInit(int type, std::string name, onEventFunc func)
 {
@@ -23,6 +31,8 @@ void Fsm::stateInit(int type, std::string name, onEventFunc func)
     States[type].type = type;
     States[type].name = name;
     States[type].onEvent = func;
+    States[type].onEnter = 0;
+    States[type].onExit  = 0;
 }
 
 void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit)
@@ -31,6 +41,8 @@ void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, on
     States[type].type = type;
     States[type].name = name;
     States[type].onEvent = onEvent;
+    States[type].onEnter = onEnter;
+    States[type].onExit  = onExit;
 }
 
 // transitive state
@@ -40,6 +52,8 @@ void Fsm::stateInit(FsmStateType type, std::string name, int targetState, onEnte
     States[type].type = type;
     States[type].name = name;
     States[type].onEvent = 0;
+    States[type].onEnter = onEnter;
+    States[type].onExit  = onExit;
 }
 
 void Fsm::eventInit(FsmEventType type, std::string name)
@@ -67,6 +81,7 @@ void Fsm::statesEventsInit(int statesCnt, int eventsCnt)
 	Events.push_back( *e );
     }
 
+    ev << fullName() << ": " << statesCnt << " state(s), " << eventsCnt << " event(s) inited." << endl;
     StatesCnt = statesCnt;
     EventsCnt = eventsCnt;
 }
@@ -76,7 +91,7 @@ bool Fsm::stateVerify() {
     bool error = false;
     for (int i=0; i<StatesCnt; i++) {
 	if (!States[i].inited) {
-	    ev << fullName() << ": State " << i << " has not been inited properly." << endl;
+	    ev << fullName() << ": State \"" << i << "\" has not been inited properly." << endl;
 	    error = true;
 	}
     }
@@ -89,7 +104,7 @@ bool Fsm::eventVerify() {
     bool error = false;
     for (int i=0; i<EventsCnt; i++) {
 	if (!Events[i].inited) {
-	    ev << fullName() << ": Event " << i << " has not been inited properly." << endl;
+	    ev << fullName() << ": Event \"" << i << "\" has not been inited properly." << endl;
 	    error = true;
 	}
     }
@@ -101,21 +116,41 @@ bool Fsm::eventVerify() {
 
 void Fsm::onEvent(FsmEventType e, cMessage *msg)
 {
-    FsmStateType newState;
     if ( (e<0) || (e>StatesCnt) ) {
-	opp_error("%s: Invalid event type %d specified (0..%d allowed)\n", fullName(), e, StatesCnt);
+	opp_error("%s: Invalid event type %d specified (0..%d allowed).\n", fullName(), e, StatesCnt);
     }
+    FsmStateType newState;
+    FsmState *tmp;
+
+    ev << fullName() << ": Event \"" << Events[e].fullName() << "\" received." << endl;
 
     newState = States[CurrentState].onEvent(this, e, msg);
+    if (newState>StatesCnt) {
+	opp_error("%s: Invalid state (%d) returned duing %s event processing in state %s.", fullName(),
+		  newState, Events[e].fullName().c_str(), States[CurrentState].fullName().c_str() );
+    }
 
     if (newState != CurrentState) {
+	ev << fullName() << ": State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
+	   << ", triggered by the \"" << Events[e].fullName().c_str() << "\" event." << endl;
 	// state transition
-	if (States[CurrentState].onExit)
-	    States[CurrentState].onExit(this);
-	CurrentState = newState;
+	tmp = &States[CurrentState];
+	if (tmp->onExit)
+	    tmp->onExit(this);
+	stateSet(newState);
 
 	if (States[CurrentState].onEnter)
 	    States[CurrentState].onEnter(this);
     }
 }
 
+void Fsm::stateSet(FsmStateType newState)
+{
+    CurrentState = newState;
+    char buf[80];
+    sprintf(buf, "state:%s(%d)", 
+	    States[newState].name.c_str(), States[newState].type);
+    if (ev.isGUI()) 
+	displayString().setTagArg("t",0,buf);
+
+}
