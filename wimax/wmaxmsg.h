@@ -73,4 +73,9 @@ typedef struct {
     uint32_t length;
 } WMaxDlMapIE;
 
+
+typedef struct {
+    uint8_t bsId[6];
+} WMaxBSFull;
+
 #endif

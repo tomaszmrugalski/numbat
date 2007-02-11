@@ -29,7 +29,8 @@
 		  << fsm->Events[e].fullName() << " ignored in state " \
  	<< fsm->CurrentStateGet()->fullName() << endl; \
         return fsm->State();
-     
+
+#define FSM_MAX_TRANSITIONS 64
 
 typedef int FsmStateType;
 typedef int FsmEventType;
@@ -63,7 +64,8 @@ public:
     onEnterFunc *onEnter;
     onExitFunc  *onExit;
     std::string fullName();
-//    Fsm * fsm;
+    bool transitive;
+    FsmStateType transitiveTo;
 };
 
 class Fsm : public cSimpleModule {
@@ -77,7 +79,7 @@ protected:
     virtual void fsmInit() = 0;
     bool stateVerify();
     bool eventVerify();
-    void statesEventsInit(int statesCnt, int eventsCnt);
+    void statesEventsInit(int statesCnt, int eventsCnt, FsmStateType s);
     virtual void onEvent(FsmEventType e, cMessage *msg);
     virtual void stateInit(FsmStateType type, std::string name, onEventFunc func); // stationary state
     virtual void stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state

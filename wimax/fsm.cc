@@ -33,6 +33,7 @@ void Fsm::stateInit(int type, std::string name, onEventFunc func)
     States[type].onEvent = func;
     States[type].onEnter = 0;
     States[type].onExit  = 0;
+    States[type].transitive = false;
 }
 
 void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit)
@@ -43,6 +44,7 @@ void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, on
     States[type].onEvent = onEvent;
     States[type].onEnter = onEnter;
     States[type].onExit  = onExit;
+    States[type].transitive = false;
 }
 
 // transitive state
@@ -54,6 +56,8 @@ void Fsm::stateInit(FsmStateType type, std::string name, int targetState, onEnte
     States[type].onEvent = 0;
     States[type].onEnter = onEnter;
     States[type].onExit  = onExit;
+    States[type].transitive = true;
+    States[type].transitiveTo = targetState;
 }
 
 void Fsm::eventInit(FsmEventType type, std::string name)
@@ -64,7 +68,7 @@ void Fsm::eventInit(FsmEventType type, std::string name)
 
 }
 
-void Fsm::statesEventsInit(int statesCnt, int eventsCnt)
+void Fsm::statesEventsInit(int statesCnt, int eventsCnt, FsmStateType state)
 {
     int i;
     States.clear();
@@ -84,6 +88,8 @@ void Fsm::statesEventsInit(int statesCnt, int eventsCnt)
     ev << fullName() << ": " << statesCnt << " state(s), " << eventsCnt << " event(s) inited." << endl;
     StatesCnt = statesCnt;
     EventsCnt = eventsCnt;
+
+    CurrentState = state;
 }
 
 
@@ -91,7 +97,7 @@ bool Fsm::stateVerify() {
     bool error = false;
     for (int i=0; i<StatesCnt; i++) {
 	if (!States[i].inited) {
-	    ev << fullName() << ": State \"" << i << "\" has not been inited properly." << endl;
+	    ev << fullName() << ": State " << i << " has not been inited properly." << endl;
 	    error = true;
 	}
     }
@@ -104,7 +110,7 @@ bool Fsm::eventVerify() {
     bool error = false;
     for (int i=0; i<EventsCnt; i++) {
 	if (!Events[i].inited) {
-	    ev << fullName() << ": Event \"" << i << "\" has not been inited properly." << endl;
+	    ev << fullName() << ": Event " << i << " has not been inited properly." << endl;
 	    error = true;
 	}
     }
@@ -120,9 +126,8 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
 	opp_error("%s: Invalid event type %d specified (0..%d allowed).\n", fullName(), e, StatesCnt);
     }
     FsmStateType newState;
-    FsmState *tmp;
 
-    ev << fullName() << ": Event \"" << Events[e].fullName() << "\" received." << endl;
+    ev << fullName() << ": Event " << Events[e].fullName() << " received." << endl;
 
     newState = States[CurrentState].onEvent(this, e, msg);
     if (newState>StatesCnt) {
@@ -132,25 +137,48 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
 
     if (newState != CurrentState) {
 	ev << fullName() << ": State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
-	   << ", triggered by the \"" << Events[e].fullName().c_str() << "\" event." << endl;
-	// state transition
-	tmp = &States[CurrentState];
-	if (tmp->onExit)
-	    tmp->onExit(this);
+	   << ", triggered by the " << Events[e].fullName().c_str() << " event." << endl;
 	stateSet(newState);
-
-	if (States[CurrentState].onEnter)
-	    States[CurrentState].onEnter(this);
     }
 }
 
 void Fsm::stateSet(FsmStateType newState)
 {
-    CurrentState = newState;
-    char buf[80];
-    sprintf(buf, "state:%s(%d)", 
-	    States[newState].name.c_str(), States[newState].type);
-    if (ev.isGUI()) 
-	displayString().setTagArg("t",0,buf);
+    FsmState *from;
+    FsmState *to;
+    int transitionsCnt = 0; // how many state changes? (by default, after transition, it should be set to 1,
+                            // unless there were some transitive states)
 
+    // skip changes to current state
+    if (newState==State())
+	return;
+
+    // state transition
+
+    do {
+	from = &States[State()];
+	to   = &States[newState];
+
+	if (from->onExit)
+	    from->onExit(this);
+	
+	CurrentState = newState;
+
+	char buf[80];
+	sprintf(buf, "state:%s", to->fullName().c_str() );
+	if (ev.isGUI()) 
+	    displayString().setTagArg("t",0,buf);
+
+	if (to->onEnter)
+	    to->onEnter(this);
+
+	if (to->transitive) {
+	    newState = to->transitiveTo;
+	    ev << fullName() << ": State change: " << States[State()].fullName() << "->" << States[newState].fullName() 
+	       << ", because " << States[State()].fullName() << " is transitive." << endl;
+	}
+	transitionsCnt++;
+	if (transitionsCnt > FSM_MAX_TRANSITIONS)
+	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", fullName(), transitionsCnt);
+    } while (to->transitive);
 }

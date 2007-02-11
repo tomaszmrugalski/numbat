@@ -25,7 +25,8 @@ WMaxCtrlSS::WMaxCtrlSS()
 }
 
 void WMaxCtrlSS::fsmInit() {
-    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM);
+    /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
+    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_OPERATIONAL);
 
     // state init
     std::string x = "Waiting for CDMA opportunity";
@@ -58,8 +59,6 @@ void WMaxCtrlSS::fsmInit() {
     //TIMER_START(NetworkEntry);
     TIMER_START(Handover);
 
-    /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
-    stateSet(STATE_OPERATIONAL);
 }
 
 void WMaxCtrlSS::initialize() {
@@ -74,8 +73,8 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	return;
     }
 
-    if (0) {
-	onEvent(EVENT_CDMA_CODE, msg);
+    if (dynamic_cast<WMaxMsgBSHORSP*>(msg)) {
+	onEvent(EVENT_BSHO_RSP_RECEIVED, msg);
 	return;
     }
 }
@@ -163,18 +162,31 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 // send MSHO-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
+    WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
+    mshoReq->setName("MSHO-REQ");
+    ev << fsm->fullName() << "Sending MSHO-REQ message." << endl;
+    fsm->send(mshoReq, "macOut");
     return fsm->State();
 }
 
 // wait for BSHO-RSP state
-FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_BSHO_RSP_RECEIVED:
+	return STATE_SEND_HO_IND;
+    default:
+	CASE_IGNORE(e);
+    }
     return fsm->State();
 }
 
 // sent HO-IND state
 FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 {
+    WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
+    hoInd->setName("HO-IND");
+    fsm->send(hoInd, "macOut");
     return fsm->State();
 }
     
@@ -206,6 +218,18 @@ void WMaxCtrlBS::initialize()
 
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
-
+    if (dynamic_cast<WMaxMsgMSHOREQ*>(msg)) {
+	ev << fullName() << ": MSHO-REQ received, sending BSHO-RSP." << endl;
+	WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
+	bshoRsp->setName("BSHO-RSP");
+	send(bshoRsp, "macOut");
+	delete msg;
+	return;
+    }
+    if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
+	ev << fullName() << ": HO-IND received." << endl;
+	delete msg;
+	return;
+    }
 }
 
