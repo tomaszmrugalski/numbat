@@ -1,15 +1,21 @@
 
 
- This file contains list of tasks, which should be implemented.
+ This file contains list of tasks, which must be done.
+ $Id$
 
  TODO
 ------
-- Implement radio channel support (so multiple SSes could be connected to one BS).
-- Implement CDMA codes support.
+- Radio channel support, so multiple SSes could be connected to one BS (Andrzej)
+- Switching between BSes (Andrzej)
 - Implement best effort.
+  - Implement CDMA codes support.
+  - Implement Bandwidth Request support. (Maciek)
 - Make connections (in SS as well as BS) configurable.
-
+- WMaxCtrl: Implement network entry
+- WMaxCtrl: Implement service flow creation (DSA-REQ, DSA-RSP, DSA-ACK)
+- WMaxCtrl: Implement scanning
 
  Implemented/Not tested
 ------------------------
+- WMaxCtrl: Implement handover (thomson)
 - UGS throughput is now defined by MSR (in bits per second).

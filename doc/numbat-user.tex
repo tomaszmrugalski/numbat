@@ -7,8 +7,10 @@
 %%          
 %% released under GNU GPL v2 or later licence
 %%
+%% $Id: dibbler-user.tex,v 1.19 2007-01-06 17:14:48 thomson Exp $
+%%
 
-\documentclass[11pt]{article}
+\documentclass[10pt]{article}
 \usepackage[latin2]{inputenc}
 \usepackage[dvips]{graphicx}
 \usepackage{float}
@@ -21,8 +23,6 @@
 \usepackage{url}
 \usepackage[usenames]{color}
 \usepackage[colorlinks=true,linkcolor=myLinkColor,urlcolor=myUrlColor]{hyperref}
-
-%\setlength{\topmargin}{-1.0cm}
 \usepackage[twoside=true,
             left={2cm},
             right={2cm},
@@ -31,6 +31,11 @@
             footskip={1cm},
             headheight={1cm},
             headsep={0.5cm}]{geometry}
+\usepackage{listings}
+
+\lstset{language=C++,basicstyle=\ttfamily,
+  keywordstyle=\color{green},identifierstyle=\color{blue}, 
+columns=flexible, backgroundcolor=\color{myBgTableColor},frame=lines,showstringspaces=false} 
 
 %%%%%% \dzis macro by Lupan %%%%%%
 \newcommand{\dzis}{
@@ -41,13 +46,16 @@
 \the\day
 }
 
-\author{\href{mailto:andrzej_bojarski(at)wp(dot)pl}{Andrzej Bojarski}\\\href{mailto:maciek01(at)gmail(dot)com}{Maciej Jureko}\\\href{mailto:thomson(at)klub(dot)com(dot)pl}{Tomasz Mrugalski}}
+\author{\href{mailto:andrzej_bojarski(at)wp(dot)pl}{Andrzej Bojarski}\\
+        \href{mailto:maciek01(at)gmail(dot)com}{Maciej Jureko}\\
+        \href{mailto:thomson(at)klub(dot)com(dot)pl}{Tomasz Mrugalski}}
 \date{\dzis}
 \title{Numbat -- WiMax, DHCPv6 implementation in Omnet++}
 
 \definecolor{myBgColor}{rgb}{1.0,1.0,1.0}
 \definecolor{myLinkColor}{rgb}{0.0,0.4,0.0}
 \definecolor{myUrlColor}{rgb}{0.7,0.2, 0.4}
+\definecolor{myBgTableColor}{rgb}{0.9, 0.9, 0.9}
 \pagecolor{myBgColor}
 
 \pagestyle{fancy}
@@ -93,6 +101,13 @@
 
 %% INTRO
 \input{numbat-01-intro.tex}
+
+%% USAGE
+%%\input{numbat-02-usage.tex}
+
+
+%% FEATURE DESCRIPTION
+\input{numbat-03-features.tex}
 
 %% BIBLIOGRAPHY
 \input{numbat-99-bibliography.tex}

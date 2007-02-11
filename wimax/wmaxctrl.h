@@ -8,7 +8,6 @@
  * 
  */
 
-#define FSM_DEBUG
 #include <omnetpp.h>
 #include <vector>
 #include "wmaxmsg_m.h"
@@ -133,11 +132,6 @@ protected:
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);
 };
-
-#if 0
-    TIMER_DEF(Handover);
-    TIMER_DEF(NetworkEntry);
-#endif
 
 class WMaxCtrlBS : public Fsm
 {
