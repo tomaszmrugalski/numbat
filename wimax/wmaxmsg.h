@@ -37,8 +37,8 @@ typedef struct  {
 } WMaxCdmaAllocationIE;
 
 typedef enum {
-    WMAX_RANGING_METHOD_INITIAL = 0,
-    WMAX_RANGING_METHOD_BWR = 1
+    WMAX_RANGING_METHOD_INITIAL = 0,/* initial ranging */
+    WMAX_RANGING_METHOD_BWR = 1 /* bandwith request */
 } WMaxRangingMethod;
 
 typedef struct {
@@ -70,6 +70,7 @@ typedef struct {
 typedef struct {
     /// @todo - implement this for real
     uint16_t cid;
+    uint16_t symbols;
     uint32_t length;
 } WMaxDlMapIE;
 

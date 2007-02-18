@@ -23,7 +23,6 @@ using namespace std;
 /*** WIMAX CONSTANTS ******************************************/
 /**************************************************************/
 
-
 // minimum number of bytes in UGS allocation
 #define WMAX_SCHED_MIN_GRANT_SIZE 12
 
@@ -38,6 +37,9 @@ using namespace std;
 
 // minimal UGS grant, which can be assigned
 #define WMAX_SCHEDULER_MIN_UGS_GRANT 120
+
+// bytes per symbol (simplification, this value may be different for each modulation)
+#define WMAX_BYTES_PER_SYMBOL 12 
 
 
 #define WMAX_CID_RANGING   0
@@ -153,7 +155,9 @@ class WMaxMacBS: public WMaxMac
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
 
-    virtual void schedule();
+    void schedule();
+    WMaxMsgDlMap * scheduleDL(int symbols);
+    WMaxMsgUlMap * scheduleUL(int symbols);
 
     // --- configuration parameters ---
     /// minimal size of granted bandwidth on UGS connection

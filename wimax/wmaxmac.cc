@@ -13,6 +13,8 @@
 #include "wmaxmac.h"
 #include "wmaxmsg_m.h"
 
+#define SCHED ev << fullName() << ":"
+
 using namespace std;
 
 /********************************************************************************/
@@ -64,21 +66,23 @@ bool WMaxMac::delConn(uint32_t sfid)
 
 void WMaxMac::printDlMap(WMaxMsgDlMap * dlmap)
 {
-    ev << fullName() << ": --- DL-MAP (" << dlmap->getIEArraySize() << " IE(s) ---" << endl;
+    string x = fullName();
+    ev << x << ": --- DL-MAP (" << dlmap->getIEArraySize() << " IE(s) ---" << endl;
 
     for (int i=0; i<dlmap->getIEArraySize(); i++) {
 	WMaxDlMapIE &ie = dlmap->getIE(i);
-	ev << "IE[" << i << "]:";
+	ev << x << ": IE[" << i << "]: cid=" << ie.cid << ", length=" << ie.length << ", symbols=" << ie.symbols << endl;
     }
 }
 
 void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 {
-    ev << fullName() << ": --- UL-MAP: " << ulmap->getIEArraySize() << " IE(s) ---" << endl;
+    string x = fullName();
+    ev << x << ": --- UL-MAP: " << ulmap->getIEArraySize() << " IE(s) ---" << endl;
 
     for (int i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE &ie = ulmap->getIE(i);
-	ev << "IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
+	ev << x << ": IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
 
 	switch (ie.uiuc) {
 	case WMAX_ULMAP_UIUC_FAST_FEEDBACK:
@@ -104,11 +108,11 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	}
 	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
 	    ev << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
-	       << " rangingCode=" << ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << ie.cdmaAllocIE.rangingSymbol
-	       << " rangingSubchannel=" << ie.cdmaAllocIE.rangingSubchannel;
+	       << " rangingCode=" << (int)ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << (int)ie.cdmaAllocIE.rangingSymbol
+	       << " rangingSubchannel=" << (int)ie.cdmaAllocIE.rangingSubchannel;
 	    break;
 	default:
-	    ev << "(DATA): duration=" << ie.dataIE.duration;
+	    ev << "(DATA): duration=" << (int)ie.dataIE.duration;
 	    break;
 	}
 	ev << endl;
@@ -184,38 +188,122 @@ void WMaxMacBS::handleMessage(cMessage *msg)
 
 void WMaxMacBS::schedule()
 {
+    int symbols = 300; /// @todo - check/calculate how many symbols are available in each frame
+    int dlSymbols = symbols/2;
+    int ulSymbols = symbols - dlSymbols;
+
+    WMaxMsgDlMap * dlmap = scheduleDL(dlSymbols);
+    WMaxMsgUlMap * ulmap = scheduleUL(ulSymbols);
+
+    printDlMap(dlmap);
+    printUlMap(ulmap);
+
+    send(dlmap, "phyOut");
+    send(ulmap, "phyOut");
+
+    // trigger PHY to start frame
+    WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
+    ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
+    send(frameStart, "phyOut");
+}
+
+/** 
+ * schedules downlink traffic
+ * 
+ * 
+ * @return 
+ */
+WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
+{
     int i;
     int ieCnt = 0;
-    /// @todo - write some scheduling module
+    WMaxDlMapIE ie; // map element
 
-    // prepare DL 
+    int bytesPerPS = WMAX_BYTES_PER_SYMBOL; // this depends on modulation used, use 12 bytes/symbol for now
+    int lengthInPS;
+    cMessage * msg;
+
     WMaxMsgDlMap * dlmap = new WMaxMsgDlMap("DL-MAP");
     dlmap->setName("DL-MAP");
     ieCnt = 0;
-    if (SendQueue.length()) {
-	for (i=0;i<SendQueue.length(); i++) {
-	    /// @todo - fix this condition: use frame length instead of sending one simple frame
-	    ieCnt++;
-	    dlmap->setIEArraySize(ieCnt);
 
-	    /// @todo - DL-MAP gemeration
-	    WMaxDlMapIE ie;
- 	    ie.cid    = 0;
+    while (true) {
+	SCHED << symbols << " symbols left." << endl;
+	
+	if (!SendQueue.length()) // nothing more to send
+	    break;
 
-	    cMessage * msg = (cMessage*)SendQueue.pop();
- 	    ie.length = msg->length();
-	    dlmap->setIE(ieCnt-1,ie);
+	if (symbols <=0)
+	    break;
 
- 	    send(msg, "phyOut");
+	msg = (cMessage*) SendQueue.tail();
+
+	if (msg->length() > symbols*bytesPerPS) {
+	    // message won't fit in this frame. What should we do in such case?
+
+	    SCHED << " tried to schedule message (len=" << msg->length() << ", but there are only "
+		  << symbols*bytesPerPS << " bytes left." << endl;
+
+	    if (ieCnt) // something has been scheduled - ok, end scheduling
+		break;
+
+	    // what to do, if we have not scheduled anything and the message still doesn't fit?
+
+	    // possible solutions:
+	    // a) implement fragmentation (the best one)
+	    // b) send message and end scheduling (flaw: sending more than possible)
+	    // c) ignore this message and try to scheduler next message, possibly smaller (flaw: message will never be sent)
+	    // d) abort simulation as there is no way to send this message
+
+	    // currently used: d)
+	    opp_error("Unable to send %d-byte long message(%s), because it won't fit in DL subframe (%d symbols *%dB/PS=%d bytes)",
+		      msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
+	    break;
 	}
+	
+	// message will fit in this frame, send it
+	ieCnt++;
+	dlmap->setIEArraySize(ieCnt);
+	
+	/// @todo - DL-MAP generation
+	
+	msg = (cMessage*)SendQueue.pop();
+	lengthInPS = (int)ceil(double(msg->length())/bytesPerPS);
+	
+	symbols -= lengthInPS;
+	
+	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+	if (!hdr)
+	    opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
+	CLEAR(&ie);
+	ie.length  = msg->length();
+	ie.cid     = hdr->cid;
+	ie.symbols = lengthInPS;
+	dlmap->setIE(ieCnt-1,ie);
+
+	SCHED << "Sent msg: length=" << ie.length << ", used " << lengthInPS << " symbols, " 
+	   << symbols << " symbol(s) left" << endl;
+	
+	send(msg, "phyOut");
     }
 
-    ev << "Generating DL-MAP: " << dlmap->getIEArraySize() << " IE(s)" << endl;
-    send(dlmap, "phyOut");
+    return dlmap;
+}
 
-    // prepare UL
+/** 
+ * scheduler uplink traffic
+ * 
+ * 
+ * @return 
+ */
+WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
+{
+    int i;
+    int ieCnt = 0;
+    WMaxUlMapIE ie;
+    int bytesPerPS = WMAX_BYTES_PER_SYMBOL; // this depends on modulation used, use 12 bytes/symbol for now
+
     WMaxMsgUlMap * ulmap = new WMaxMsgUlMap("UL-MAP");
-    ieCnt = 0;
 
     schedCdmaInitRngCnt++;
     schedCdmaHoRngCnt++;
@@ -226,20 +314,39 @@ void WMaxMacBS::schedule()
 	ieCnt++;
 	schedCdmaBwrCnt=0;
 	ulmap->setIEArraySize(ieCnt);
-	WMaxUlMapIE ie;
 	CLEAR(&ie);
 	ie.cid  = WMAX_CID_BROADCAST;
 	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
 	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_BWR;
 	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
 	ulmap->setIE(ieCnt-1,ie);
+	symbols /= 1; // use just 1 symbol for Bandwidth Requests
+    }
+
+    if (schedCdmaInitRngFreq && schedCdmaInitRngFreq<=schedCdmaInitRngCnt++) {
+	// append IE for CDMA bandwidth request
+	ieCnt++;
+	schedCdmaInitRngCnt=0;
+	ulmap->setIEArraySize(ieCnt);
+	CLEAR(&ie);
+	ie.cid  = WMAX_CID_BROADCAST;
+	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
+	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_INITIAL;
+	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
+	ulmap->setIE(ieCnt-1,ie);
+	symbols /= 1; // use just 1 symbol for Initial Ranging
     }
 
     if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
-	
+	/// @todo - implement sending Handover ranging opportunities
     }
     
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
+	if (symbols <=0) {
+	    SCHED << "No symbols left, scheduling aborted." << endl;
+	    break;
+	}
+
 	// for each configured service flow, grant some bandwidth (if necessary)
 	switch (it->type) {
 	case WMAX_CONN_TYPE_BE:
@@ -249,9 +356,11 @@ void WMaxMacBS::schedule()
 	{
 	    uint32_t x = uint32_t(double(it->qos.ugs.msr)/8.0*FrameLength);
 	    it->bandwidth += x;
+	    int symbolLength = (int)ceil(double(it->bandwidth)/bytesPerPS);
 
-	    if (it->bandwidth>WMAX_SCHEDULER_MIN_UGS_GRANT) {
-		ev << fullName() << ": Adding UGS grant." << endl;
+	    if ( (it->bandwidth>WMAX_SCHEDULER_MIN_UGS_GRANT) && (symbols>=symbolLength) ) {
+		symbols -= symbolLength;
+
 		ieCnt++;
 		ulmap->setIEArraySize(ieCnt);
 		WMaxUlMapIE ie;
@@ -261,20 +370,15 @@ void WMaxMacBS::schedule()
 		ie.dataIE.duration = it->bandwidth;
 		ulmap->setIE(ieCnt-1, ie);
 		it->bandwidth = 0;
+		ev << fullName() << ": Adding UGS grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+		   << symbolLength << " symbols." << endl;
 		break;
 	    }
+	    
 	}
 	}
     }
-
-    ev << fullName() << ": Generating UL-MAP: " << ulmap->getIEArraySize() << "IE(s)" << endl;
-    printUlMap(ulmap);
-    send(ulmap, "phyOut");
-
-    // trigger PHY to start frame
-    WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
-    ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
-    send(frameStart, "phyOut");
+    return ulmap;
 }
 
 void WMaxMac::handleUlMessage(cMessage *msg)
@@ -368,7 +472,7 @@ void WMaxMac::handleDlMessage(cMessage *msg)
     hdr->cid = it->cid;
     msg->setControlInfo(hdr);
 
-    ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ")." << endl;
+    ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
     SendQueue.insert(msg);
 }
 
