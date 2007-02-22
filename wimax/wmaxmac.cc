@@ -12,6 +12,7 @@
 #include <sstream>
 #include "wmaxmac.h"
 #include "wmaxmsg_m.h"
+#include "wmaxctrl.h"
 
 #define SCHED ev << fullName() << ":"
 
@@ -31,9 +32,6 @@ bool WMaxMac::addConn(WMaxConn conn)
     conn.gateIndex = GateIndex++;
 
     stringstream tmp;
-    /// @todo - check if CID and sfid are unique
-    Conns.push_back(conn);
-
     
     ev << fullName() << ": adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
     switch (conn.type) {
@@ -52,7 +50,24 @@ bool WMaxMac::addConn(WMaxConn conn)
 	ev << "BestEffort: msr=" << conn.qos.be.msr;
 	break;
     }
-    ev << tmp.str() << " gateIndex=" << conn.gateIndex << endl;
+    cGate *target = gate("macOut", conn.gateIndex);
+    target = target->toGate();
+    cModule * owner = target->ownerModule();
+
+    if (dynamic_cast<WMaxCtrlSS*>(owner)) {
+	conn.controlConn = true;
+    }
+    if (dynamic_cast<WMaxCtrlBS*>(owner)) {
+	conn.controlConn = true;
+    }
+    
+    ev << tmp.str() << " gateIndex=" << conn.gateIndex << ", controlConn=" << (conn.controlConn?"YES":"NO") 
+       << ", connected to: ";
+    ev << owner->fullName() << endl;
+
+    /// @todo - check if CID and sfid are unique
+    Conns.push_back(conn);
+
     //setDisplayString("Conns"); // this doesn't work. Strange
     return true;
 }
@@ -479,9 +494,23 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 void WMaxMacSS::handleUlMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
-	printUlMap(dynamic_cast<WMaxMsgUlMap*>(msg));
+	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
+	printUlMap(ulmap);
 	Stats.ulmaps++;
-	schedule(dynamic_cast<WMaxMsgUlMap*>(msg));
+
+	// handle this map to WMaxCtrl
+	list<WMaxConn>::iterator it;
+	for (it = Conns.begin(); it!=Conns.end(); it++) {
+	    if (it->controlConn) {
+		ev << "Dispatching ulmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
+		//WMaxMsgUlMap * copy = (WMaxMsgUlMap *) ulmap->dup();
+		send(msg, "macOut", it->gateIndex);
+	    }
+	}
+
+	schedule(ulmap);
+
+	/// @todo - delete ulmap, but before to do so, create and send copies to control clients
 	return;
     }
 
@@ -529,7 +558,6 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	send(msg, "phyOut");
     }
 
-    delete ulmap;
     Stats.bandwidth += bandwidth;
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();

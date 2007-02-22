@@ -111,6 +111,7 @@ typedef struct {
     uint32_t bandwidth;
 
     int gateIndex; // index of a gate associated with this connection
+    bool controlConn; // is this a control connection? (i.e. send DL-MAP,UL-MAP there?)
 } WMaxConn;
 
 class WMaxMacHeader : public cPolymorphic

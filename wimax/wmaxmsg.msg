@@ -54,6 +54,13 @@ fields:
     WMaxBSFull target;
 }
 
+message WMaxMsgCDMA
+{
+fields:
+    int code;
+    /// @todo - add other parameters
+}
+
 // ********************************************************************************
 // *** fake messages used to communicate between modules **************************
 // ********************************************************************************

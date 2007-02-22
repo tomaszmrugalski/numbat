@@ -48,14 +48,14 @@ void Fsm::stateInit(FsmStateType type, std::string name, onEventFunc onEvent, on
 }
 
 // transitive state
-void Fsm::stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter, onExitFunc onExit)
+void Fsm::stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter)
 {
     States[type].inited = true;
     States[type].type = type;
     States[type].name = name;
     States[type].onEvent = 0;
     States[type].onEnter = onEnter;
-    States[type].onExit  = onExit;
+    States[type].onExit  = 0;
     States[type].transitive = true;
     States[type].transitiveTo = targetState;
 }

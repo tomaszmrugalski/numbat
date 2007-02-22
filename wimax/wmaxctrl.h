@@ -72,6 +72,14 @@ protected:
 	STATE_SEND_HO_IND,                // send HO-IND
 	STATE_HANDOVER_COMPLETE,          // handover complete
 	
+	// network reentry
+	STATE_HO_WAIT_FOR_CDMA,           // wait for Handover ranging CDMA opportunity
+	STATE_HO_SEND_CDMA,               // send handover CDMA code
+	STATE_HO_WAIT_FOR_ANON_RNG_RSP,   // wait for anonymous RNG-RSP
+	STATE_HO_SEND_RNG_REQ,            // send RNG-REQ
+	STATE_HO_WAIT_FOR_RNG_RSP,        // wait for RNG-RSP
+
+	STATE_POWER_DOWN,
 	STATE_NUM
     } State;
 
@@ -118,11 +126,27 @@ protected:
     // handover complete state
     static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg);
 
+    // HO wait for CDMA state
+    static FsmStateType onEventState_hoWaitForCdma(Fsm * fsm, FsmEventType s, cMessage *msg);
+
+    static FsmStateType onEnterState_hoSendCdma(Fsm *fsm);
+
+    static FsmStateType onEventState_hoWaitForAnonRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    
+    static FsmStateType onEnterState_hoSendRngReq(Fsm *fsm);
+    
+    static FsmStateType onEventState_hoWaitForRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+
+    static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType s, cMessage *msg);
+
     // --- EVENTS ---
     typedef enum {
-	EVENT_CDMA_CODE,
 	EVENT_HANDOVER_START,
+	EVENT_REENTRY_START,
+	EVENT_CDMA_CODE,
 	EVENT_BSHO_RSP_RECEIVED,
+	EVENT_HO_CDMA_CODE,
+	EVENT_RNG_RSP_RECEIVED,
 	EVENT_NUM
     } Event;
 
