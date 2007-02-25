@@ -28,10 +28,12 @@ WMaxCtrlSS::WMaxCtrlSS()
 
 void WMaxCtrlSS::fsmInit() {
     /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
-    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_POWER_DOWN);
+    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_DLMAP);
 
     // state init
     std::string x = "Waiting for CDMA opportunity";
+    stateInit(STATE_WAIT_FOR_DLMAP,    "Waiting for DL-MAP", onEventState_WaitForDlmap);
+    stateInit(STATE_WAIT_FOR_UCD,      "Waiting for UCD", onEventState_WaitforUcd);
     stateInit(STATE_WAIT_FOR_CDMA,     "Waiting for CDMA opportunity", onEventState_WaitForCdma);
     stateInit(STATE_SEND_CDMA,         "Send CDMA code", STATE_WAIT_ANON_RNG_RSP, onEnterState_WaitAnonRngRsp);
     stateInit(STATE_WAIT_ANON_RNG_RSP, "Waiting for anonymous RNG-RSP", onEventState_WaitForAnonRngRsp);
@@ -61,6 +63,8 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_HANDOVER_START, "Begin handover procedure");
     eventInit(EVENT_REENTRY_START, "Begin reentry procedure");
 
+    eventInit(EVENT_DLMAP, "DL-MAP received");
+    eventInit(EVENT_UCD, "UCD received");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
@@ -71,16 +75,47 @@ void WMaxCtrlSS::fsmInit() {
     TIMER(Handover, 0.1, "Start handover");
 
     //TIMER_START(NetworkEntry);
-    TIMER_START(Handover);
+    //TIMER_START(Handover);
 
+    stringUpdate();
 }
 
 void WMaxCtrlSS::initialize() {
     fsmInit();
 }
 
+
+/** 
+ * general dispatcher
+ * 
+ * @param msg 
+ */
 void WMaxCtrlSS::handleMessage(cMessage *msg) 
 {
+    if (dynamic_cast<WMaxMsgDlMap*>(msg)) { onEvent(EVENT_DLMAP, msg); return;  }
+    // if (dynamic_cast<WMaxMsgDCD*>(dcd))   { onEvent(EVENT_DCD, msg);   return;  } ignore for now
+    if (dynamic_cast<WMaxMsgUCD*>(msg))   { onEvent(EVENT_UCD, msg);   return;  }
+
+    if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
+	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
+
+	for (int i=0; i<ulmap->getIEArraySize(); i++) {
+	    WMaxUlMapIE & ie = ulmap->getIE(i);
+	    if ( (ie.uiuc == WMAX_ULMAP_UIUC_CDMA_BWR) ) {
+
+		if (ie.cdmaIE.purpose == WMAX_CDMA_PURPOSE_BWR) {
+		    onEvent(EVENT_CDMA_CODE, msg);
+		    return;
+		}
+
+		if (ie.cdmaIE.purpose == WMAX_CDMA_PURPOSE_HO_RNG) {
+		    onEvent(EVENT_HO_CDMA_CODE, msg);
+		    return;
+		}
+	    }
+	}
+    }
+
     if (msg==TimerHandover) {
 	onEvent(EVENT_REENTRY_START, msg);
 	return;
@@ -91,22 +126,27 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	return;
     }
 
-    if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
-	WMaxMsgUlMap* ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
-	int i;
-	for (i=0; i<ulmap->getIEArraySize(); i++) {
-	    WMaxUlMapIE & ie = ulmap->getIE(i);
-	    if ( (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR) &&
-		 (ie.cdmaIE.rangingMethod == WMAX_RANGING_METHOD_INITIAL) )
-		onEvent(EVENT_CDMA_CODE, msg);
+}
 
-	    /// @todo - fix this CDMA code transmission
-	    if ( (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR) &&
-		 (ie.cdmaIE.rangingMethod == WMAX_RANGING_METHOD_BWR) )
-		onEvent(EVENT_HO_CDMA_CODE, msg);
-	}
+// wait for DL-MAP state
+FsmStateType WMaxCtrlSS::onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_DLMAP:
+	return STATE_WAIT_FOR_UCD;
+    default:
+	CASE_IGNORE(e);
+    }
+}
 
-	ev << "UL-MAP received." << endl;
+// wait for UCD state
+FsmStateType WMaxCtrlSS::onEventState_WaitforUcd(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_UCD:
+	return STATE_WAIT_FOR_CDMA;
+    default:
+	CASE_IGNORE(e);
     }
 }
 

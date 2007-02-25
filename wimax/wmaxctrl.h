@@ -32,6 +32,11 @@ using namespace std;
 
 class WMaxCtrlSS : public Fsm
 {
+    typedef enum {
+	WMAX_CTRL_NETWORK_ENTRY_INITIAL,
+	WMAX_CTRL_NETWORK_REENTRY
+    } WMaxCtrlNetworkEntryType;
+
 public:
     WMaxCtrlSS();
 
@@ -44,9 +49,11 @@ protected:
     // --- STATES ---
     typedef enum {
 	// 1. network entry phase
-	STATE_WAIT_FOR_CDMA,
-	STATE_SEND_CDMA,            // send CDMA code
-	STATE_WAIT_ANON_RNG_RSP,    // wait for anonymous RNG-RSP
+	STATE_WAIT_FOR_DLMAP,             // wait for DL-MAP
+	STATE_WAIT_FOR_UCD,               // wait for UCD
+	STATE_WAIT_FOR_CDMA,              // wait for CDMA opportunity
+	STATE_SEND_CDMA,                  // send CDMA code
+	STATE_WAIT_ANON_RNG_RSP,          // wait for anonymous RNG-RSP
 	STATE_SEND_RNG_REQ,               // send RNG-REQ
 	STATE_WAIT_RNG_RSP,               // wait for RNG-RSP
 	STATE_SEND_SBC_REQ,               // send SBC-REQ
@@ -83,66 +90,74 @@ protected:
 	STATE_NUM
     } State;
 
+    // wait for DL-MAP state
+    static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);
+
+    // wait for UCD state
+    static FsmStateType onEventState_WaitforUcd(Fsm * fsm, FsmEventType e, cMessage *msg);
+
     // wait for CDMA opportunity state
-    static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send CDMA code state
     static FsmStateType onEnterState_WaitAnonRngRsp(Fsm * fsm);
     static FsmStateType onExitState_WaitAnonRngRsp(Fsm * fsm);
 
     // wait for anonymous RNG-RSP state
-    static FsmStateType onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send RNG-REQ state
     static FsmStateType onEnterState_SendRngReq(Fsm * fsm);
 
     // wait for RNG-RSP state
-    static FsmStateType onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
     
     // send SBC-REQ state
     static FsmStateType onEnterState_SendSbcReq(Fsm * fsm);
 
     // wait for SBC-RSP state
-    static FsmStateType onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send REG-REQ state
     static FsmStateType onEnterState_SendRegReq(Fsm * fsm);
 
     // wait for REG-RSP state
-    static FsmStateType onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // operational state
-    static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send MSHO-REQ state
     static FsmStateType onEnterState_SendMshoReq(Fsm *fsm);
 
     // wait for BSHO-RSP state
-    static FsmStateType onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // sent HO-IND state
     static FsmStateType onEnterState_SendHoInd(Fsm *fsm);
     
     // handover complete state
-    static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // HO wait for CDMA state
-    static FsmStateType onEventState_hoWaitForCdma(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_hoWaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     static FsmStateType onEnterState_hoSendCdma(Fsm *fsm);
 
-    static FsmStateType onEventState_hoWaitForAnonRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_hoWaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
     
     static FsmStateType onEnterState_hoSendRngReq(Fsm *fsm);
     
-    static FsmStateType onEventState_hoWaitForRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_hoWaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-    static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType s, cMessage *msg);
+    static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // --- EVENTS ---
     typedef enum {
 	EVENT_HANDOVER_START,
 	EVENT_REENTRY_START,
+	EVENT_DLMAP,
+	EVENT_UCD,
 	EVENT_CDMA_CODE,
 	EVENT_BSHO_RSP_RECEIVED,
 	EVENT_HO_CDMA_CODE,
@@ -155,6 +170,9 @@ protected:
     // --- TIMERS ---
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);
+
+
+    WMaxCtrlNetworkEntryType neType;
 };
 
 class WMaxCtrlBS : public Fsm

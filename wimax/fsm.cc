@@ -85,7 +85,7 @@ void Fsm::statesEventsInit(int statesCnt, int eventsCnt, FsmStateType state)
 	Events.push_back( *e );
     }
 
-    ev << fullName() << ": " << statesCnt << " state(s), " << eventsCnt << " event(s) inited." << endl;
+    ev << fullName() << ": " << statesCnt << " state(s), " << eventsCnt << " event(s) inited, initial state:" << state << endl;
     StatesCnt = statesCnt;
     EventsCnt = eventsCnt;
 
@@ -163,11 +163,7 @@ void Fsm::stateSet(FsmStateType newState)
 	    from->onExit(this);
 	
 	CurrentState = newState;
-
-	char buf[80];
-	sprintf(buf, "state:%s", to->fullName().c_str() );
-	if (ev.isGUI()) 
-	    displayString().setTagArg("t",0,buf);
+	stringUpdate();
 
 	if (to->onEnter)
 	    to->onEnter(this);
@@ -181,4 +177,12 @@ void Fsm::stateSet(FsmStateType newState)
 	if (transitionsCnt > FSM_MAX_TRANSITIONS)
 	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", fullName(), transitionsCnt);
     } while (to->transitive);
+}
+
+void Fsm::stringUpdate()
+{
+    char buf[80];
+    sprintf(buf, "state:%s(%d)", States[CurrentState].fullName().c_str(), CurrentState );
+    if (ev.isGUI()) 
+	displayString().setTagArg("t",0,buf);
 }

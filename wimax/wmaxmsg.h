@@ -41,11 +41,24 @@ typedef enum {
     WMAX_RANGING_METHOD_BWR = 1 /* bandwith request */
 } WMaxRangingMethod;
 
+
+/* following type is not a real field. It is a simplification only, used for simulation.
+   Real WiMAX defines that whole range (0...255) of CDMA code is split into 4 separate
+   pools, each with different purpose */
+typedef enum {                     /* this CDMA opportunity should be used for: */
+    WMAX_CDMA_PURPOSE_INITIAL_RNG, /* initial ranging */
+    WMAX_CDMA_PURPOSE_HO_RNG,      /* handover ranging */
+    WMAX_CDMA_PURPOSE_BWR,         /* bandwidth request */
+    WMAX_CDMA_PURPOSE_PERIODIC_RNG /* periodic ranging */
+} WMaxCdmaPurpose;
+
 typedef struct {
     uint8_t symbolOffset;
     uint8_t ofdmaSymbols;
     uint8_t subchannels;
     WMaxRangingMethod rangingMethod;
+    
+    WMaxCdmaPurpose purpose; // not a real field (simulation simplification) 
 } WMaxCdmaIE;
 
 // see table 287, IEEE 802.16-2004

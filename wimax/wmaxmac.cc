@@ -154,6 +154,8 @@ void WMaxMacBS::initialize()
     schedCdmaInitRngFreq = WMAX_CDMA_INIT_RNG_FREQ;
     schedCdmaBwrFreq     = WMAX_CDMA_BWR_FREQ;
     schedCdmaHoRngFreq   = WMAX_CDMA_HO_RNG_FREQ;
+    schedDcdFreq         = WMAX_DCD_FREQ;
+    schedUcdFreq         = WMAX_UCD_FREQ;
 
     // configure connections
     int conns = gateSize("macOut");
@@ -170,16 +172,6 @@ void WMaxMacBS::initialize()
 	conn.qos.ugs.msr = 80000; // 100kbps
 	addConn(conn);
     }
-
-#if 0
-    /// @todo - Best Effort is not supported yet
-    CLEAR(&conn);
-    conn.type= WMAX_CONN_TYPE_BE;
-    conn.sfid = 2;
-    conn.cid = 1025;
-    conn.qos.ugs.msr = 100000; // 100kbps
-    addConn(conn);
-#endif
 }
 
 void WMaxMacBS::handleMessage(cMessage *msg)
@@ -207,6 +199,8 @@ void WMaxMacBS::schedule()
     int dlSymbols = symbols/2;
     int ulSymbols = symbols - dlSymbols;
 
+    scheduleBcastMessages();
+
     WMaxMsgDlMap * dlmap = scheduleDL(dlSymbols);
     WMaxMsgUlMap * ulmap = scheduleUL(ulSymbols);
 
@@ -221,6 +215,35 @@ void WMaxMacBS::schedule()
     ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
     send(frameStart, "phyOut");
 }
+
+void WMaxMacBS::scheduleBcastMessages() 
+{
+    schedDcdCnt++;
+    schedUcdCnt++;
+
+    if (schedDcdFreq && schedDcdFreq<=schedDcdCnt++) {
+	schedDcdCnt = 0;
+	WMaxMsgDCD * dcd = new WMaxMsgDCD("DCD");
+	dcd->setName("DCD");
+	WMaxMacHeader * hdr = new WMaxMacHeader();
+	hdr->cid = WMAX_CID_BROADCAST;
+	dcd->setControlInfo(hdr);
+	SCHED << "#### DCD" << endl;
+	SendQueue.insert(dcd);
+    }
+
+    if (schedUcdFreq && schedUcdFreq<=schedUcdCnt++) {
+	schedUcdCnt = 0;
+	WMaxMsgUCD * ucd = new WMaxMsgUCD("UCD");
+	ucd->setName("UCD");
+	WMaxMacHeader * hdr = new WMaxMacHeader();
+	hdr->cid = WMAX_CID_BROADCAST;
+	ucd->setControlInfo(hdr);
+	SendQueue.insert(ucd);
+	SCHED << "#### UCD" << endl;
+    }
+}
+
 
 /** 
  * schedules downlink traffic
@@ -333,9 +356,11 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	ie.cid  = WMAX_CID_BROADCAST;
 	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
 	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_BWR;
+	ie.cdmaIE.purpose = WMAX_CDMA_PURPOSE_BWR;
+
 	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
 	ulmap->setIE(ieCnt-1,ie);
-	symbols /= 1; // use just 1 symbol for Bandwidth Requests
+	symbols--; // use just 1 symbol for Bandwidth Requests
     }
 
     if (schedCdmaInitRngFreq && schedCdmaInitRngFreq<=schedCdmaInitRngCnt++) {
@@ -347,13 +372,25 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	ie.cid  = WMAX_CID_BROADCAST;
 	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
 	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_INITIAL;
+	ie.cdmaIE.purpose       = WMAX_CDMA_PURPOSE_INITIAL_RNG;
 	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
 	ulmap->setIE(ieCnt-1,ie);
-	symbols /= 1; // use just 1 symbol for Initial Ranging
+	symbols--; // use just 1 symbol for Initial Ranging
     }
 
     if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
-	/// @todo - implement sending Handover ranging opportunities
+	// append IE for handover ranging
+	ieCnt++;
+	schedCdmaHoRngCnt=0;
+	ulmap->setIEArraySize(ieCnt);
+	CLEAR(&ie);
+	ie.cid  = WMAX_CID_BROADCAST;
+	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_BWR;
+	ie.cdmaIE.rangingMethod = WMAX_RANGING_METHOD_INITIAL;
+	ie.cdmaIE.purpose       = WMAX_CDMA_PURPOSE_HO_RNG;
+	/// @todo - full symbolOffset, ofdmaSymbols, subchannels
+	ulmap->setIE(ieCnt-1,ie);
+	symbols--; // use just 1 symbol for Initial Ranging
     }
     
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
@@ -493,10 +530,42 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 
 void WMaxMacSS::handleUlMessage(cMessage *msg)
 {
+    bool bcastMsg = false; // is this a broadcast message?
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
 	printUlMap(ulmap);
 	Stats.ulmaps++;
+	bcastMsg = true;
+
+	schedule(ulmap);
+    }
+    if (dynamic_cast<WMaxMsgDCD*>(msg)) {
+	bcastMsg = true;
+    }
+    if (dynamic_cast<WMaxMsgUCD*>(msg)) {
+	bcastMsg = true;
+    }
+
+    if (bcastMsg) {
+	// handle this map to WMaxCtrl
+	list<WMaxConn>::iterator it;
+	for (it = Conns.begin(); it!=Conns.end(); it++) {
+	    if (it->controlConn) {
+		ev << "Dispatching " << msg->fullName() << " to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
+		//WMaxMsgUlMap * copy = (WMaxMsgUlMap *) ulmap->dup();
+		send(msg, "macOut", it->gateIndex);
+	    }
+	}
+
+	/// @todo - delete ulmap, but before to do so, create and send copies to control clients
+	return;
+    }
+
+    if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
+	printDlMap(dynamic_cast<WMaxMsgDlMap*>(msg));
+	Stats.dlmaps++;
+	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
+	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;
 
 	// handle this map to WMaxCtrl
 	list<WMaxConn>::iterator it;
@@ -508,18 +577,8 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	    }
 	}
 
-	schedule(ulmap);
-
-	/// @todo - delete ulmap, but before to do so, create and send copies to control clients
-	return;
-    }
-
-    if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
-	printDlMap(dynamic_cast<WMaxMsgDlMap*>(msg));
-	Stats.dlmaps++;
-	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
-	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;
-	delete msg;
+	// @todo - delete dlmap
+	// delete msg;
 	return;
     }
 

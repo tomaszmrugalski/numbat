@@ -96,6 +96,7 @@ protected:
     virtual void stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter); // transitive state
     void eventInit(FsmEventType type, std::string name);
     void stateSet(FsmStateType state);
+    void stringUpdate();
 
     int StatesCnt;
     int EventsCnt;

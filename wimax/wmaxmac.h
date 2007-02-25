@@ -26,14 +26,20 @@ using namespace std;
 // minimum number of bytes in UGS allocation
 #define WMAX_SCHED_MIN_GRANT_SIZE 12
 
-// define frequency of the BWR CDMA slots (2 = one alloc per 2 frames)
+// define frequency of the BWR CDMA slots (2 = one alloc per 2 frames) (in # of frames)
 #define WMAX_CDMA_BWR_FREQ 2
 
-// define frequency of the initial ranging CDMA slots
+// define frequency of the initial ranging CDMA slots (in # of frames)
 #define WMAX_CDMA_INIT_RNG_FREQ 3
 
-// define frequency of the handover CDMA slots
-#define WMAX_CDMA_HO_RNG_FREQ 10
+// define frequency of the handover CDMA slots (in # of frames)
+#define WMAX_CDMA_HO_RNG_FREQ 10 
+
+// define frequency of DCD transmissions (in # of frames)
+#define WMAX_DCD_FREQ 5
+
+// define frequenct of UCD transmissions (in # of frames)
+#define WMAX_UCD_FREQ 5
 
 // minimal UGS grant, which can be assigned
 #define WMAX_SCHEDULER_MIN_UGS_GRANT 120
@@ -157,27 +163,24 @@ class WMaxMacBS: public WMaxMac
     virtual void handleMessage(cMessage *msg);
 
     void schedule();
+    void scheduleBcastMessages(); // prepare broadcast messages sent periodically (DCD, UCD, Neighbor-Advertisements)
     WMaxMsgDlMap * scheduleDL(int symbols);
     WMaxMsgUlMap * scheduleUL(int symbols);
 
     // --- configuration parameters ---
-    /// minimal size of granted bandwidth on UGS connection
-    uint32_t schedUgsMinGrantSize;
-
-    /// frequency of the initial ranging CDMA regions
-    uint32_t schedCdmaInitRngFreq;
-
-    /// frequency of the handover ranging CDMA regions
-    uint32_t schedCdmaHoRngFreq;
-
-    /// frequency of the bandwidth request CDMA regions
-    uint32_t schedCdmaBwrFreq;
+    uint32_t schedUgsMinGrantSize; // minimal size of granted bandwidth on UGS connection
+    uint32_t schedCdmaInitRngFreq; // frequency of the initial ranging CDMA regions
+    uint32_t schedCdmaHoRngFreq;   // frequency of the handover ranging CDMA regions
+    uint32_t schedCdmaBwrFreq;     // frequency of the bandwidth request CDMA regions
+    uint32_t schedUcdFreq;         // frequency of UCD transmissions
+    uint32_t schedDcdFreq;         // frequency of DCD transmissions
 
     // --- runtime parameters ---
     uint32_t schedCdmaInitRngCnt; // counter
     uint32_t schedCdmaHoRngCnt;
     uint32_t schedCdmaBwrCnt;
-
+    uint32_t schedDcdCnt;
+    uint32_t schedUcdCnt;
 
     cMessage * TxStart;
 };
