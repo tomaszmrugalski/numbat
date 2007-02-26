@@ -35,6 +35,16 @@ fields:
     int confChangeCount;
 };
 
+message WMaxMsgRngReq
+{
+
+};
+
+message WMaxMsgRngRsp
+{
+
+};
+
 message WMaxMsgMSHOREQ
 {
 fields:
@@ -58,6 +68,8 @@ message WMaxMsgCDMA
 {
 fields:
     int code;
+    int purpose; // use WMaxCdmaPurpose type here
+
     /// @todo - add other parameters
 }
 

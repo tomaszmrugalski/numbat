@@ -41,7 +41,6 @@ typedef enum {
     WMAX_RANGING_METHOD_BWR = 1 /* bandwith request */
 } WMaxRangingMethod;
 
-
 /* following type is not a real field. It is a simplification only, used for simulation.
    Real WiMAX defines that whole range (0...255) of CDMA code is split into 4 separate
    pools, each with different purpose */

@@ -51,9 +51,6 @@ protected:
 	// 1. network entry phase
 	STATE_WAIT_FOR_DLMAP,             // wait for DL-MAP
 	STATE_WAIT_FOR_UCD,               // wait for UCD
-	STATE_WAIT_FOR_CDMA,              // wait for CDMA opportunity
-	STATE_SEND_CDMA,                  // send CDMA code
-	STATE_WAIT_ANON_RNG_RSP,          // wait for anonymous RNG-RSP
 	STATE_SEND_RNG_REQ,               // send RNG-REQ
 	STATE_WAIT_RNG_RSP,               // wait for RNG-RSP
 	STATE_SEND_SBC_REQ,               // send SBC-REQ
@@ -80,11 +77,9 @@ protected:
 	STATE_HANDOVER_COMPLETE,          // handover complete
 	
 	// network reentry
-	STATE_HO_WAIT_FOR_CDMA,           // wait for Handover ranging CDMA opportunity
-	STATE_HO_SEND_CDMA,               // send handover CDMA code
-	STATE_HO_WAIT_FOR_ANON_RNG_RSP,   // wait for anonymous RNG-RSP
-	STATE_HO_SEND_RNG_REQ,            // send RNG-REQ
-	STATE_HO_WAIT_FOR_RNG_RSP,        // wait for RNG-RSP
+	STATE_WAIT_FOR_CDMA,              // wait for CDMA opportunity
+	STATE_SEND_CDMA,                  // send CDMA code
+	STATE_WAIT_ANON_RNG_RSP,          // wait for anonymous RNG-RSP
 
 	STATE_POWER_DOWN,
 	STATE_NUM
@@ -96,15 +91,9 @@ protected:
     // wait for UCD state
     static FsmStateType onEventState_WaitforUcd(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-    // wait for CDMA opportunity state
-    static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);
-
     // send CDMA code state
     static FsmStateType onEnterState_WaitAnonRngRsp(Fsm * fsm);
     static FsmStateType onExitState_WaitAnonRngRsp(Fsm * fsm);
-
-    // wait for anonymous RNG-RSP state
-    static FsmStateType onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send RNG-REQ state
     static FsmStateType onEnterState_SendRngReq(Fsm * fsm);
@@ -139,17 +128,14 @@ protected:
     // handover complete state
     static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-    // HO wait for CDMA state
-    static FsmStateType onEventState_hoWaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);
+    // wait for CDMA opportunity state
+    static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-    static FsmStateType onEnterState_hoSendCdma(Fsm *fsm);
+    static FsmStateType onEnterState_SendCdma(Fsm *fsm);
 
-    static FsmStateType onEventState_hoWaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
+    // wait for anonymous RNG-RSP state
+    static FsmStateType onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
     
-    static FsmStateType onEnterState_hoSendRngReq(Fsm *fsm);
-    
-    static FsmStateType onEventState_hoWaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
-
     static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // --- EVENTS ---

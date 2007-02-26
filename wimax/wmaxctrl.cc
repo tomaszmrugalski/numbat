@@ -34,9 +34,6 @@ void WMaxCtrlSS::fsmInit() {
     std::string x = "Waiting for CDMA opportunity";
     stateInit(STATE_WAIT_FOR_DLMAP,    "Waiting for DL-MAP", onEventState_WaitForDlmap);
     stateInit(STATE_WAIT_FOR_UCD,      "Waiting for UCD", onEventState_WaitforUcd);
-    stateInit(STATE_WAIT_FOR_CDMA,     "Waiting for CDMA opportunity", onEventState_WaitForCdma);
-    stateInit(STATE_SEND_CDMA,         "Send CDMA code", STATE_WAIT_ANON_RNG_RSP, onEnterState_WaitAnonRngRsp);
-    stateInit(STATE_WAIT_ANON_RNG_RSP, "Waiting for anonymous RNG-RSP", onEventState_WaitForAnonRngRsp);
     stateInit(STATE_SEND_RNG_REQ,      "Sending RNG-REQ", STATE_WAIT_RNG_RSP, onEnterState_SendRngReq);
     stateInit(STATE_WAIT_RNG_RSP,      "Waiting for RNG-RSP", onEventState_WaitForRngRsp);
     stateInit(STATE_SEND_SBC_REQ,      "Sending SBC-REQ", STATE_WAIT_SBC_RSP, onEnterState_SendSbcReq);
@@ -49,11 +46,9 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", STATE_HANDOVER_COMPLETE, onEnterState_SendHoInd);
     stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", onEventState_HandoverComplete);
 
-    stateInit(STATE_HO_WAIT_FOR_CDMA,   "Wait for handover CDMA opportunity", onEventState_hoWaitForCdma);
-    stateInit(STATE_HO_SEND_CDMA,       "Sending HO CDMA code", STATE_HO_WAIT_FOR_ANON_RNG_RSP, onEnterState_hoSendCdma);
-    stateInit(STATE_HO_WAIT_FOR_ANON_RNG_RSP, "Wait for anonymous RNG-RSP", onEventState_hoWaitForAnonRngRsp);
-    stateInit(STATE_HO_SEND_RNG_REQ,    "Sending (handover) RNG-REQ", STATE_HO_WAIT_FOR_RNG_RSP, onEnterState_hoSendRngReq);
-    stateInit(STATE_HO_WAIT_FOR_RNG_RSP,"Wait for (handover) RNG-RSP", onEventState_hoWaitForRngRsp);
+    stateInit(STATE_WAIT_FOR_CDMA,     "Waiting for CDMA opportunity", onEventState_WaitForCdma);
+    stateInit(STATE_SEND_CDMA,         "Send CDMA code", STATE_WAIT_ANON_RNG_RSP, onEnterState_SendCdma);
+    stateInit(STATE_WAIT_ANON_RNG_RSP, "Waiting for anonymous RNG-RSP", onEventState_WaitForAnonRngRsp);
 
     stateInit(STATE_POWER_DOWN,         "Power down", onEventState_PowerDown);
 
@@ -65,10 +60,10 @@ void WMaxCtrlSS::fsmInit() {
 
     eventInit(EVENT_DLMAP, "DL-MAP received");
     eventInit(EVENT_UCD, "UCD received");
+    eventInit(EVENT_RNG_RSP_RECEIVED, "RNG-RSP received.");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
-    eventInit(EVENT_RNG_RSP_RECEIVED, "RNG-RSP received");
     eventVerify();
 
     TIMER(NetworkEntry, 0.0, "Start Network entry");
@@ -102,18 +97,15 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	for (int i=0; i<ulmap->getIEArraySize(); i++) {
 	    WMaxUlMapIE & ie = ulmap->getIE(i);
 	    if ( (ie.uiuc == WMAX_ULMAP_UIUC_CDMA_BWR) ) {
-
-		if (ie.cdmaIE.purpose == WMAX_CDMA_PURPOSE_BWR) {
-		    onEvent(EVENT_CDMA_CODE, msg);
-		    return;
-		}
-
-		if (ie.cdmaIE.purpose == WMAX_CDMA_PURPOSE_HO_RNG) {
-		    onEvent(EVENT_HO_CDMA_CODE, msg);
-		    return;
-		}
+		onEvent(EVENT_CDMA_CODE, msg);
+		return;
 	    }
+	    
 	}
+    }
+    if (dynamic_cast<WMaxMsgRngRsp*>(msg)) {
+	onEvent(EVENT_RNG_RSP_RECEIVED, msg);
+	return;
     }
 
     if (msg==TimerHandover) {
@@ -144,7 +136,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitforUcd(Fsm * fsm, FsmEventType e, cMes
 {
     switch (e) {
     case EVENT_UCD:
-	return STATE_WAIT_FOR_CDMA;
+	return STATE_SEND_RNG_REQ;
     default:
 	CASE_IGNORE(e);
     }
@@ -166,11 +158,21 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMe
 
 FsmStateType WMaxCtrlSS::onEnterState_WaitAnonRngRsp(Fsm* fsm)
 {
-    return fsm->State();
-}
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    WMaxMsgCDMA * cdma = new WMaxMsgCDMA("CDMA (Anonymous Ranging)");
 
-FsmStateType WMaxCtrlSS::onEventState_WaitForAnonRngRsp(Fsm* fsm, FsmEventType e , cMessage* msg)
-{
+    switch (ss->neType) {
+    case WMAX_CTRL_NETWORK_ENTRY_INITIAL:
+	cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
+	break;
+    case WMAX_CTRL_NETWORK_REENTRY:
+	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
+	break;
+    }
+    cdma->setName("CDMA");
+    ev << fsm->fullName() << ": Sending CDMA code." << endl;
+    fsm->send(cdma, "macOut");
+    
     return fsm->State();
 }
 
@@ -181,12 +183,21 @@ FsmStateType WMaxCtrlSS::onEvent_CdmaCode(cMessage *msg)
 
 FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 {
+    WMaxMsgRngReq * rng = new WMaxMsgRngReq();
+    rng->setName("RNG-REQ");
+    fsm->send(rng, "macOut");
     return fsm->State();
 }
 
 // wait for RNG-RSP state
-FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType s, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_RNG_RSP_RECEIVED:
+	return STATE_SEND_SBC_REQ;
+    default:
+	CASE_IGNORE(e);
+    }
     return fsm->State();
 }
 
@@ -260,17 +271,7 @@ FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType e
     return fsm->State();
 }
 
-FsmStateType WMaxCtrlSS::onEventState_hoWaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg)
-{
-    switch (e) {
-    case EVENT_HO_CDMA_CODE:
-	return STATE_HO_SEND_CDMA;
-    default:
-	CASE_IGNORE(e);
-    }
-}
-
-FsmStateType WMaxCtrlSS::onEnterState_hoSendCdma(Fsm *fsm)
+FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
     Log << "Sending CDMA code" << endl;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
@@ -279,17 +280,7 @@ FsmStateType WMaxCtrlSS::onEnterState_hoSendCdma(Fsm *fsm)
     return fsm->State();
 }
 
-FsmStateType WMaxCtrlSS::onEventState_hoWaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
-{
-    return fsm->State();
-}
-
-FsmStateType WMaxCtrlSS::onEnterState_hoSendRngReq(Fsm *fsm)
-{
-    return fsm->State();
-}
-
-FsmStateType WMaxCtrlSS::onEventState_hoWaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
     return fsm->State();
 }
@@ -298,7 +289,7 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
 {
     switch (e) {
     case EVENT_REENTRY_START:
-	return STATE_HO_WAIT_FOR_CDMA;
+	return STATE_WAIT_FOR_CDMA;
     default:
 	CASE_IGNORE(e);
     }
@@ -335,6 +326,17 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	return;
     }
 
+    if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
+	ev << fullName() << ": RNG-REQ received, sending RNG-RSP." << endl;
+	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP");
+	rsp->setName("RNG-RSP");
+	send(rsp, "macOut");
+	delete msg;
+	return;
+    }
+
+    ev << "Received " << msg->fullName() << " message." << endl;
+
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
 	ev << fullName() << ":HO-IND received." << endl;
 	delete msg;
@@ -343,6 +345,15 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
 	ev << fullName() << ":CDMA code received." << endl;
+	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
+	switch (cdma->getPurpose()) {
+	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
+	case WMAX_CDMA_PURPOSE_HO_RNG:
+	case WMAX_CDMA_PURPOSE_BWR:
+	    /// @todo - Best effort traffic.
+	    break;
+	}
+	
 	delete msg;
 	return;
     }
