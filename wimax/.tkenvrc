@@ -18,7 +18,7 @@ option bubbles	{1}
 option animation_speed	{2.19}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{1205x427+115+62}
+config mainwin-geom	{1205x427+109+68}
 config rununtil-event	{34}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
@@ -41,11 +41,10 @@ config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim.BS" "BS" "2" "357x411+367+648"
 inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "1" "460x315+5+48"
-inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "506x258+371+700"
+inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "506x258+633+674"
 inspector "physim" "Physim" "2" "357x365+957+558"
-inspector "physim.SS" "SS" "2" "546x497+735+351"
-inspector "physim.SS.WMaxCtrlSS" "WMaxCtrlSS" "3" "806x398+16+488"
-inspector "physim.SS.ssMac" "WMaxMacSS" "3" "506x258+119+334"
+inspector "physim.SS" "SS" "2" "546x497+734+589"
+inspector "physim.SS.WMaxCtrlSS" "WMaxCtrlSS" "3" "1031x398+16+488"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"
 inspector "physim.WMaxCtrlBS" "WMaxCtrlBS" "3" "826x308+29+637"

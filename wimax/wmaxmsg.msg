@@ -37,12 +37,30 @@ fields:
 
 message WMaxMsgRngReq
 {
-
+fields:
+    int purpose;
 };
 
 message WMaxMsgRngRsp
 {
+fields:
+    int purpose;
+};
 
+message WMaxMsgSbcReq
+{
+
+};
+message WMaxMsgSbcRsp
+{
+
+};
+message WMaxMsgRegReq
+{
+
+};
+message WMaxMsgRegRsp
+{
 };
 
 message WMaxMsgMSHOREQ

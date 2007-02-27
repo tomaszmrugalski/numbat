@@ -29,6 +29,7 @@ WMaxCtrlSS::WMaxCtrlSS()
 void WMaxCtrlSS::fsmInit() {
     /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
     statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_DLMAP);
+    //statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_CDMA);
 
     // state init
     std::string x = "Waiting for CDMA opportunity";
@@ -57,10 +58,13 @@ void WMaxCtrlSS::fsmInit() {
     // event init
     eventInit(EVENT_HANDOVER_START, "Begin handover procedure");
     eventInit(EVENT_REENTRY_START, "Begin reentry procedure");
+    eventInit(EVENT_ENTRY_START, "Begin network entry procedure");
 
     eventInit(EVENT_DLMAP, "DL-MAP received");
     eventInit(EVENT_UCD, "UCD received");
     eventInit(EVENT_RNG_RSP_RECEIVED, "RNG-RSP received.");
+    eventInit(EVENT_SBC_RSP_RECEIVED, "SBC-RSP received.");
+    eventInit(EVENT_REG_RSP_RECEIVED, "REG-RSP received.");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
@@ -105,6 +109,14 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
     }
     if (dynamic_cast<WMaxMsgRngRsp*>(msg)) {
 	onEvent(EVENT_RNG_RSP_RECEIVED, msg);
+	return;
+    }
+    if (dynamic_cast<WMaxMsgSbcRsp*>(msg)) {
+	onEvent(EVENT_SBC_RSP_RECEIVED, msg);
+	return;
+    }
+    if (dynamic_cast<WMaxMsgRegRsp*>(msg)) {
+	onEvent(EVENT_REG_RSP_RECEIVED, msg);
 	return;
     }
 
@@ -156,26 +168,6 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMe
     }
 }
 
-FsmStateType WMaxCtrlSS::onEnterState_WaitAnonRngRsp(Fsm* fsm)
-{
-    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    WMaxMsgCDMA * cdma = new WMaxMsgCDMA("CDMA (Anonymous Ranging)");
-
-    switch (ss->neType) {
-    case WMAX_CTRL_NETWORK_ENTRY_INITIAL:
-	cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-	break;
-    case WMAX_CTRL_NETWORK_REENTRY:
-	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
-	break;
-    }
-    cdma->setName("CDMA");
-    ev << fsm->fullName() << ": Sending CDMA code." << endl;
-    fsm->send(cdma, "macOut");
-    
-    return fsm->State();
-}
-
 FsmStateType WMaxCtrlSS::onEvent_CdmaCode(cMessage *msg)
 {
     return WMaxCtrlSS::STATE_SEND_CDMA;
@@ -198,30 +190,47 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
     default:
 	CASE_IGNORE(e);
     }
-    return fsm->State();
 }
 
 // send SBC-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
+    WMaxMsgSbcReq * req = new WMaxMsgSbcReq();
+    req->setName("SBC-REQ");
+    fsm->send(req, "macOut");
     return fsm->State();
 }
 
 // wait for SBC-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_SBC_RSP_RECEIVED:
+	return STATE_SEND_REG_REQ;
+    default:
+	CASE_IGNORE(e);
+    }
     return fsm->State();
 }
 
 // send REG-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
+    WMaxMsgRegReq * reg = new WMaxMsgRegReq();
+    reg->setName("SBC-REQ");
+    fsm->send(reg, "macOut");
     return fsm->State();
 }
 
 // wait for REG-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_REG_RSP_RECEIVED:
+	return STATE_OPERATIONAL;
+    default:
+	CASE_IGNORE(e);
+    }
     return fsm->State();
 }
 
@@ -273,9 +282,10 @@ FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType e
 
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
-    Log << "Sending CDMA code" << endl;
+    Log << " Sending CDMA code" << endl;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
     cdma->setName("CDMA code");
+    cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
     fsm->send(cdma, "macOut");
     return fsm->State();
 }
@@ -290,6 +300,8 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
     switch (e) {
     case EVENT_REENTRY_START:
 	return STATE_WAIT_FOR_CDMA;
+    case EVENT_ENTRY_START:
+	return STATE_WAIT_FOR_DLMAP;
     default:
 	CASE_IGNORE(e);
     }
@@ -317,6 +329,34 @@ void WMaxCtrlBS::initialize()
 
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
+    if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
+	ev << fullName() << ": RNG-REQ received, sending RNG-RSP." << endl;
+	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP");
+	rsp->setName("RNG-RSP");
+	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
+	send(rsp, "macOut");
+	delete msg;
+	return;
+    }
+
+    if (dynamic_cast<WMaxMsgSbcReq*>(msg)) {
+	ev << fullName() << ": SBC-REQ received, sending SBC-RSP." << endl;
+	WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
+	rsp->setName("SBC-RSP");
+	send(rsp, "macOut");
+	delete msg;
+	return;
+    }
+
+    if (dynamic_cast<WMaxMsgRegReq*>(msg)) {
+	ev << fullName() << ": REG-REQ received, sending REG-RSP." << endl;
+	WMaxMsgRegRsp * rsp = new WMaxMsgRegRsp("REG-RSP");
+	rsp->setName("REG-RSP");
+	send(rsp, "macOut");
+	delete msg;
+	return;
+    }
+
     if (dynamic_cast<WMaxMsgMSHOREQ*>(msg)) {
 	ev << fullName() << ":MSHO-REQ received, sending BSHO-RSP." << endl;
 	WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
@@ -326,14 +366,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	return;
     }
 
-    if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
-	ev << fullName() << ": RNG-REQ received, sending RNG-RSP." << endl;
-	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP");
-	rsp->setName("RNG-RSP");
-	send(rsp, "macOut");
-	delete msg;
-	return;
-    }
+
 
     ev << "Received " << msg->fullName() << " message." << endl;
 
@@ -344,11 +377,15 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
-	ev << fullName() << ":CDMA code received." << endl;
+	ev << fullName() << ":CDMA code received.";
 	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
 	switch (cdma->getPurpose()) {
-	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
 	case WMAX_CDMA_PURPOSE_HO_RNG:
+	{
+	    ev << fullName() << ": CDMA code received, sending anonymous RNG-RSP." << endl;
+	    break;
+	}
+	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
 	case WMAX_CDMA_PURPOSE_BWR:
 	    /// @todo - Best effort traffic.
 	    break;
