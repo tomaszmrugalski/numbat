@@ -8,6 +8,7 @@
  * 
  */
 
+#include <stdint.h>
 #include <omnetpp.h>
 #include <vector>
 #include "wmaxmsg_m.h"

@@ -11,6 +11,7 @@
 #ifndef IPV6NODE_H
 #define IPV6NODE_H
 
+#include <stdint.h>
 #include <omnetpp.h>
 
 

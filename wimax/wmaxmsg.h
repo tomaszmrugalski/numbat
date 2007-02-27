@@ -1,6 +1,7 @@
 #ifndef WMAXMSG_H
 #define WMAXMSG_H
 
+#include <stdint.h>
 #include <omnetpp.h>
 
 
