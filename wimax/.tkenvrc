@@ -40,8 +40,7 @@ config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim.BS" "BS" "2" "357x411+367+648"
-inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "1" "460x315+5+48"
-inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "506x258+633+674"
+inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "598x258+633+674"
 inspector "physim" "Physim" "2" "357x365+957+558"
 inspector "physim.SS" "SS" "2" "546x497+734+589"
 inspector "physim.SS.WMaxCtrlSS" "WMaxCtrlSS" "3" "1031x398+16+488"

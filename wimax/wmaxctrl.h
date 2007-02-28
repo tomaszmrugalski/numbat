@@ -159,7 +159,7 @@ protected:
     // --- TIMERS ---
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);
-
+    TIMER_DEF(Reentry);
 
     WMaxCtrlNetworkEntryType neType;
 };

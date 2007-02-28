@@ -28,8 +28,8 @@ WMaxCtrlSS::WMaxCtrlSS()
 
 void WMaxCtrlSS::fsmInit() {
     /// @todo - SS should perform network entry procedure (i.e. start in WAIT_FOR_CDMA state)
-    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_DLMAP);
-    //statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_CDMA);
+    //statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_WAIT_FOR_DLMAP);
+    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_POWER_DOWN);
 
     // state init
     std::string x = "Waiting for CDMA opportunity";
@@ -70,17 +70,25 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
     eventVerify();
 
-    TIMER(NetworkEntry, 0.0, "Start Network entry");
-    TIMER(Handover, 0.1, "Start handover");
-
-    //TIMER_START(NetworkEntry);
-    //TIMER_START(Handover);
+    TIMER(NetworkEntry, 0.1, "Start Network entry");
+    TIMER(Handover,     1.0, "Start handover");
+    TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
+
+    neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
 }
 
 void WMaxCtrlSS::initialize() {
     fsmInit();
+    // uncomment ONLY ONE of the following:
+    TIMER_START(NetworkEntry); // Option 1: normal network entry (after SS boot)
+    //TIMER_START(Reentry);        // Option 2: network reentry (at target BS)
+
+
+    
+    // Option 1+bonus: if NetworkEntry is chosen, it is also possible, to perform handover
+    TIMER_START(Handover);
 }
 
 
@@ -107,6 +115,8 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	    
 	}
     }
+
+    // messages
     if (dynamic_cast<WMaxMsgRngRsp*>(msg)) {
 	onEvent(EVENT_RNG_RSP_RECEIVED, msg);
 	return;
@@ -120,16 +130,27 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	return;
     }
 
-    if (msg==TimerHandover) {
-	onEvent(EVENT_REENTRY_START, msg);
-	return;
-    }
-
     if (dynamic_cast<WMaxMsgBSHORSP*>(msg)) {
 	onEvent(EVENT_BSHO_RSP_RECEIVED, msg);
 	return;
     }
 
+
+    // timers
+    if (msg==TimerHandover) {
+	onEvent(EVENT_HANDOVER_START, msg);
+	return;
+    }
+
+    if (msg==TimerReentry) {
+	onEvent(EVENT_REENTRY_START, msg);
+	return;
+    }
+    
+    if (msg==TimerNetworkEntry) {
+	onEvent(EVENT_ENTRY_START, msg);
+	return;
+    }
 }
 
 // wait for DL-MAP state
@@ -184,9 +205,15 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 // wait for RNG-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+
     switch (e) {
-    case EVENT_RNG_RSP_RECEIVED:
-	return STATE_SEND_SBC_REQ;
+    case EVENT_RNG_RSP_RECEIVED: 
+	if (ss->neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL) {
+	    return STATE_SEND_SBC_REQ;
+	} else {
+	    return STATE_OPERATIONAL;
+	}
     default:
 	CASE_IGNORE(e);
     }
@@ -277,31 +304,52 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 // handover complete state
 FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
-    return fsm->State();
+    switch (e) {
+    case EVENT_REENTRY_START:
+	return STATE_WAIT_FOR_CDMA;
+    default:
+	CASE_IGNORE(e);
+	
+    }
 }
 
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     Log << " Sending CDMA code" << endl;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
-    cdma->setName("CDMA code");
-    cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
+    if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
+	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
+	cdma->setName("CDMA code (ho rng)");
+    } else {
+	cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
+	cdma->setName("CDMA code (initial rng)");
+    }
     fsm->send(cdma, "macOut");
     return fsm->State();
 }
 
 FsmStateType WMaxCtrlSS::onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    switch (e) {
+    case EVENT_RNG_RSP_RECEIVED:
+	return STATE_SEND_RNG_REQ;
+    default:
+	CASE_IGNORE(e);
+    }
     return fsm->State();
 }
 
 FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     switch (e) {
-    case EVENT_REENTRY_START:
-	return STATE_WAIT_FOR_CDMA;
     case EVENT_ENTRY_START:
+	ss->neType = WMAX_CTRL_NETWORK_ENTRY_INITIAL;
 	return STATE_WAIT_FOR_DLMAP;
+    case EVENT_REENTRY_START:
+	ss->neType = WMAX_CTRL_NETWORK_REENTRY;
+	return STATE_WAIT_FOR_CDMA;
     default:
 	CASE_IGNORE(e);
     }
@@ -331,7 +379,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
 	ev << fullName() << ": RNG-REQ received, sending RNG-RSP." << endl;
-	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP");
+	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
 	rsp->setName("RNG-RSP");
 	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
 	send(rsp, "macOut");
@@ -366,10 +414,6 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	return;
     }
 
-
-
-    ev << "Received " << msg->fullName() << " message." << endl;
-
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
 	ev << fullName() << ":HO-IND received." << endl;
 	delete msg;
@@ -377,22 +421,30 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
-	ev << fullName() << ":CDMA code received.";
 	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
+	ev << fullName() << ": " << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
 	switch (cdma->getPurpose()) {
 	case WMAX_CDMA_PURPOSE_HO_RNG:
 	{
-	    ev << fullName() << ": CDMA code received, sending anonymous RNG-RSP." << endl;
+	    ev << ", sending Anonymous RNG-RSP." << endl;
+	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
+	    rsp->setName("Anonymous RNG-RSP");
+	    send(rsp, "macOut");
 	    break;
 	}
 	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
 	case WMAX_CDMA_PURPOSE_BWR:
+	default:
 	    /// @todo - Best effort traffic.
+	    ev << ", not supported." << endl;
+	    opp_error("That type of CDMA code is not supported yet.");
 	    break;
 	}
 	
 	delete msg;
 	return;
     }
+
+    ev << "Received " << msg->fullName() << " message." << endl;
 }
 
