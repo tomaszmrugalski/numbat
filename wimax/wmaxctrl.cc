@@ -82,10 +82,8 @@ void WMaxCtrlSS::fsmInit() {
 void WMaxCtrlSS::initialize() {
     fsmInit();
     // uncomment ONLY ONE of the following:
-    TIMER_START(NetworkEntry); // Option 1: normal network entry (after SS boot)
-    //TIMER_START(Reentry);        // Option 2: network reentry (at target BS)
-
-
+    TIMER_START(NetworkEntry);  // Option 1: normal network entry (after SS boot)
+    //TIMER_START(Reentry);     // Option 2: network reentry (at target BS)
     
     // Option 1+bonus: if NetworkEntry is chosen, it is also possible, to perform handover
     TIMER_START(Handover);
@@ -99,9 +97,9 @@ void WMaxCtrlSS::initialize() {
  */
 void WMaxCtrlSS::handleMessage(cMessage *msg) 
 {
-    if (dynamic_cast<WMaxMsgDlMap*>(msg)) { onEvent(EVENT_DLMAP, msg); return;  }
-    // if (dynamic_cast<WMaxMsgDCD*>(dcd))   { onEvent(EVENT_DCD, msg);   return;  } ignore for now
-    if (dynamic_cast<WMaxMsgUCD*>(msg))   { onEvent(EVENT_UCD, msg);   return;  }
+    if (dynamic_cast<WMaxMsgDlMap*>(msg)) { onEvent(EVENT_DLMAP, msg); delete msg; return; }
+    if (dynamic_cast<WMaxMsgDCD*>(msg))   {                            delete msg; return; }
+    if (dynamic_cast<WMaxMsgUCD*>(msg))   { onEvent(EVENT_UCD, msg);   delete msg; return; }
 
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
@@ -110,28 +108,34 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	    WMaxUlMapIE & ie = ulmap->getIE(i);
 	    if ( (ie.uiuc == WMAX_ULMAP_UIUC_CDMA_BWR) ) {
 		onEvent(EVENT_CDMA_CODE, msg);
-		return;
 	    }
 	    
 	}
+
+	delete msg;
+	return;
     }
 
     // messages
     if (dynamic_cast<WMaxMsgRngRsp*>(msg)) {
 	onEvent(EVENT_RNG_RSP_RECEIVED, msg);
+	delete msg;
 	return;
     }
     if (dynamic_cast<WMaxMsgSbcRsp*>(msg)) {
 	onEvent(EVENT_SBC_RSP_RECEIVED, msg);
+	delete msg;
 	return;
     }
     if (dynamic_cast<WMaxMsgRegRsp*>(msg)) {
 	onEvent(EVENT_REG_RSP_RECEIVED, msg);
+	delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgBSHORSP*>(msg)) {
 	onEvent(EVENT_BSHO_RSP_RECEIVED, msg);
+	delete msg;
 	return;
     }
 

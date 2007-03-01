@@ -182,7 +182,7 @@ void Fsm::stateSet(FsmStateType newState)
 void Fsm::stringUpdate()
 {
     char buf[80];
-    sprintf(buf, "state:%s(%d)", States[CurrentState].fullName().c_str(), CurrentState );
+    sprintf(buf, "state:%s", States[CurrentState].fullName().c_str());
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);
 }

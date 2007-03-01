@@ -1,4 +1,5 @@
-import "common";
+import
+    "common";
 
 simple WMaxPhySS
     gates:
@@ -28,26 +29,26 @@ endsimple
 
 module SS
 
-gates:
-	out: out;
-	in: in;
+    gates:
+        out: out;
+        in: in;
 
 
     submodules:
         ssPhy: WMaxPhySS;
-            display: "i=abstract/accesspoint,#ce1821;p=120,256;q=SendQueue";
+            display: "i=abstract/accesspoint,#ce1821;p=232,296;q=SendQueue";
         ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=120,184;q=SendQueue";
+            display: "i=block/control,#ce1821;p=232,208;q=SendQueue";
         ssIPv6: IPv6Node;
-            display: "i=block/app,#ce1821;p=48,144;tx=Tx,rx";
+            display: "i=block/app,#ce1821;p=112,160;tx=Tx,rx";
         ssIPv6_1: IPv6Node;
             parameters:
                 BurstInterval = 0.026, // TBD
                 BurstSize = 1, // TBD
                 BurstPacketSize = 500; // TBD
-            display: "i=block/app,#ce1821;p=120,72";
+            display: "i=block/app,#ce1821;p=232,80";
         WMaxCtrlSS: WMaxCtrlSS;
-            display: "i=block/cogwheel,#ce1821;p=184,128";
+            display: "i=block/cogwheel,#ce1821;p=352,160";
     connections:
 
         ssMac.phyOut --> ssPhy.phyIn;
@@ -60,6 +61,6 @@ gates:
         WMaxCtrlSS.macOut --> ssMac.macIn++;
         ssPhy.rfOut --> out;
         in --> ssPhy.rfIn;
-    display: "b=224,352";
+    display: "b=448,360";
 endmodule
 

@@ -552,12 +552,12 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	for (it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->controlConn) {
 		ev << "Dispatching " << msg->fullName() << " to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
-		//WMaxMsgUlMap * copy = (WMaxMsgUlMap *) ulmap->dup();
-		send(msg, "macOut", it->gateIndex);
+		cMessage * copy = (cMessage*)msg->dup();
+		send(copy, "macOut", it->gateIndex);
 	    }
 	}
 
-	/// @todo - delete ulmap, but before to do so, create and send copies to control clients
+	delete msg;
 	return;
     }
 
