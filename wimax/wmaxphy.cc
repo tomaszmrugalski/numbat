@@ -40,12 +40,13 @@ void WMaxPhyBS::initialize()
 }
 
 void WMaxPhyBS::handleMessage(cMessage *msg)
-{
+{   checkConnect();
     cGate * gate = msg->arrivalGate();
     // uplink message
     ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
     if (!strcmp(gate->fullName(),"rfIn")) {
 	// deliver message immediately
+	
 	send(msg, "phyOut");
 	return;
     }
@@ -95,6 +96,33 @@ void WMaxPhyBS::beginFrame()
     }
 }
 
+// checks if BS is connected to anything and connects to dummy if not
+void WMaxPhyBS::checkConnect()
+{ cModule *BS = parentModule();
+  cGate *BSout = BS->gate("out");
+  if(BSout->isConnected())
+  {
+                          }
+  else
+          { int gatenum=-1;
+            int connected=1; 
+            cModule *BS = parentModule();
+            cModule *physim = parentModule()->parentModule();
+            cModule *dummy = physim->submodule("Dummy");
+    
+    while( connected) {
+        gatenum++;
+    cGate *dumgate=dummy->gate("in",gatenum);
+    connected=(dumgate->isConnected());
+    
+                                       }
+    
+    BS->gate("out")->connectTo(dummy->gate("in",gatenum)) ; 
+                                                           
+           }   
+     
+   }
+
 /********************************************************************************/
 /*** WMax PHY SS ****************************************************************/
 /********************************************************************************/
@@ -112,9 +140,15 @@ WMaxPhySS::~WMaxPhySS()
 }
 
 void WMaxPhySS::initialize()
-{
+{   
     SendQueue.clear();
     SendQueue.setName("SendQueue");
+    
+    cModule *SS = parentModule();
+    cModule *physim = parentModule()->parentModule();
+    cModule *BS = physim->submodule("BS",0);
+    SS->gate("out")->connectTo(BS->gate("in")) ; 
+    BS->gate("out")->connectTo(SS->gate("in")) ;
 }
 
 void WMaxPhySS::beginFrame()
@@ -123,17 +157,19 @@ void WMaxPhySS::beginFrame()
 	cMessage * msg = (cMessage*)SendQueue.pop();
 	send(msg, "rfOut");
     }
+    
+
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
-{
+{   static int licz ; // test
     cGate * gate = msg->arrivalGate();
-
     // uplink message
     ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
     if (!strcmp(gate->fullName(),"rfIn")) {
 	// deliver message immediately
 	send(msg, "phyOut");
+    licz=licz+1 ; //test
 	return;
     }
 
@@ -142,7 +178,9 @@ void WMaxPhySS::handleMessage(cMessage *msg)
 	delete msg;
 	return;
     }
-
-    // downlink message
+   // downlink message
     SendQueue.insert(msg);
+
+    
+
 }

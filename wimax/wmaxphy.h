@@ -31,12 +31,14 @@ protected:
 class WMaxPhyBS : public WMaxPhy
 {
  public:
+       
     WMaxPhyBS();
     ~WMaxPhyBS();
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     void beginFrame();
+    void checkConnect();
 
     WMaxMsgDlMap * DlMap;
     WMaxMsgUlMap * UlMap;

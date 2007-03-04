@@ -2,16 +2,27 @@ import
     "SS";
 import
     "BS";
+    
+simple AirDummy
+	gates:
+	in: in[];
+endsimple
+    
 module Physim
     submodules:
-        BS: BS;
-            display: "p=49,72;i=device/antennatower_l";
-        SS: SS;
+    Dummy: AirDummy
+		gatesizes:
+		in[10];
+	    display: "i=misc/cloud";	
+    BS: BS[3];
+            display: "i=device/antennatower_l";
+    SS: SS;
             display: "p=239,232;i=device/pc_s";
-    connections:
+    connections nocheck:
 
-        BS.out --> SS.in;
-        SS.out --> BS.in;
+     //  BS[1].out --> SS.in;
+      //  SS.out --> BS[1].in;
+
 
 
 endmodule
