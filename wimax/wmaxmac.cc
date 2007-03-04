@@ -157,6 +157,12 @@ void WMaxMacBS::initialize()
     schedDcdFreq         = WMAX_DCD_FREQ;
     schedUcdFreq         = WMAX_UCD_FREQ;
 
+    schedCdmaInitRngCnt  = 0;
+    schedCdmaHoRngCnt    = 0;
+    schedCdmaBwrCnt      = 0;
+    schedDcdCnt          = 0;
+    schedUcdCnt          = 0;
+
     // configure connections
     int conns = gateSize("macOut");
     int cid  = 1024;
