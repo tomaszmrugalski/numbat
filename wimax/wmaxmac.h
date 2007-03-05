@@ -94,7 +94,16 @@ typedef struct {
 // 6.3.5.2.4, 802.16-2005 Best Effort connection
 typedef struct {
     uint32_t msr; // maximum sustained traffic rate rate
+    int reqbw; // required bandwidth
 } WMaxConnBe;
+
+
+typedef struct {
+    int code;
+    int bandwidth;
+    int cid;
+} WMaxMacCDMA;
+
 
 /** 
  * this structure represents connection
@@ -115,6 +124,7 @@ typedef struct {
     } qos;
 
     // --- runtime parameters ---
+    cQueue * queue;
     uint32_t bandwidth;
 
     int gateIndex; // index of a gate associated with this connection
@@ -125,6 +135,8 @@ class WMaxMacHeader : public cPolymorphic
 {
 public:
     uint16_t cid;
+    int ht;
+    int bwr;
 };
 
 /**************************************************************/
@@ -144,6 +156,7 @@ class WMaxMac : public cSimpleModule
 
     // --- runtime parameters ---
     cQueue SendQueue;
+    cQueue CDMAQueue;
     int GateIndex;
 
     // --- configuration parameters ---
@@ -162,6 +175,7 @@ class WMaxMacBS: public WMaxMac
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    void handleUlMessage(cMessage* msg);
 
     void schedule();
     void scheduleBcastMessages(); // prepare broadcast messages sent periodically (DCD, UCD, Neighbor-Advertisements)
@@ -202,6 +216,9 @@ class WMaxMacSS: public WMaxMac
     virtual void initialize();
     virtual void handleMessage(cMessage* msg);
     virtual void finish();
+
+    list<WMaxMacCDMA> CDMAlist;
+
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
     void         handleUlMessage(cMessage* msg);

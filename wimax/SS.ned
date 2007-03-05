@@ -55,8 +55,8 @@ module SS
         ssPhy.phyOut --> ssMac.phyIn;
         ssIPv6.ipOut --> ssMac.macIn++;
         ssMac.macOut++ --> ssIPv6.ipIn;
-        ssMac.macOut++ --> ssIPv6_1.ipIn;
-        ssIPv6_1.ipOut --> ssMac.macIn++;
+       ssMac.macOut++ --> ssIPv6_1.ipIn;
+       ssIPv6_1.ipOut --> ssMac.macIn++;
         ssMac.macOut++ --> WMaxCtrlSS.macIn;
         WMaxCtrlSS.macOut --> ssMac.macIn++;
         ssPhy.rfOut --> out;

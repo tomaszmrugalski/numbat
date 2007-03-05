@@ -38,11 +38,11 @@ module BS
         bsIPv6: IPv6Node;
             display: "i=block/app,#40e221;p=144,48;tx=Tx,rx";
         bsIPv6_1: IPv6Node;
-            parameters:
+           parameters:
                 BurstInterval = 0.027, // TBD
                 BurstSize = 1, // TBD
                 BurstPacketSize = 400; // TBD
-            display: "i=block/app,#40e221;p=48,48";
+            display: "i=block/app,#40e221;p=48,48"; 
         WMaxCtrlBS: WMaxCtrlBS;
             display: "i=block/cogwheel,#40e221;p=216,136";
     connections:

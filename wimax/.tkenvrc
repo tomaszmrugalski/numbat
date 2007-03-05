@@ -18,36 +18,45 @@ option bubbles	{1}
 option animation_speed	{2.19}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{1205x427+109+68}
-config rununtil-event	{34}
-config last-nedfile	{}
-config filtobjlist-category	{mqsgvo}
-config display-timeline	{1}
-config filtobjlist-maxcount	{100000}
-config log-save-filename	{omnetpp.out}
-config editor-findstring	{rng-req}
-config rununtil-time	{}
-config dontshow	{}
-config editor-regexp	{0}
-config filtobjlist-class	{WMaxMsgUlMap}
-config rununtil-mode	{Express (tracing off)}
-config filtobjlist-name	{}
+config concurrent-anim	{1}
 config confirm-exit	{1}
-config editor-backwards	{0}
+config display-timeline	{1}
 config display-treeview	{1}
-config timeline-maxnumevents	{1000}
+config dontshow	{}
+config editor-backwards	{0}
 config editor-case-sensitive	{0}
+config editor-findstring	{rng-req}
+config editor-regexp	{0}
 config editor-whole-words	{0}
+config filtobjlist-category	{mqsgvo}
+config filtobjlist-class	{WMaxMsgUlMap}
+config filtobjlist-maxcount	{100000}
+config filtobjlist-name	{}
 config filtobjlist-order	{Class}
+config last-nedfile	{}
+config log-save-filename	{omnetpp.out}
+config logwindow-scrollbacklines	{100000}
+config mainwin-geom	{1205x301+69+0}
+config mainwin-state	{normal}
+config rununtil-event	{34}
+config rununtil-mode	{Express (tracing off)}
+config rununtil-time	{}
+config timeline-maxnumevents	{1000}
+config timeline-msgclassnamepattern	{*}
+config timeline-msgnamepattern	{*}
+config timeline-wantnonselfmsgs	{1}
+config timeline-wantselfmsgs	{1}
+inspector "physim.BS[0]" "BS" "2" "357x411+919+345"
+inspector "physim" "Physim" "2" "357x365+842+391"
+inspector "physim.SS" "SS" "2" "503x348+299+408"
+inspector "physim.SS.ssMac" "WMaxMacSS" "1" "385x315+-74+442"
+inspector "physim.SS.ssMac" "WMaxMacSS" "3" "506x258+12+257"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
-inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "598x258+633+674"
-inspector "physim" "Physim" "2" "357x365+957+558"
-inspector "physim.SS" "SS" "2" "503x497+487+448"
-inspector "physim.SS.WMaxCtrlSS" "WMaxCtrlSS" "3" "1031x398+2+324"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"
 inspector "physim.WMaxCtrlBS" "WMaxCtrlBS" "3" "826x308+29+637"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
+inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "598x258+633+674"
 inspector "physim.bsMac" "WMaxMacBS" "3" "1019x258+0+712"
 inspector "physim" "PhySim" "2" "644x499+624+492"
 inspector "physim.WMaxCtrlSS" "WMaxCtrlSS" "3" "826x247+29+357"
