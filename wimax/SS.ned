@@ -45,7 +45,7 @@ module SS
             parameters:
                 BurstInterval = 0.026, // TBD
                 BurstSize = 1, // TBD
-                BurstPacketSize = 500; // TBD
+                BurstPacketSize = 100; // TBD
             display: "i=block/app,#ce1821;p=232,80";
         WMaxCtrlSS: WMaxCtrlSS;
             display: "i=block/cogwheel,#ce1821;p=352,160";
@@ -55,8 +55,8 @@ module SS
         ssPhy.phyOut --> ssMac.phyIn;
         ssIPv6.ipOut --> ssMac.macIn++;
         ssMac.macOut++ --> ssIPv6.ipIn;
-       ssMac.macOut++ --> ssIPv6_1.ipIn;
-       ssIPv6_1.ipOut --> ssMac.macIn++;
+        ssMac.macOut++ --> ssIPv6_1.ipIn;
+        ssIPv6_1.ipOut --> ssMac.macIn++;
         ssMac.macOut++ --> WMaxCtrlSS.macIn;
         WMaxCtrlSS.macOut --> ssMac.macIn++;
         ssPhy.rfOut --> out;

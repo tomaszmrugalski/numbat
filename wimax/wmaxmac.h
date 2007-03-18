@@ -218,6 +218,7 @@ class WMaxMacSS: public WMaxMac
     virtual void finish();
 
     list<WMaxMacCDMA> CDMAlist;
+    int BEpoint;
 
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);

@@ -171,7 +171,8 @@ void WMaxMacBS::initialize()
     ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
 
 // Best Effort
-    int i=0;
+//    int i=0;
+    for (int i=0; i<conns; i++) {
 	WMaxConn conn;
 	CLEAR(&conn);
 	conn.type= WMAX_CONN_TYPE_BE;
@@ -180,9 +181,10 @@ void WMaxMacBS::initialize()
 	conn.gateIndex = i;
 	conn.qos.be.msr = 80000; // 100kbps
 	addConn(conn);
+    }
 
 // UGS
-    for (int i=1; i<conns; i++) {
+/*    for (int i=1; i<conns; i++) {
 	WMaxConn conn;
 	CLEAR(&conn);
 	conn.type= WMAX_CONN_TYPE_UGS;
@@ -191,7 +193,7 @@ void WMaxMacBS::initialize()
 	conn.gateIndex = i;
 	conn.qos.ugs.msr = 80000; // 100kbps
 	addConn(conn);
-    }
+    }*/
 }
 
 void WMaxMacBS::handleMessage(cMessage *msg)
@@ -216,9 +218,7 @@ void WMaxMacBS::handleUlMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgCDMA*>(msg))
     {
-        WMaxMsgCDMA *cdmamsg = new WMaxMsgCDMA();
-        cdmamsg = (WMaxMsgCDMA*)msg;
-        if (cdmamsg->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
+        if (dynamic_cast<WMaxMsgCDMA*>(msg)->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
             ev << fullName() << " Recived CDMA code" << endl;
             CDMAQueue.insert(msg);
             return;
@@ -426,6 +426,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	/// @todo - duration, rangingSymbol, rangingSubchannel
 	ulmap->setIE(ieCnt-1,ie);
 	symbols--; // use just 1 symbol
+	delete msgcdma;
     }
 
     if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
@@ -492,7 +493,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	    it->bandwidth += it->qos.be.reqbw;
             it->qos.be.reqbw = 0;
 	    int symbolLength = (int)ceil(double(it->bandwidth)/bytesPerPS);
-	    if ( (it->bandwidth>WMAX_SCHED_MIN_GRANT_SIZE) && (symbols>=symbolLength) ) {
+	    if ( (it->bandwidth>=WMAX_SCHED_MIN_GRANT_SIZE) && (symbols>=symbolLength) ) {
 		symbols -= symbolLength;
 
 		ieCnt++;
@@ -528,10 +529,11 @@ void WMaxMac::handleUlMessage(cMessage *msg)
         if (hdr->ht == 1) {
             for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	        if (it->cid == hdr->cid) {
-                    ev << fullName() << ": resived bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr;
+                    ev << fullName() << ": resived bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << endl;
 	            it->qos.be.reqbw = hdr->bwr;
 	        }
             }
+            delete msg;
             delete hdr;
             return;
         }
@@ -565,6 +567,8 @@ Define_Module(WMaxMacSS);
 
 void WMaxMacSS::initialize()
 {
+    BEpoint = 0;
+
     SendQueue.setName("SendQueue");
 
     CLEAR(&Stats);
@@ -576,7 +580,8 @@ void WMaxMacSS::initialize()
 
 // Best Effort
 
-int i = 0;
+//int i = 0;
+    for (int i=0; i<conns; i++) {
     WMaxConn conn;
     CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
@@ -593,10 +598,11 @@ int i = 0;
     std::string name = "SednQueue, CID: " + st_cid;
     conn.queue = new cQueue(name.c_str());
     addConn(conn);
+    }
 
 // UGS
 
-    for (int i=1; i<conns; i++) {
+/*    for (int i=1; i<conns; i++) {
 	WMaxConn conn;
 	CLEAR(&conn);
 	conn.type= WMAX_CONN_TYPE_UGS;
@@ -605,7 +611,7 @@ int i = 0;
 	conn.gateIndex = i;
 	conn.qos.ugs.msr = 80000; // 100kbps
 	addConn(conn);
-    }
+    }*/
 }
 
 void WMaxMacSS::handleMessage(cMessage *msg)
@@ -648,6 +654,9 @@ if (!strcmp(fullName(), "ssMac")) {
     case WMAX_CONN_TYPE_BE:
         ev << fullName() << ": Resived BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
         it->qos.be.reqbw += msg->length();
+        if(msg->length() == 0) { /// @todo sending messages with length == 0
+            it->qos.be.reqbw += 12;
+        }
         ev << fullName() << ": CID=" << it->cid << " Requied bandwidth: " << it->qos.be.reqbw << endl; 
         it->queue->insert(msg);
         break;
@@ -751,8 +760,6 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 	                 msg = (cMessage*) it->queue->tail();
 
-            ev << "TAIL: " << msg->length() << endl;
-
 	                 if (msg->length() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
 
@@ -798,24 +805,39 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	    
 	}
 
-        if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR && ie.cdmaIE.rangingMethod==WMAX_RANGING_METHOD_BWR) {
-            for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
-                if (it->type == WMAX_CONN_TYPE_BE) {
-                    if (it->qos.be.reqbw) {
+        if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR && ie.cdmaIE.rangingMethod==WMAX_RANGING_METHOD_BWR) { 
+
+            for (int i=0; i!=Conns.size(); i++) {
+
+                list<WMaxConn>::iterator BEit = Conns.begin();
+                for (int j=0; j!=BEpoint; j++){
+                    BEit++;
+                    if (BEit == Conns.end())
+                        BEit = Conns.begin();
+                }
+
+                BEpoint++;
+                BEpoint = BEpoint%Conns.size();
+
+                if (BEit->type == WMAX_CONN_TYPE_BE) {
+                    if (BEit->qos.be.reqbw) {
                         WMaxMacCDMA cdma;
                         cdma.code = rand()%256;
-                        cdma.bandwidth = it->qos.be.reqbw;
-                        it->qos.be.reqbw = 0;
-                        cdma.cid = it->cid;
+                        cdma.bandwidth = BEit->qos.be.reqbw;
+                        BEit->qos.be.reqbw = 0;
+                        cdma.cid = BEit->cid;
                         CDMAlist.push_back(cdma);
                         WMaxMsgCDMA *cdmamsg = new WMaxMsgCDMA("CDMA");
                         cdmamsg->setCode(cdma.code);
                         cdmamsg->setPurpose(WMAX_CDMA_PURPOSE_BWR);
                         ev << fullName() << ": Sending CDMA code: " << cdma.code <<" (cid: " << cdma.cid << ", bandwidth: "<< cdma.bandwidth << ")" << endl;
                         send(cdmamsg, "phyOut");
+                        break;
                     }
                 }
             }
+
+
         }
 
         if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_ALLOC) {
@@ -839,6 +861,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                    msg->setControlInfo(hdr);
                    ev << fullName() << ": Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << endl;
                    send(msg, "phyOut");
+                   CDMAlist.erase(it);
+                   break;
                }
            }
 	}
