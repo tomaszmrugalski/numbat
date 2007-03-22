@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   fsm.o ipv6node.o   wmaxctrl.o wmaxmac.o  wmaxphy.o
+OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o fsm.o ipv6node.o wmaxctrl.o wmaxmac.o wmaxphy.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -194,29 +194,16 @@ re-makemake-m: makefile-ins
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 AirDummy.o: AirDummy.cc \
   AirDummy.h
-BS_n.o: BS_n.cc
-common_n.o: common_n.cc
 fsm.o: fsm.cc \
   fsm.h
 ipv6node.o: ipv6node.cc \
   ipv6node.h
-physim_n.o: physim_n.cc
-SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
-  wmaxmsg_m.h \
-  fsm.h \
-  wmaxmsg.h
+  fsm.h
 wmaxmac.o: wmaxmac.cc \
   wmaxmac.h \
-  wmaxmsg_m.h \
   wmaxctrl.h \
-  wmaxmsg.h \
   fsm.h
-wmaxmsg_m.o: wmaxmsg_m.cc \
-  wmaxmsg_m.h \
-  wmaxmsg.h
 wmaxphy.o: wmaxphy.cc \
-  wmaxphy.h \
-  wmaxmsg_m.h \
-  wmaxmsg.h
+  wmaxphy.h

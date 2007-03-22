@@ -328,10 +328,16 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	    // c) ignore this message and try to scheduler next message, possibly smaller (flaw: message will never be sent)
 	    // d) abort simulation as there is no way to send this message
 
+            // currently used: c)
+            msg = (cMessage*) SendQueue.pop();
+            SCHED << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() <<"), because it won't fit in DL subframe. Message is dropped." << endl;
+            delete msg;
+            continue;
+
 	    // currently used: d)
-	    opp_error("Unable to send %d-byte long message(%s), because it won't fit in DL subframe (%d symbols *%dB/PS=%d bytes)",
+	    /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in DL subframe (%d symbols *%dB/PS=%d bytes)",
 		      msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
-	    break;
+	    break;*/
 	}
 	
 	// message will fit in this frame, send it
@@ -768,9 +774,16 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
 		                 break;
 
-	                     opp_error("Unable to send %d-byte long message(%s), because it won't fit in UL subframe (%d symbols *%dB/PS=%d bytes)",
+                             // currently used: c)
+                             msg = (cMessage*) it->queue->pop();
+                             SCHED << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() <<"), because it won't fit in UL subframe. Message is dropped." << endl;
+                             delete msg;
+                             continue;
+
+                             // currently used: d)
+	                     /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in UL subframe (%d symbols *%dB/PS=%d bytes)",
 		             msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
-	                     break;
+	                     break;*/
 	                 }
 	
 	                 // message will fit in this frame, send it
