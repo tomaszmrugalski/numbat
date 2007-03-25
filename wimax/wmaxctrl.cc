@@ -71,7 +71,7 @@ void WMaxCtrlSS::fsmInit() {
     eventVerify();
 
     TIMER(NetworkEntry, 0.1, "Start Network entry");
-    TIMER(Handover,     1.0, "Start handover");
+    TIMER(Handover,     0.4, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
@@ -307,8 +307,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     
 // handover complete state
 FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg)
-{
+{   WMaxCtrlSS *wskSS = dynamic_cast<WMaxCtrlSS*>(fsm);
+    wskSS->reConnect();
+
     switch (e) {
+
     case EVENT_REENTRY_START:
 	return STATE_WAIT_FOR_CDMA;
     default:
@@ -358,7 +361,19 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
 	CASE_IGNORE(e);
     }
 }
-
+void WMaxCtrlSS::reConnect() {
+    
+    cModule *SS = parentModule();
+    cModule *physim = parentModule()->parentModule();
+    cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
+    int actBS = BS->index();
+    cModule *BSnext = physim->submodule("BS",actBS+1);
+    SS->gate("out")->disconnect();
+    BS->gate("out")->disconnect();
+    BSnext->gate("out")->disconnect();
+    SS->gate("out")->connectTo(BSnext->gate("in")) ; 
+    BSnext->gate("out")->connectTo(SS->gate("in")) ;
+     }
 /********************************************************************************/
 /*** WMax Ctrl BS ****************************************************************/
 /********************************************************************************/

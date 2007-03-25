@@ -9,12 +9,16 @@ simple AirDummy
 endsimple
     
 module Physim
+	parameters:
+	numBS:numeric;
+	
+
     submodules:
     Dummy: AirDummy
 		gatesizes:
 		in[10];
 	    display: "i=misc/cloud";	
-    BS: BS[3];
+    BS: BS[numBS];
             display: "i=device/antennatower_l";
     SS: SS;
             display: "p=239,232;i=device/pc_s";

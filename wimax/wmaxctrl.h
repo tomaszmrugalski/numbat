@@ -42,10 +42,10 @@ public:
 
     void initialize();
     void handleMessage(cMessage *msg);
-
+    
 protected:
     void fsmInit();
-
+    void reConnect();
     // --- STATES ---
     typedef enum {
 	// 1. network entry phase
