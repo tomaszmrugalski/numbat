@@ -367,7 +367,12 @@ void WMaxCtrlSS::reConnect() {
     cModule *physim = parentModule()->parentModule();
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
-    cModule *BSnext = physim->submodule("BS",actBS+1);
+    int nextBS = (actBS+1)%(BS->size());
+    cout << "Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << endl;
+    cModule *BSnext = physim->submodule("BS", nextBS);
+    if (!BSnext)
+	opp_error("Unable to find BS:%d\n", nextBS);
+    
     SS->gate("out")->disconnect();
     BS->gate("out")->disconnect();
     BSnext->gate("out")->disconnect();

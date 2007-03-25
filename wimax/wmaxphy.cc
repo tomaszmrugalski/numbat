@@ -147,6 +147,8 @@ void WMaxPhySS::initialize()
     cModule *SS = parentModule();
     cModule *physim = parentModule()->parentModule();
     cModule *BS = physim->submodule("BS",0);
+    if (!BS)
+	opp_error("There are no BS(es) defined. Number of BSes must be at least 1 to initialize sim.");
     SS->gate("out")->connectTo(BS->gate("in")) ; 
     BS->gate("out")->connectTo(SS->gate("in")) ;
 }
