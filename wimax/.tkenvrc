@@ -46,9 +46,9 @@ config timeline-maxnumevents	{1000}
 config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
+inspector "physim.BS[0]" "BS" "2" "357x411+123+345"
 inspector "physim" "Physim" "2" "357x525+420+230"
 inspector "physim.SS" "SS" "2" "492x459+784+297"
-inspector "physim.BS[0]" "BS" "2" "357x411+123+345"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"

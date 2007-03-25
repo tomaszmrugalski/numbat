@@ -41,7 +41,7 @@ MAKEDEPEND=opp_makedep -Y --objdirtree
 
 CFLAGS=-O2 -DNDEBUG=1 -g   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
-LDFLAGS= -Wl,--export-dynamic -lefence
+LDFLAGS= -Wl,--export-dynamic
 EXE_SUFFIX=
 
 WITH_PARSIM=yes

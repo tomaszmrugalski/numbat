@@ -134,8 +134,9 @@ typedef struct {
 class WMaxMacHeader : public cPolymorphic
 {
 public:
+    WMaxMacHeader() { cid=0xffff; ht=0; bwr=0; }
     uint16_t cid;
-    int ht;
+    bool ht;
     int bwr;
 };
 

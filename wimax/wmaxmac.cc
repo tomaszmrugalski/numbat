@@ -532,10 +532,10 @@ void WMaxMac::handleUlMessage(cMessage *msg)
 	cid = hdr->cid;
 
         // bandwidth request
-        if (hdr->ht == 1) {
+        if (hdr->ht == true) {
             for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	        if (it->cid == hdr->cid) {
-                    ev << fullName() << ": resived bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << endl;
+                    ev << fullName() << ": received bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << endl;
 	            it->qos.be.reqbw = hdr->bwr;
 	        }
             }
@@ -857,7 +857,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
            for (list<WMaxMacCDMA>::iterator it = CDMAlist.begin(); it!=CDMAlist.end(); it++) {
                if (it->code == ie.cdmaAllocIE.rangingCode){
                    WMaxMacHeader *hdr = new WMaxMacHeader();
-                   hdr->ht = 1;
+                   hdr->ht = true;
                    hdr->bwr = it->bandwidth;
 
                    for (list<WMaxConn>::iterator it2=Conns.begin(); it2!=Conns.end(); it2++) {
