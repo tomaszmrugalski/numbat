@@ -126,7 +126,7 @@ protected:
     static FsmStateType onEnterState_SendHoInd(Fsm *fsm);
     
     // handover complete state
-    static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg);
+    static FsmStateType onEnterState_HandoverComplete(Fsm * fsm);
 
     // wait for CDMA opportunity state
     static FsmStateType onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMessage *msg);

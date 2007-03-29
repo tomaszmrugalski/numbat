@@ -45,7 +45,7 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
     stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", STATE_HANDOVER_COMPLETE, onEnterState_SendHoInd);
-    stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", onEventState_HandoverComplete);
+    stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", STATE_WAIT_FOR_CDMA, onEnterState_HandoverComplete);
 
     stateInit(STATE_WAIT_FOR_CDMA,     "Waiting for CDMA opportunity", onEventState_WaitForCdma);
     stateInit(STATE_SEND_CDMA,         "Send CDMA code", STATE_WAIT_ANON_RNG_RSP, onEnterState_SendCdma);
@@ -306,18 +306,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 }
     
 // handover complete state
-FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType e, cMessage *msg)
+FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 {   WMaxCtrlSS *wskSS = dynamic_cast<WMaxCtrlSS*>(fsm);
     wskSS->reConnect();
+return fsm->State();
 
-    switch (e) {
-
-    case EVENT_REENTRY_START:
-	return STATE_WAIT_FOR_CDMA;
-    default:
-	CASE_IGNORE(e);
-	
-    }
 }
 
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
