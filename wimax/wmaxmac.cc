@@ -263,7 +263,6 @@ void WMaxMacBS::scheduleBcastMessages()
 	WMaxMacHeader * hdr = new WMaxMacHeader();
 	hdr->cid = WMAX_CID_BROADCAST;
 	dcd->setControlInfo(hdr);
-	SCHED << "#### DCD" << endl;
 	SendQueue.insert(dcd);
     }
 
@@ -275,7 +274,6 @@ void WMaxMacBS::scheduleBcastMessages()
 	hdr->cid = WMAX_CID_BROADCAST;
 	ucd->setControlInfo(hdr);
 	SendQueue.insert(ucd);
-	SCHED << "#### UCD" << endl;
     }
 }
 

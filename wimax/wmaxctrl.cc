@@ -71,7 +71,7 @@ void WMaxCtrlSS::fsmInit() {
     eventVerify();
 
     TIMER(NetworkEntry, 0.1, "Start Network entry");
-    TIMER(Handover,     0.4, "Start handover");
+    TIMER(Handover,     0.2, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
@@ -214,8 +214,10 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
 	if (ss->neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL) {
+	    ev << ss->fullName() << ": Network entry type: initial, switching to 'send SBC-REQ'." << endl;
 	    return STATE_SEND_SBC_REQ;
 	} else {
+	    ev << ss->fullName() << ":Network entry type: reentry, switching to 'OPERATIONAL'." << endl;
 	    return STATE_OPERATIONAL;
 	}
     default:
@@ -309,8 +311,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 {   WMaxCtrlSS *wskSS = dynamic_cast<WMaxCtrlSS*>(fsm);
     wskSS->reConnect();
-return fsm->State();
-
+    return fsm->State();
 }
 
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
@@ -361,7 +362,7 @@ void WMaxCtrlSS::reConnect() {
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
     int nextBS = (actBS+1)%(BS->size());
-    cout << "Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << endl;
+    ev << fullName() << ": Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << endl;
     cModule *BSnext = physim->submodule("BS", nextBS);
     if (!BSnext)
 	opp_error("Unable to find BS:%d\n", nextBS);
@@ -371,7 +372,14 @@ void WMaxCtrlSS::reConnect() {
     BSnext->gate("out")->disconnect();
     SS->gate("out")->connectTo(BSnext->gate("in")) ; 
     BSnext->gate("out")->connectTo(SS->gate("in")) ;
-     }
+
+    // after reconnecting to other BS, perform Reentry, not normal entry
+    neType = WMAX_CTRL_NETWORK_REENTRY; 
+
+    // uncomment this to perform another handover
+    TIMER_START(Handover);
+}
+
 /********************************************************************************/
 /*** WMax Ctrl BS ****************************************************************/
 /********************************************************************************/
@@ -443,18 +451,25 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	switch (cdma->getPurpose()) {
 	case WMAX_CDMA_PURPOSE_HO_RNG:
 	{
-	    ev << ", sending Anonymous RNG-RSP." << endl;
+	    ev << ", sending Anonymous (handover) RNG-RSP." << endl;
 	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
 	    rsp->setName("Anonymous RNG-RSP");
 	    send(rsp, "macOut");
 	    break;
 	}
 	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
+	{
+	    ev << ", sending Anonymous (initial) RNG-RSP." << endl;
+	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
+	    rsp->setName("Anonymous (initial) RNG-RSP");
+	    send(rsp, "macOut");
+	    break;
+	}
 	case WMAX_CDMA_PURPOSE_BWR:
 	default:
 	    /// @todo - Best effort traffic.
 	    ev << ", not supported." << endl;
-	    opp_error("That type of CDMA code is not supported yet.");
+	    opp_error("That type of CDMA code is not supported yet (purpose=%d).", cdma->getPurpose());
 	    break;
 	}
 	
