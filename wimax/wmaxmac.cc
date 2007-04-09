@@ -364,6 +364,10 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	send(msg, "phyOut");
     }
 
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr->cid = WMAX_CID_BROADCAST;
+    dlmap->setControlInfo(hdr);
+
     return dlmap;
 }
 
@@ -517,6 +521,9 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	}
     }    
 
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr->cid = WMAX_CID_BROADCAST;
+    ulmap->setControlInfo(hdr);
 
     return ulmap;
 }
@@ -543,9 +550,12 @@ void WMaxMac::handleUlMessage(cMessage *msg)
         }
 	delete hdr;
     } else {
-	ev << fullName() << ": malformed message received. Uplink message without WMaxMacHeader structure" << endl;
+	ev << fullName() << ": malformed message received: " << msg->fullName() << ". Uplink message without WMaxMacHeader structure." << endl;
 	return;
     }
+
+    if (cid==WMAX_CID_BROADCAST)
+	return;
 
     // check if there is such connection (cid has to match)
     for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
@@ -584,7 +594,6 @@ void WMaxMacSS::initialize()
 
 // Best Effort
 
-//int i = 0;
     for (int i=0; i<conns; i++) {
     WMaxConn conn;
     CLEAR(&conn);
@@ -698,7 +707,8 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	list<WMaxConn>::iterator it;
 	for (it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->controlConn) {
-		ev << "Dispatching " << msg->fullName() << " to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
+		// ev << fullName() << "Dispatching " << msg->fullName() << " to gate " << it->gateIndex 
+		// << ", ctrl=" << ((int)(it->controlConn)) << endl;
 		cMessage * copy = (cMessage*)msg->dup();
 		send(copy, "macOut", it->gateIndex);
 	    }
@@ -718,8 +728,7 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	list<WMaxConn>::iterator it;
 	for (it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->controlConn) {
-		ev << "Dispatching ulmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
-		//WMaxMsgUlMap * copy = (WMaxMsgUlMap *) ulmap->dup();
+		ev << "Dispatching dlmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
 		send(msg, "macOut", it->gateIndex);
 	    }
 	}

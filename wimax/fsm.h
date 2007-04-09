@@ -35,9 +35,9 @@
        onEvent(event, msg);
 
 #define CASE_IGNORE(e)                                                 \
-	std::cout << fsm->fullName() << ": event "                     \
-		  << fsm->Events[e].fullName() << " ignored in state " \
- 	<< fsm->CurrentStateGet()->fullName() << endl; \
+	ev << fsm->fullName() << ": event "                     \
+	   << fsm->Events[e].fullName() << " ignored in state " \
+ 	   << fsm->CurrentStateGet()->fullName() << endl; \
         return fsm->State();
 
 #define FSM_MAX_TRANSITIONS 64
