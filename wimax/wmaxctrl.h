@@ -30,6 +30,9 @@ using namespace std;
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
 
+class WMaxFlowSS;
+
+
 class WMaxCtrlSS : public Fsm
 {
     typedef enum {
@@ -42,6 +45,7 @@ public:
 
     void initialize();
     void handleMessage(cMessage *msg);
+    list<WMaxFlowSS*> serviceFlows;
     
 protected:
     void fsmInit();
@@ -61,7 +65,7 @@ protected:
 
 	// 2. service flow creation phase
 	/// @todo - implement service flow creation
-	// STATE_INITIATE_SVC_FLOW_CREATION, // initialize service flow creation (i.e. start new FSMs for each flow)
+	STATE_INITIATE_SVC_FLOW_CREATION, // initialize service flow creation (i.e. start new FSMs for each flow)
 	// STATE_WAIT_FOR_SVC_FLOW_COMPLETE, // wait for service flow creation completion
 
 	STATE_OPERATIONAL,                // network entry completed, service flows created, normal operation
@@ -113,6 +117,9 @@ protected:
     // wait for REG-RSP state
     static FsmStateType onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
+    // initiate service flow creation state
+    static FsmStateType onEnterState_InitiateSvcFlowCreation(Fsm * fsm);
+
     // operational state
     static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg);
 
@@ -162,6 +169,7 @@ protected:
     TIMER_DEF(Reentry);
 
     WMaxCtrlNetworkEntryType neType;
+
 };
 
 class WMaxCtrlBS : public Fsm
@@ -174,5 +182,48 @@ protected:
     virtual void handleMessage(cMessage *msg);
 };
 
+class WMaxFlowSS : public Fsm
+{
+public:
+    WMaxFlowSS(Fsm * fsm);
+    int cid;
+    int transactionID;
+    WMaxQos qos;
+    void handleMessage(cMessage *msg);
+    Fsm *parentFsm;
+
+protected:
+    void fsmInit();
+//    virtual void initialize();
+    
+
+    typedef enum {
+        STATE_START,
+        STATE_SEND_DSA_REQ,
+        STATE_WAITING_DSX_RVD,
+        STATE_WAITING_DSA_RSP,
+        STATE_SEND_DSA_ACK,
+        STATE_OPERATIONAL,
+        STATE_NUM
+    } State;
+
+    static FsmStateType onEventState_Start(Fsm * fsm, FsmEventType e, cMessage * msg);
+    static FsmStateType onEnterState_SendDsaReq(Fsm * fsm);
+    static FsmStateType onEventState_WaitingDsxRvd(Fsm * fsm, FsmEventType e, cMessage * msg);
+    static FsmStateType onEventState_WaitingDsaRsp(Fsm * fsm, FsmEventType e, cMessage * msg);
+    static FsmStateType onEnterState_SendDsaAck(Fsm * fsm);
+    static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage * msg);
+
+    typedef enum {
+        EVENT_START,
+        EVENT_DSX_RVD_RECEIVED,
+        EVENT_DSA_RSP_RECEIVED,
+        EVENT_NUM
+    } Event;
+
+};
+
+
+/// @todo class WMaxFlowBS
 
 #endif

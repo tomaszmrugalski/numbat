@@ -41,6 +41,9 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_WAIT_SBC_RSP,      "Waiting for SBC-RSP", onEventState_WaitForSbcRsp);
     stateInit(STATE_SEND_REG_REQ,      "Sending REG-REQ", STATE_WAIT_REG_RSP, onEnterState_SendRegReq);
     stateInit(STATE_WAIT_REG_RSP,      "Waiting for REG-RSP", onEventState_WaitForRegRsp);
+
+    stateInit(STATE_INITIATE_SVC_FLOW_CREATION, "Initiate service flow creation", STATE_OPERATIONAL, onEnterState_InitiateSvcFlowCreation);
+
     stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational);
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
@@ -89,7 +92,6 @@ void WMaxCtrlSS::initialize() {
     TIMER_START(Handover);
 }
 
-
 /** 
  * general dispatcher
  * 
@@ -97,9 +99,21 @@ void WMaxCtrlSS::initialize() {
  */
 void WMaxCtrlSS::handleMessage(cMessage *msg) 
 {
-    if (dynamic_cast<WMaxMsgDlMap*>(msg)) { onEvent(EVENT_DLMAP, msg); delete msg; return; }
-    if (dynamic_cast<WMaxMsgDCD*>(msg))   {                            delete msg; return; }
-    if (dynamic_cast<WMaxMsgUCD*>(msg))   { onEvent(EVENT_UCD, msg);   delete msg; return; }
+
+    if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
+        onEvent(EVENT_DLMAP, msg);
+        delete msg;
+        return;
+    }
+    if (dynamic_cast<WMaxMsgDCD*>(msg))   {
+        delete msg;
+        return;
+    }
+    if (dynamic_cast<WMaxMsgUCD*>(msg))   {
+        onEvent(EVENT_UCD, msg);
+        delete msg;
+        return;
+    }
 
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
@@ -155,6 +169,61 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	onEvent(EVENT_ENTRY_START, msg);
 	return;
     }
+
+    if (dynamic_cast<WMaxMsgDsxRvd*>(msg)) {
+        WMaxMsgDsxRvd *dsxrvd = dynamic_cast<WMaxMsgDsxRvd*>(msg);
+
+        WMaxFlowSS *flow;
+        for (int i=0; i!= serviceFlows.size(); i++) {
+            flow = serviceFlows.front();
+            serviceFlows.pop_front();
+
+            if (flow->transactionID == dsxrvd->getTransactionID()) {
+                flow->handleMessage(msg);
+                serviceFlows.push_back(flow);
+                return;
+            }
+            serviceFlows.push_back(flow);
+        }
+
+// 	list<WMaxFlowSS*>::iterator it;
+// 	for (it = serviceFlows.begin(); it!=serviceFlows.end(); it++) {
+// 	    if (it->transactionID == dsxrvd->getTransactionID()) {
+// 		it->handleMessage(msg);
+// 		return;
+// 	    }
+//   	}
+
+        return;
+    }
+
+    if (dynamic_cast<WMaxMsgDsaRsp*>(msg)) {
+        WMaxMsgDsaRsp *dsarsp = dynamic_cast<WMaxMsgDsaRsp*>(msg);
+
+        WMaxFlowSS *flow;
+        for (int i=0; i!= serviceFlows.size(); i++) {
+            flow = serviceFlows.front();
+            serviceFlows.pop_front();
+            if (flow->transactionID == dsarsp->getTransactionID()) {
+                flow->handleMessage(msg);
+                serviceFlows.push_back(flow);
+                return;
+            }
+            serviceFlows.push_back(flow);
+        }
+
+
+// 	list<WMaxFlowSS*>::iterator it;
+// 	for (it = serviceFlows.begin(); it!=serviceFlows.end(); it++) {
+// 	    if (it->transactionID == dsarsp->getTransactionID()) {
+// 		it->handleMessage(msg);
+// 		return;
+// 	    }
+// 	}
+
+        return;
+    }
+
 }
 
 // wait for DL-MAP state
@@ -260,12 +329,25 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, c
 {
     switch (e) {
     case EVENT_REG_RSP_RECEIVED:
-	return STATE_OPERATIONAL;
+//	return STATE_OPERATIONAL;
+        return STATE_INITIATE_SVC_FLOW_CREATION;
     default:
 	CASE_IGNORE(e);
     }
     return fsm->State();
 }
+
+// inititae service flow creation state
+FsmStateType WMaxCtrlSS::onEnterState_InitiateSvcFlowCreation(Fsm * fsm) {
+    WMaxFlowSS *flow;
+    WMaxCtrlSS *ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    
+    flow = new WMaxFlowSS(fsm);
+    ss->serviceFlows.push_back(flow);
+    
+    return fsm->State();
+}
+
 
 FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
@@ -477,6 +559,148 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	return;
     }
 
+    if (dynamic_cast<WMaxMsgDsaReq*>(msg)) {
+        WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
+
+        WMaxMsgDsxRvd *dsxrvd = new WMaxMsgDsxRvd();
+        dsxrvd->setName("DSX-RVD");
+        dsxrvd->setTransactionID(dsareq->getTransactionID());
+        dsxrvd->setConfirmationCode(0);
+        send(dsxrvd, "macOut");
+
+        WMaxMsgDsaRsp *dsarsp = new WMaxMsgDsaRsp();
+        dsarsp->setName("DSA-RSP");
+        dsarsp->setTransactionID(dsareq->getTransactionID());
+        dsarsp->setQosArraySize(1);
+        dsarsp->setQos(0,dsareq->getQos(0));
+        dsarsp->setCid(1024); /// @todo generate CID
+        send(dsarsp, "macOut");
+
+        delete msg;
+        return;
+    }
+
     ev << "Received " << msg->fullName() << " message." << endl;
+}
+
+
+/********************************************************************************/
+/*** WMax Service Flow Creation SS***********************************************/
+/********************************************************************************/
+
+//Define_Module(WMaxFlowSS);
+
+WMaxFlowSS::WMaxFlowSS(Fsm * fsm) {
+    parentFsm = fsm;
+    fsmInit();
+    WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
+    handleMessage(msg);
+}
+
+void WMaxFlowSS::fsmInit() {
+    statesEventsInit(WMaxFlowSS::STATE_NUM, WMaxFlowSS::EVENT_NUM, STATE_START);
+
+    stateInit(STATE_START, "Start", onEventState_Start);
+    stateInit(STATE_SEND_DSA_REQ, "Sending DSA-REQ", STATE_WAITING_DSX_RVD, onEnterState_SendDsaReq);
+    stateInit(STATE_WAITING_DSX_RVD, "Waiting for DSX-RVD", onEventState_WaitingDsxRvd);
+    stateInit(STATE_WAITING_DSA_RSP, "Waiting for DSA-RSP", onEventState_WaitingDsaRsp);
+    stateInit(STATE_SEND_DSA_ACK, "Sending DSA-ACK", STATE_OPERATIONAL, onEnterState_SendDsaAck);
+    stateInit(STATE_OPERATIONAL, "Operational", onEventState_Operational);
+
+    stateVerify();
+
+    eventInit(EVENT_START, "Service flow creation started");
+    eventInit(EVENT_DSX_RVD_RECEIVED, "Received DSX-RVD");
+    eventInit(EVENT_DSA_RSP_RECEIVED, "Received DSA-RSP");
+
+    eventVerify();
+}
+
+
+void WMaxFlowSS::handleMessage(cMessage *msg) {
+    if(dynamic_cast<WMaxCtrlFlowCreationStart*>(msg)) {
+        onEvent(EVENT_START, msg);
+        delete msg;
+        return;
+    }
+
+    if(dynamic_cast<WMaxMsgDsxRvd*>(msg)) {
+        onEvent(EVENT_DSX_RVD_RECEIVED, msg);
+        delete msg;
+        return;
+    }
+
+    if(dynamic_cast<WMaxMsgDsaRsp*>(msg)) {
+        onEvent(EVENT_DSA_RSP_RECEIVED, msg);
+        delete msg;
+        return;
+    }
+}
+
+// Start state
+FsmStateType WMaxFlowSS::onEventState_Start(Fsm * fsm, FsmEventType e, cMessage * msg){
+    WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    flow->transactionID=rand();
+    switch (e) {
+    case EVENT_START:
+        return STATE_SEND_DSA_REQ;
+    default:
+        CASE_IGNORE(e);
+    }
+}
+
+// Send DSA-REQ state
+FsmStateType WMaxFlowSS::onEnterState_SendDsaReq(Fsm * fsm) {
+    WMaxMsgDsaReq *msg = new WMaxMsgDsaReq();
+    WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    msg->setName("DSA-REQ");
+    msg->setTransactionID(flow->transactionID);
+    flow->qos.msr=800000;
+    msg->setQosArraySize(1);
+    msg->setQos(0,flow->qos);
+    WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
+    ctrlSS->send(msg, "macOut");
+    return fsm->State();
+}
+
+// Waiting for DSX-RVD state
+FsmStateType WMaxFlowSS::onEventState_WaitingDsxRvd(Fsm * fsm, FsmEventType e, cMessage * msg) {
+    switch (e) {
+    case EVENT_DSX_RVD_RECEIVED:
+        return STATE_WAITING_DSA_RSP;
+    default:
+        CASE_IGNORE(e);
+    }
+}
+
+// Waiting for DSA-RSP state
+FsmStateType WMaxFlowSS::onEventState_WaitingDsaRsp(Fsm * fsm, FsmEventType e, cMessage * msg) {
+    WMaxMsgDsaRsp *dsarsp = dynamic_cast<WMaxMsgDsaRsp*>(msg);
+    WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    flow->cid = dsarsp->getCid();
+    switch (e) {
+    case EVENT_DSA_RSP_RECEIVED:
+        return STATE_SEND_DSA_ACK;
+    default:
+        CASE_IGNORE(e);
+    }
+}
+
+// Send DSA-ACK state
+FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
+    WMaxMsgDsaAck *msg = new WMaxMsgDsaAck();
+    WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    msg->setName("DSA-ACK");
+    msg->setTransactionID(flow->transactionID);
+    msg->setQosArraySize(1);
+    msg->setQos(0,flow->qos);
+    WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
+    ctrlSS->send(msg, "macOut");
+    return fsm->State();
+}
+
+// Operational state
+FsmStateType WMaxFlowSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage * msg) {
+
 }
 

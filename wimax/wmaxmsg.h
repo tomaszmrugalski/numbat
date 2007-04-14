@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <omnetpp.h>
 
-
 typedef enum {
     WMAX_ULMAP_UIUC_FAST_FEEDBACK = 0,
     WMAX_ULMAP_UIUC_DATA_1    = 1,
@@ -23,6 +22,7 @@ typedef enum {
     WMAX_ULMAP_UIUC_CDMA_ALLOC= 14,
     WMAX_ULMAP_UIUC_EXTENDED  = 15
 } WMaxUlMapUiuc;
+
 
 /* Information Element (simplified version) */
 typedef struct  {
@@ -91,5 +91,11 @@ typedef struct {
 typedef struct {
     uint8_t bsId[6];
 } WMaxBSFull;
+
+
+typedef struct {
+    //WMaxConnType connType;
+    uint32_t msr;
+} WMaxQos;
 
 #endif

@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnetpp-3.3/bin/nedtool
+NEDC=/usr/local/omnetpp/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -39,7 +39,7 @@ AR=ar cr
 SHLIB_LD=g++ -shared 
 MAKEDEPEND=opp_makedep -Y --objdirtree
 
-CFLAGS=-O2 -DNDEBUG=1 -g   -DWITH_PARSIM -DWITH_NETBUILDER
+CFLAGS=-O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
 LDFLAGS= -Wl,--export-dynamic
 EXE_SUFFIX=
@@ -47,12 +47,12 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnetpp-3.3/include
-OMNETPP_LIB_DIR=/home/thomson/omnetpp-3.3/lib
+OMNETPP_INCL_DIR=/usr/local/omnetpp/include
+OMNETPP_LIB_DIR=/usr/local/omnetpp/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
-XML_LIBS=
+XML_LIBS=-lxml2
 SYS_LIBS=-ldl -lstdc++ 
 SYS_LIBS_PURE=-ldl -lsocket -lnsl -lm $(shell $(CXX) -print-file-name=libstdc++.a)
 
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o SS_n.o common_n.o physim_n.o wmaxmsg_m.o AirDummy.o    fsm.o ipv6node.o  wmaxctrl.o wmaxmac.o  wmaxphy.o
+OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o fsm.o ipv6node.o wmaxctrl.o wmaxmac.o wmaxphy.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -111,12 +111,6 @@ BS_n.o: BS_n.cc
 BS_n.cc: BS.ned
 	$(NEDC) $(INCLUDE_PATH) BS.ned
 
-SS_n.o: SS_n.cc
-	$(CXX) -c $(NEDCOPTS) SS_n.cc
-
-SS_n.cc: SS.ned
-	$(NEDC) $(INCLUDE_PATH) SS.ned
-
 common_n.o: common_n.cc
 	$(CXX) -c $(NEDCOPTS) common_n.cc
 
@@ -128,6 +122,12 @@ physim_n.o: physim_n.cc
 
 physim_n.cc: physim.ned
 	$(NEDC) $(INCLUDE_PATH) physim.ned
+
+SS_n.o: SS_n.cc
+	$(CXX) -c $(NEDCOPTS) SS_n.cc
+
+SS_n.cc: SS.ned
+	$(NEDC) $(INCLUDE_PATH) SS.ned
 
 wmaxmsg_m.o: wmaxmsg_m.cc
 	$(CXX) -c $(NEDCOPTS) wmaxmsg_m.cc
@@ -192,4 +192,18 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
+AirDummy.o: AirDummy.cc \
+  AirDummy.h
+fsm.o: fsm.cc \
+  fsm.h
+ipv6node.o: ipv6node.cc \
+  ipv6node.h
+wmaxctrl.o: wmaxctrl.cc \
+  wmaxctrl.h \
+  fsm.h
+wmaxmac.o: wmaxmac.cc \
+  wmaxmac.h \
+  wmaxctrl.h \
+  fsm.h
+wmaxphy.o: wmaxphy.cc \
+  wmaxphy.h

@@ -5,6 +5,7 @@ cplusplus {{
 struct WMaxUlMapIE;
 struct WMaxDlMapIE;
 struct WMaxBSFull;
+struct WMaxQos;
 
 // ********************************************************************************
 // *** real WiMAX MAC messages ****************************************************
@@ -96,6 +97,41 @@ message WMaxMsgBWR
 
 }
 
+// Table 38
+message WMaxMsgDsaReq
+{
+fields:
+    int transactionID;
+    WMaxQos qos[];
+}
+
+// Table 56
+message WMaxMsgDsxRvd
+{
+fields:
+    int transactionID;
+    int confirmationCode; // Table 384
+}
+
+// Table 39
+message WMaxMsgDsaRsp
+{
+fields:
+    int transactionID;
+    int confirmationCode; // Table 384
+    WMaxQos qos[];
+    int cid;
+}
+
+// Table 40
+message WMaxMsgDsaAck
+{
+fields:
+    int transactionID;
+    int confirmationCode; // Table 384
+    WMaxQos qos[];
+}
+
 // ********************************************************************************
 // *** fake messages used to communicate between modules **************************
 // ********************************************************************************
@@ -105,3 +141,9 @@ message WMaxPhyDummyFrameStart
 {
 
 };
+
+message WMaxCtrlFlowCreationStart
+{
+//fields:
+//    int gateIndex;
+}
