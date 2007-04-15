@@ -187,6 +187,7 @@ class WMaxFlowSS : public Fsm
 public:
     WMaxFlowSS(Fsm * fsm);
     int cid;
+    int gate;
     int transactionID;
     WMaxQos qos;
     void handleMessage(cMessage *msg);

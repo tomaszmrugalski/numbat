@@ -144,6 +144,15 @@ message WMaxPhyDummyFrameStart
 
 message WMaxCtrlFlowCreationStart
 {
-//fields:
-//    int gateIndex;
+fields:
+    int gateIndex;
+    WMaxQos qos[];
+}
+
+message WMaxMacAddConn
+{
+fields:
+    int gateIndex;
+    int cid;
+    WMaxQos qos[];
 }

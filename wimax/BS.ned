@@ -37,12 +37,12 @@ module BS
             display: "i=block/control,#40e221;p=128,144;q=SendQueue";
         bsIPv6: IPv6Node;
             display: "i=block/app,#40e221;p=144,48;tx=Tx,rx";
-        bsIPv6_1: IPv6Node;
-           parameters:
-                BurstInterval = 0.027, // TBD
-                BurstSize = 1, // TBD
-                BurstPacketSize = 400; // TBD
-            display: "i=block/app,#40e221;p=48,48"; 
+//        bsIPv6_1: IPv6Node;
+//           parameters:
+//                BurstInterval = 0.027, // TBD
+//                BurstSize = 1, // TBD
+//                BurstPacketSize = 400; // TBD
+//            display: "i=block/app,#40e221;p=48,48"; 
         WMaxCtrlBS: WMaxCtrlBS;
             display: "i=block/cogwheel,#40e221;p=216,136";
     connections:
@@ -54,8 +54,8 @@ module BS
         bsIPv6.ipOut --> bsMac.macIn++;
         bsMac.macOut++ --> bsIPv6.ipIn;
 
-        bsIPv6_1.ipOut --> bsMac.macIn++;
-        bsMac.macOut++ --> bsIPv6_1.ipIn;
+//        bsIPv6_1.ipOut --> bsMac.macIn++;
+//        bsMac.macOut++ --> bsIPv6_1.ipIn;
 
 
         bsMac.macOut++ --> WMaxCtrlBS.macIn;

@@ -56,13 +56,13 @@ using namespace std;
 /*** STRUCTURES ***********************************************/
 /**************************************************************/
 
-typedef enum
-{
-    WMAX_CONN_TYPE_BE,    // best effort
-    WMAX_CONN_TYPE_RTPS,
-    WMAX_CONN_TYPE_NRTPS, // Non-Real Time Packet Switched
-    WMAX_CONN_TYPE_UGS    // Unsolicited Grant Interval
-} WMaxConnType;
+// typedef enum
+// {
+//     WMAX_CONN_TYPE_BE,    // best effort
+//     WMAX_CONN_TYPE_RTPS,
+//     WMAX_CONN_TYPE_NRTPS, // Non-Real Time Packet Switched
+//     WMAX_CONN_TYPE_UGS    // Unsolicited Grant Interval
+// } WMaxConnType;
 
 typedef enum
 {

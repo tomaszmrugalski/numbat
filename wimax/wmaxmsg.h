@@ -4,6 +4,15 @@
 #include <stdint.h>
 #include <omnetpp.h>
 
+typedef enum
+{
+    WMAX_CONN_TYPE_BE,    // best effort
+    WMAX_CONN_TYPE_RTPS,
+    WMAX_CONN_TYPE_NRTPS, // Non-Real Time Packet Switched
+    WMAX_CONN_TYPE_UGS    // Unsolicited Grant Interval
+} WMaxConnType;
+
+
 typedef enum {
     WMAX_ULMAP_UIUC_FAST_FEEDBACK = 0,
     WMAX_ULMAP_UIUC_DATA_1    = 1,
@@ -94,7 +103,7 @@ typedef struct {
 
 
 typedef struct {
-    //WMaxConnType connType;
+    WMaxConnType connType;
     uint32_t msr;
 } WMaxQos;
 

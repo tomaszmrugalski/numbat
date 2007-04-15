@@ -29,7 +29,7 @@ WMaxMac::WMaxMac()
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
-    conn.gateIndex = GateIndex++;
+//    conn.gateIndex = GateIndex++;
 
     stringstream tmp;
     
@@ -57,8 +57,10 @@ bool WMaxMac::addConn(WMaxConn conn)
     if (dynamic_cast<WMaxCtrlSS*>(owner)) {
 	conn.controlConn = true;
     }
-    if (dynamic_cast<WMaxCtrlBS*>(owner)) {
+    else if (dynamic_cast<WMaxCtrlBS*>(owner)) {
 	conn.controlConn = true;
+    } else {
+        conn.controlConn = false;
     }
     
     ev << tmp.str() << " gateIndex=" << conn.gateIndex << ", controlConn=" << (conn.controlConn?"YES":"NO") 
@@ -571,6 +573,7 @@ void WMaxMac::handleUlMessage(cMessage *msg)
 	send(msg, "macOut", gateIndex);
     } else {
 	ev << fullName() << ": Unable to find connection for CID=" << cid << ", message dropped." << endl;
+        delete msg;
     }
 }
 
@@ -594,12 +597,14 @@ void WMaxMacSS::initialize()
 
 // Best Effort
 
-    for (int i=0; i<conns; i++) {
+//     for (int i=0; i<conns; i++) {
+    int i = conns - 1; // control connection
     WMaxConn conn;
     CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = sfid++;
-    conn.cid  = cid++;
+//     conn.cid  = cid++;
+    conn.cid = 1025; /// @todo generate CID
     conn.gateIndex = i;
     conn.qos.be.msr = 80000; // 100kbps
     conn.qos.be.reqbw = 0;
@@ -611,7 +616,8 @@ void WMaxMacSS::initialize()
     std::string name = "SednQueue, CID: " + st_cid;
     conn.queue = new cQueue(name.c_str());
     addConn(conn);
-    }
+//     }
+
 
 // UGS
 
@@ -630,6 +636,30 @@ void WMaxMacSS::initialize()
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
     cGate * gate = msg->arrivalGate();
+
+    if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
+        WMaxQos qos = addconn->getQos(0);
+
+        WMaxConn conn;
+        conn.type= qos.connType;
+        conn.sfid = 2; /// @todo set sfid
+        conn.cid  = addconn->getCid();
+        conn.gateIndex = addconn->getGateIndex();
+        conn.qos.be.msr = qos.msr; // 100kbps
+        conn.qos.be.reqbw = 0;
+        conn.bandwidth = 0;
+        std::stringstream ss_cid;
+        std::string st_cid;
+        ss_cid << conn.cid;
+        ss_cid >> st_cid;
+        std::string name = "SednQueue, CID: " + st_cid;
+        conn.queue = new cQueue(name.c_str());
+        addConn(conn);
+
+        delete msg;
+        return;
+    }
+
     ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
     if (!strcmp(gate->fullName(),"phyIn")) {
         //BS -> SS
@@ -656,6 +686,7 @@ void WMaxMac::handleDlMessage(cMessage *msg)
     }
     if (it==Conns.end()) {
 	ev << fullName() << ": Unable to find connection for gateIndex=" << gate->index() << endl;
+        delete msg;
 	return;
     }
 

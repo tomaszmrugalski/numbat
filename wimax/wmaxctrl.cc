@@ -74,7 +74,7 @@ void WMaxCtrlSS::fsmInit() {
     eventVerify();
 
     TIMER(NetworkEntry, 0.1, "Start Network entry");
-    TIMER(Handover,     0.2, "Start handover");
+    TIMER(Handover,     0.3, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
@@ -343,6 +343,18 @@ FsmStateType WMaxCtrlSS::onEnterState_InitiateSvcFlowCreation(Fsm * fsm) {
     WMaxCtrlSS *ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     
     flow = new WMaxFlowSS(fsm);
+
+/// @todo WMacCtrlFlowCreationStart should be send by WMaxMac
+    WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
+    msg->setGateIndex(0);
+    WMaxQos qos;
+    qos.connType = WMAX_CONN_TYPE_BE;
+    qos.msr = 80000;
+    msg->setQosArraySize(1);
+    msg->setQos(0,qos);
+    msg->setGateIndex(0);
+    flow->handleMessage(msg);
+
     ss->serviceFlows.push_back(flow);
     
     return fsm->State();
@@ -560,6 +572,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgDsaReq*>(msg)) {
+        ev << fullName() << ": DSA-REQ received, sending DSX-RVD and DSA-RSP." << endl;
         WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
 
         WMaxMsgDsxRvd *dsxrvd = new WMaxMsgDsxRvd();
@@ -580,6 +593,12 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         return;
     }
 
+    if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
+        ev << fullName() << ": DSA-ACK received." << endl;
+        delete msg;
+        return;
+    }
+
     ev << "Received " << msg->fullName() << " message." << endl;
 }
 
@@ -593,8 +612,8 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 WMaxFlowSS::WMaxFlowSS(Fsm * fsm) {
     parentFsm = fsm;
     fsmInit();
-    WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
-    handleMessage(msg);
+//     WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
+//     handleMessage(msg);
 }
 
 void WMaxFlowSS::fsmInit() {
@@ -640,6 +659,9 @@ void WMaxFlowSS::handleMessage(cMessage *msg) {
 // Start state
 FsmStateType WMaxFlowSS::onEventState_Start(Fsm * fsm, FsmEventType e, cMessage * msg){
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    WMaxCtrlFlowCreationStart *flowcrstart = dynamic_cast<WMaxCtrlFlowCreationStart*>(msg);
+    flow->qos = flowcrstart->getQos(0);
+    flow->gate = flowcrstart->getGateIndex();
     flow->transactionID=rand();
     switch (e) {
     case EVENT_START:
@@ -655,7 +677,7 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaReq(Fsm * fsm) {
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
     msg->setName("DSA-REQ");
     msg->setTransactionID(flow->transactionID);
-    flow->qos.msr=800000;
+    //flow->qos.msr=800000;
     msg->setQosArraySize(1);
     msg->setQos(0,flow->qos);
     WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
@@ -688,14 +710,24 @@ FsmStateType WMaxFlowSS::onEventState_WaitingDsaRsp(Fsm * fsm, FsmEventType e, c
 
 // Send DSA-ACK state
 FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
-    WMaxMsgDsaAck *msg = new WMaxMsgDsaAck();
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+    WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
+
+    WMaxMsgDsaAck *msg = new WMaxMsgDsaAck();
     msg->setName("DSA-ACK");
     msg->setTransactionID(flow->transactionID);
     msg->setQosArraySize(1);
     msg->setQos(0,flow->qos);
-    WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
     ctrlSS->send(msg, "macOut");
+
+    WMaxMacAddConn *addConn = new WMaxMacAddConn();
+    addConn->setName("Add connection");
+    addConn->setGateIndex(flow->gate);
+    addConn->setCid(flow->cid);
+    addConn->setQosArraySize(1);
+    addConn->setQos(0,flow->qos);
+    ctrlSS->send(addConn, "macOut");
+
     return fsm->State();
 }
 
