@@ -287,7 +287,8 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 	    return STATE_SEND_SBC_REQ;
 	} else {
 	    ev << ss->fullName() << ":Network entry type: reentry, switching to 'OPERATIONAL'." << endl;
-	    return STATE_OPERATIONAL;
+// 	    return STATE_OPERATIONAL;
+ 	    return STATE_INITIATE_SVC_FLOW_CREATION;
 	}
     default:
 	CASE_IGNORE(e);
@@ -344,7 +345,7 @@ FsmStateType WMaxCtrlSS::onEnterState_InitiateSvcFlowCreation(Fsm * fsm) {
     
     flow = new WMaxFlowSS(fsm);
 
-/// @todo WMacCtrlFlowCreationStart should be send by WMaxMac
+/// @todo WMacCtrlFlowCreationStart should be send by WMaxMac ??
     WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
     msg->setGateIndex(0);
     WMaxQos qos;
@@ -398,6 +399,8 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
     hoInd->setName("HO-IND");
     fsm->send(hoInd, "macOut");
+    WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
+    fsm->send(terminateAll, "macOut");
     return fsm->State();
 }
     
@@ -491,7 +494,7 @@ void WMaxCtrlBS::fsmInit()
 
 void WMaxCtrlBS::initialize()
 {
-
+    cid = 1024;
 }
 
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
@@ -575,6 +578,8 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         ev << fullName() << ": DSA-REQ received, sending DSX-RVD and DSA-RSP." << endl;
         WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
 
+        Transaction Trans;
+
         WMaxMsgDsxRvd *dsxrvd = new WMaxMsgDsxRvd();
         dsxrvd->setName("DSX-RVD");
         dsxrvd->setTransactionID(dsareq->getTransactionID());
@@ -584,10 +589,16 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         WMaxMsgDsaRsp *dsarsp = new WMaxMsgDsaRsp();
         dsarsp->setName("DSA-RSP");
         dsarsp->setTransactionID(dsareq->getTransactionID());
+        Trans.TransactionID = dsareq->getTransactionID();
         dsarsp->setQosArraySize(1);
         dsarsp->setQos(0,dsareq->getQos(0));
-        dsarsp->setCid(1024); /// @todo generate CID
+        Trans.qos = dsareq->getQos(0);
+        dsarsp->setCid(cid); /// @todo generate CID
+        Trans.cid = cid;
+        cid++;
         send(dsarsp, "macOut");
+
+        Transactions.push_back(Trans);
 
         delete msg;
         return;
@@ -595,6 +606,25 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
         ev << fullName() << ": DSA-ACK received." << endl;
+        WMaxMsgDsaAck *dsaack = dynamic_cast<WMaxMsgDsaAck*>(msg);
+
+        list<Transaction>::iterator it;
+        for (it = Transactions.begin(); it!=Transactions.end(); it++) {
+        if (it->TransactionID == dsaack->getTransactionID()) {
+            ev << fullName() << ": create new connection." << endl;
+            WMaxMacAddConn *addConn = new WMaxMacAddConn();
+            addConn->setName("Add connection");
+            addConn->setGateIndex(0);
+            addConn->setCid(it->cid);
+            addConn->setQosArraySize(1);
+            addConn->setQos(0,it->qos);
+            send(addConn, "macOut");
+
+            Transactions.erase(it);
+            break;
+            }
+        }
+
         delete msg;
         return;
     }

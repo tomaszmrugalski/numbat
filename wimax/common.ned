@@ -13,3 +13,12 @@ simple IPv6Node
         out: ipOut;
         in: ipIn;
 endsimple
+
+simple WMaxMacCS
+    gates:
+        in: macIn;
+        out: macOut;
+        in: ipIn[];
+        out: ipOut[];
+endsimple
+

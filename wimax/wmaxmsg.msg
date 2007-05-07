@@ -156,3 +156,8 @@ fields:
     int cid;
     WMaxQos qos[];
 }
+
+message WMaxMacTerminateAllConns
+{
+
+};

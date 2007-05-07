@@ -26,6 +26,13 @@ using namespace std;
 /*** STRUCTURES ***********************************************/
 /**************************************************************/
 
+typedef struct {
+    int TransactionID;
+    int cid;
+    WMaxQos qos;
+} Transaction;
+
+
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
@@ -176,6 +183,9 @@ class WMaxCtrlBS : public Fsm
 {
 public:
     WMaxCtrlBS();
+private:
+    list<Transaction> Transactions;
+    int cid;
 protected:
     void fsmInit();
     virtual void initialize();
@@ -226,5 +236,4 @@ protected:
 
 
 /// @todo class WMaxFlowBS
-
 #endif

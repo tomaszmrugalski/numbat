@@ -29,8 +29,6 @@ WMaxMac::WMaxMac()
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
-//    conn.gateIndex = GateIndex++;
-
     stringstream tmp;
     
     ev << fullName() << ": adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
@@ -173,17 +171,24 @@ void WMaxMacBS::initialize()
     ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
 
 // Best Effort
-//    int i=0;
-    for (int i=0; i<conns; i++) {
-	WMaxConn conn;
-	CLEAR(&conn);
-	conn.type= WMAX_CONN_TYPE_BE;
-	conn.sfid = sfid++;
-	conn.cid  = cid++;
-	conn.gateIndex = i;
-	conn.qos.be.msr = 80000; // 100kbps
-	addConn(conn);
-    }
+    int i = conns - 1; // control connection
+    WMaxConn conn;
+    CLEAR(&conn);
+    conn.type= WMAX_CONN_TYPE_BE;
+    conn.sfid = sfid++;
+//     conn.cid  = cid++;
+    conn.cid = 1023; /// @todo generate CID
+    conn.gateIndex = i;
+    conn.qos.be.msr = 80000; // 100kbps
+    conn.qos.be.reqbw = 0;
+    conn.bandwidth = 0;
+    std::stringstream ss_cid;
+    std::string st_cid;
+    ss_cid << conn.cid;
+    ss_cid >> st_cid;
+    std::string name = "SednQueue, CID: " + st_cid;
+    conn.queue = new cQueue(name.c_str());
+    addConn(conn);
 
 // UGS
 /*    for (int i=1; i<conns; i++) {
@@ -206,6 +211,31 @@ void WMaxMacBS::handleMessage(cMessage *msg)
 	return;
     }
 
+    if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
+        WMaxQos qos = addconn->getQos(0);
+
+        WMaxConn conn;
+        conn.type= qos.connType;
+        conn.sfid = 2; /// @todo set sfid
+        conn.cid  = addconn->getCid();
+        conn.gateIndex = addconn->getGateIndex();
+        conn.qos.be.msr = qos.msr; // 100kbps
+        conn.qos.be.reqbw = 0;
+        conn.bandwidth = 0;
+        std::stringstream ss_cid;
+        std::string st_cid;
+        ss_cid << conn.cid;
+        ss_cid >> st_cid;
+        std::string name = "SednQueue, CID: " + st_cid;
+        conn.queue = new cQueue(name.c_str());
+        addConn(conn);
+
+        send(msg, "macOut", 0);  // send add conn msg to CS
+
+        //delete msg;
+        return;
+    }
+
     cGate * gate = msg->arrivalGate();
     if (!strcmp(gate->fullName(),"phyIn")) {
 	handleUlMessage(msg);
@@ -221,7 +251,7 @@ void WMaxMacBS::handleUlMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgCDMA*>(msg))
     {
         if (dynamic_cast<WMaxMsgCDMA*>(msg)->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
-            ev << fullName() << " Recived CDMA code" << endl;
+            ev << fullName() << " Received CDMA code" << endl;
             CDMAQueue.insert(msg);
             return;
         }
@@ -604,7 +634,7 @@ void WMaxMacSS::initialize()
     conn.type= WMAX_CONN_TYPE_BE;
     conn.sfid = sfid++;
 //     conn.cid  = cid++;
-    conn.cid = 1025; /// @todo generate CID
+    conn.cid = 1023; /// @todo generate CID
     conn.gateIndex = i;
     conn.qos.be.msr = 80000; // 100kbps
     conn.qos.be.reqbw = 0;
@@ -637,6 +667,21 @@ void WMaxMacSS::handleMessage(cMessage *msg)
 {
     cGate * gate = msg->arrivalGate();
 
+    if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
+        ev << fullName() << ": ALL CONNECTION TERMINATED" << endl;
+
+        list<WMaxConn>::iterator it;
+        for (it = Conns.begin(); it!=Conns.end(); it++) {
+            it->queue->clear();
+            delete it->queue;
+        }
+        Conns.clear();
+        send(msg, "macOut", 0);
+        initialize();
+        return;
+    }
+
+
     if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
         WMaxQos qos = addconn->getQos(0);
 
@@ -656,7 +701,9 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         conn.queue = new cQueue(name.c_str());
         addConn(conn);
 
-        delete msg;
+        send(msg, "macOut", 0);  // send add conn msg to CS
+
+        //delete msg;
         return;
     }
 
@@ -674,29 +721,41 @@ void WMaxMacSS::handleMessage(cMessage *msg)
 
 void WMaxMac::handleDlMessage(cMessage *msg)
 {
+
+
+/// @todo find proper connection 
+     cGate * gate = msg->arrivalGate();
+     list<WMaxConn>::iterator it;
+
+    // message from WMaxCtrl - add header
+    for (it = Conns.begin(); it!=Conns.end(); it++) {
+	if ((it->gateIndex == gate->index()) && (it->controlConn == true)) {
+	    WMaxMacHeader * hdr = new WMaxMacHeader();
+	    hdr->cid = it->cid;
+	    msg->setControlInfo(hdr);
+	    break;
+	}
+    }
+
     WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
 
     // find proper connection, not just get first one
-    cGate * gate = msg->arrivalGate();
-    list<WMaxConn>::iterator it;
     for (it = Conns.begin(); it!=Conns.end(); it++) {
-	if (it->gateIndex == gate->index()) {
+	if (it->cid == hdr->cid) {
 	    break;
 	}
     }
     if (it==Conns.end()) {
-	ev << fullName() << ": Unable to find connection for gateIndex=" << gate->index() << endl;
+	ev << fullName() << ": Unable to find connection for CID=" << hdr->cid << endl;
         delete msg;
 	return;
     }
 
-    hdr->cid = it->cid;
-    msg->setControlInfo(hdr);
-
 if (!strcmp(fullName(), "ssMac")) {
     switch(it->type) {
     case WMAX_CONN_TYPE_BE:
-        ev << fullName() << ": Resived BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
+        ev << fullName() << ": Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
         it->qos.be.reqbw += msg->length();
         if(msg->length() == 0) { /// @todo sending messages with length == 0
             it->qos.be.reqbw += 12;
@@ -713,6 +772,7 @@ if (!strcmp(fullName(), "ssMac")) {
         ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
         SendQueue.insert(msg);
 }
+
 }
 
 void WMaxMacSS::handleUlMessage(cMessage *msg)
