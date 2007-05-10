@@ -21,6 +21,15 @@ simple WMaxMacBS
 endsimple
 
 simple WMaxCtrlBS
+    parameters:
+        MinDelayCdma: numeric,
+        MaxDelayCdma: numeric,
+        MinDelaySbc: numeric,
+        MaxDelaySbc: numeric,
+        MinDelayReg: numeric,
+        MaxDelayReg: numeric,
+        MinDelayHoRsp: numeric,
+        MaxDelayHoRsp: numeric;
     gates:
         out: macOut;
         in: macIn;
@@ -38,17 +47,16 @@ module BS
             display: "i=block/control,#40e221;p=152,200;q=SendQueue";
         bsIPv6: IPv6Node;
             display: "i=block/app,#40e221;p=80,56;tx=Tx,rx";
-//         bsIPv6_1: IPv6Node;
-//             parameters:
-//                 BurstInterval = 0.027, // TBD
-//                 BurstSize = 1, // TBD
-//                 BurstPacketSize = 400; // TBD
-//             display: "i=block/app,#40e221;p=232,80";
+        //         bsIPv6_1: IPv6Node;
+        //             parameters:
+        //                 BurstInterval = 0.027, // TBD
+        //                 BurstSize = 1, // TBD
+        //                 BurstPacketSize = 400; // TBD
+        //             display: "i=block/app,#40e221;p=232,80";
         WMaxCtrlBS: WMaxCtrlBS;
             display: "i=block/cogwheel,#40e221;p=240,160";
         bsCS: WMaxMacCS;
             display: "p=152,120;i=block/classifier,#40e221";
-
     connections:
 
         bsMac.phyOut --> bsPhy.phyIn;
@@ -57,14 +65,14 @@ module BS
         bsCS.ipOut++ --> bsIPv6.ipIn;
         bsIPv6.ipOut --> bsCS.ipIn++;
 
-//         bsCS.ipOut++ --> bsIPv6_1.ipIn;
-//         bsIPv6_1.ipOut --> bsCS.ipIn++;
+                                      //         bsCS.ipOut++ --> bsIPv6_1.ipIn;
+                                      //         bsIPv6_1.ipOut --> bsCS.ipIn++;
 
         bsMac.macOut++ --> bsCS.macIn;
         bsCS.macOut --> bsMac.macIn++;
 
-//        bsMac.macOut++ --> bsIPv6.ipIn;
-//        bsIPv6.ipOut --> bsMac.macIn++;
+                                       //        bsMac.macOut++ --> bsIPv6.ipIn;
+                                       //        bsIPv6.ipOut --> bsMac.macIn++;
 
         bsMac.macOut++ --> WMaxCtrlBS.macIn;
         WMaxCtrlBS.macOut --> bsMac.macIn++;

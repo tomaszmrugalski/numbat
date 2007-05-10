@@ -9,9 +9,15 @@
  */
 
 #include <vector>
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <fstream>
 
 #ifndef FSM_H
 #define FSM_H
+
+using namespace std;
 
 #include <omnetpp.h>
 
@@ -33,6 +39,9 @@
 #define IF_TIMER(name, event)                                  \
     if (msg==Timer##name)                                      \
        onEvent(event, msg);
+
+#define STATIC_TIMER_START(obj, name) \
+    obj->scheduleAt(obj->simTime() + obj->Timer##name##Value, obj->Timer##name);
 
 #define CASE_IGNORE(e)                                                 \
 	ev << fsm->fullName() << ": event "                     \
@@ -80,10 +89,13 @@ public:
 
 class Fsm : public cSimpleModule {
 public:
+    Fsm();
     FsmStateType State() { return CurrentState; }
     FsmState * CurrentStateGet() { return &States[CurrentState]; }
     std::vector<FsmState> States;
     std::vector<FsmEvent> Events;
+
+    void sendMsg(cMessage * msg, char * paramName, const char * gateName);
 
 protected:
     virtual void fsmInit() = 0;
@@ -102,7 +114,11 @@ protected:
     int EventsCnt;
 
     FsmStateType CurrentState;
+
+private:
 };
+
+
 
 #endif
 

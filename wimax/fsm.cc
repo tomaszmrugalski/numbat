@@ -2,10 +2,14 @@
 #include <iostream>
 #include <sstream>
 #include "fsm.h"
+#include "logger.h"
 
 /********************************************************************************/
 /*** Generic FSM class **********************************************************/
 /********************************************************************************/
+Fsm::Fsm()
+{
+}
 
 std::string FsmEvent::fullName() {
     std::ostringstream x;
@@ -85,7 +89,6 @@ void Fsm::statesEventsInit(int statesCnt, int eventsCnt, FsmStateType state)
 	Events.push_back( *e );
     }
 
-    ev << fullName() << ": " << statesCnt << " state(s), " << eventsCnt << " event(s) inited, initial state:" << state << endl;
     StatesCnt = statesCnt;
     EventsCnt = eventsCnt;
 
@@ -127,7 +130,7 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
     }
     FsmStateType newState;
 
-    ev << fullName() << ": Event " << Events[e].fullName() << " received." << endl;
+    Log(Debug) << "Event " << Events[e].fullName() << " received." << LogEnd;
 
     newState = States[CurrentState].onEvent(this, e, msg);
     if (newState>StatesCnt) {
@@ -136,8 +139,8 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
     }
 
     if (newState != CurrentState) {
-	ev << fullName() << ": State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
-	   << ", triggered by the " << Events[e].fullName().c_str() << " event." << endl;
+	Log(Debug) << "State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
+		   << ", triggered by the " << Events[e].fullName().c_str() << " event." << LogEnd;
 	stateSet(newState);
     }
 }
@@ -170,8 +173,8 @@ void Fsm::stateSet(FsmStateType newState)
 
 	if (to->transitive) {
 	    newState = to->transitiveTo;
-	    ev << fullName() << ": State change: " << States[State()].fullName() << "->" << States[newState].fullName() 
-	       << ", because " << States[State()].fullName() << " is transitive." << endl;
+	    Log(Debug) << "State change: " << States[State()].fullName() << "->" << States[newState].fullName() 
+		       << ", because " << States[State()].fullName() << " is transitive." << LogEnd;
 	}
 	transitionsCnt++;
 	if (transitionsCnt > FSM_MAX_TRANSITIONS)
@@ -185,4 +188,20 @@ void Fsm::stringUpdate()
     sprintf(buf, "state:%s", States[CurrentState].fullName().c_str());
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);
+}
+
+void Fsm::sendMsg(cMessage * msg, char * paramName, const char * gateName)
+{
+    char buf[80];
+    sprintf(buf, "Min%s", paramName);
+    double min = (double)par(buf);
+
+    sprintf(buf, "Max%s", paramName);
+    double max = (double)par(buf);
+
+    double delay = min + exponential(max-min);
+
+    Log(Debug) << "Sending " << msg->name() << " in " << delay << "secs." << LogEnd;
+
+    sendDelayed(msg, delay, gateName);
 }

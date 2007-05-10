@@ -13,8 +13,7 @@
 #include <vector>
 #include "wmaxctrl.h"
 #include "wmaxmsg_m.h"
-
-#define Log ev << fsm->fullName() << ":" 
+#include "logger.h"
 
 /********************************************************************************/
 /*** WMax Ctrl SS ****************************************************************/
@@ -44,7 +43,7 @@ void WMaxCtrlSS::fsmInit() {
 
     stateInit(STATE_INITIATE_SVC_FLOW_CREATION, "Initiate service flow creation", STATE_OPERATIONAL, onEnterState_InitiateSvcFlowCreation);
 
-    stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational);
+    stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational, onEnterState_Operational, 0);
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
     stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", STATE_HANDOVER_COMPLETE, onEnterState_SendHoInd);
@@ -86,10 +85,6 @@ void WMaxCtrlSS::initialize() {
     fsmInit();
     // uncomment ONLY ONE of the following:
     TIMER_START(NetworkEntry);  // Option 1: normal network entry (after SS boot)
-    //TIMER_START(Reentry);     // Option 2: network reentry (at target BS)
-    
-    // Option 1+bonus: if NetworkEntry is chosen, it is also possible, to perform handover
-    TIMER_START(Handover);
 }
 
 /** 
@@ -283,11 +278,10 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
 	if (ss->neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL) {
-	    ev << ss->fullName() << ": Network entry type: initial, switching to 'send SBC-REQ'." << endl;
+	    SLog(ss, Debug) << ": Network entry type: initial, switching to 'send SBC-REQ'." << LogEnd;
 	    return STATE_SEND_SBC_REQ;
 	} else {
-	    ev << ss->fullName() << ":Network entry type: reentry, switching to 'OPERATIONAL'." << endl;
-// 	    return STATE_OPERATIONAL;
+	    SLog(ss, Debug) << ":Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
  	    return STATE_INITIATE_SVC_FLOW_CREATION;
 	}
     default:
@@ -361,6 +355,13 @@ FsmStateType WMaxCtrlSS::onEnterState_InitiateSvcFlowCreation(Fsm * fsm) {
     return fsm->State();
 }
 
+FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
+{
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    //ss->scheduleAt(ss->simTime() + ss->TimerHandoverValue, ss->TimerHandover);
+    STATIC_TIMER_START(ss, Handover);     // Option 2: network reentry (at target BS)
+}
+
 
 FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
@@ -414,7 +415,7 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    Log << " Sending CDMA code" << endl;
+    ev << fsm->fullName() << ":" << " Sending CDMA code" << endl;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
 	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
@@ -472,9 +473,6 @@ void WMaxCtrlSS::reConnect() {
 
     // after reconnecting to other BS, perform Reentry, not normal entry
     neType = WMAX_CTRL_NETWORK_REENTRY; 
-
-    // uncomment this to perform another handover
-    TIMER_START(Handover);
 }
 
 /********************************************************************************/
@@ -500,44 +498,44 @@ void WMaxCtrlBS::initialize()
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
-	ev << fullName() << ": RNG-REQ received, sending RNG-RSP." << endl;
+	Log(Notice) << "RNG-REQ received, sending RNG-RSP." << LogEnd;
 	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
 	rsp->setName("RNG-RSP");
 	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-	send(rsp, "macOut");
+	sendMsg(rsp, "DelayCdma", "macOut");
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgSbcReq*>(msg)) {
-	ev << fullName() << ": SBC-REQ received, sending SBC-RSP." << endl;
+	Log(Notice) << "SBC-REQ received, sending SBC-RSP." << LogEnd;
 	WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
 	rsp->setName("SBC-RSP");
-	send(rsp, "macOut");
+	sendMsg(rsp, "DelaySbc", "macOut");
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgRegReq*>(msg)) {
-	ev << fullName() << ": REG-REQ received, sending REG-RSP." << endl;
+	Log(Notice) << "REG-REQ received, sending REG-RSP." << LogEnd;
 	WMaxMsgRegRsp * rsp = new WMaxMsgRegRsp("REG-RSP");
 	rsp->setName("REG-RSP");
-	send(rsp, "macOut");
+	sendMsg(rsp, "DelayReg", "macOut");
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgMSHOREQ*>(msg)) {
-	ev << fullName() << ":MSHO-REQ received, sending BSHO-RSP." << endl;
+	Log(Notice) << "MSHO-REQ received, sending BSHO-RSP." << LogEnd;
 	WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
 	bshoRsp->setName("BSHO-RSP");
-	send(bshoRsp, "macOut");
+	sendMsg(bshoRsp, "DelayHoRsp", "macOut");
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-	ev << fullName() << ":HO-IND received." << endl;
+	Log(Notice) << ":HO-IND received." << LogEnd;
 	delete msg;
 	return;
     }
@@ -647,6 +645,7 @@ WMaxFlowSS::WMaxFlowSS(Fsm * fsm) {
 }
 
 void WMaxFlowSS::fsmInit() {
+    setName("WMaxFlowSS");
     statesEventsInit(WMaxFlowSS::STATE_NUM, WMaxFlowSS::EVENT_NUM, STATE_START);
 
     stateInit(STATE_START, "Start", onEventState_Start);

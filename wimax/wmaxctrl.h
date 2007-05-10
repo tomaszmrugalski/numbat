@@ -128,6 +128,7 @@ protected:
     static FsmStateType onEnterState_InitiateSvcFlowCreation(Fsm * fsm);
 
     // operational state
+    static FsmStateType onEnterState_Operational(Fsm * fsm);
     static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send MSHO-REQ state
