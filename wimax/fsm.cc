@@ -100,7 +100,7 @@ bool Fsm::stateVerify() {
     bool error = false;
     for (int i=0; i<StatesCnt; i++) {
 	if (!States[i].inited) {
-	    ev << fullName() << ": State " << i << " has not been inited properly." << endl;
+	    Log(Error) << "State " << i << " has not been inited properly." << LogEnd;
 	    error = true;
 	}
     }
@@ -113,7 +113,7 @@ bool Fsm::eventVerify() {
     bool error = false;
     for (int i=0; i<EventsCnt; i++) {
 	if (!Events[i].inited) {
-	    ev << fullName() << ": Event " << i << " has not been inited properly." << endl;
+	    Log(Error) << "Event " << i << " has not been inited properly." << LogEnd;
 	    error = true;
 	}
     }

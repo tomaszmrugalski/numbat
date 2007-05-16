@@ -378,7 +378,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
     WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
     mshoReq->setName("MSHO-REQ");
-    ev << fsm->fullName() << ": Sending MSHO-REQ message." << endl;
+    SLog(fsm, Notice) << "Sending MSHO-REQ message." << LogEnd;
     fsm->send(mshoReq, "macOut");
     return fsm->State();
 }
@@ -415,7 +415,7 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    ev << fsm->fullName() << ":" << " Sending CDMA code" << endl;
+    SLog(fsm, Info) << "Sending CDMA code" << LogEnd;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
 	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
@@ -460,7 +460,7 @@ void WMaxCtrlSS::reConnect() {
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
     int nextBS = (actBS+1)%(BS->size());
-    ev << fullName() << ": Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << endl;
+    Log(Notice) << "Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << LogEnd;
     cModule *BSnext = physim->submodule("BS", nextBS);
     if (!BSnext)
 	opp_error("Unable to find BS:%d\n", nextBS);
@@ -542,11 +542,11 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
 	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
-	ev << fullName() << ": " << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
+	Log(Info) << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
 	switch (cdma->getPurpose()) {
 	case WMAX_CDMA_PURPOSE_HO_RNG:
 	{
-	    ev << ", sending Anonymous (handover) RNG-RSP." << endl;
+	    Log(Cont) << ", sending Anonymous (handover) RNG-RSP." << LogEnd;
 	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
 	    rsp->setName("Anonymous RNG-RSP");
 	    send(rsp, "macOut");
@@ -554,7 +554,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	}
 	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
 	{
-	    ev << ", sending Anonymous (initial) RNG-RSP." << endl;
+	    Log(Cont) << ", sending Anonymous (initial) RNG-RSP." << LogEnd;
 	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
 	    rsp->setName("Anonymous (initial) RNG-RSP");
 	    send(rsp, "macOut");
@@ -563,7 +563,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	case WMAX_CDMA_PURPOSE_BWR:
 	default:
 	    /// @todo - Best effort traffic.
-	    ev << ", not supported." << endl;
+	    Log(Cont) << ", not supported." << LogEnd;
 	    opp_error("That type of CDMA code is not supported yet (purpose=%d).", cdma->getPurpose());
 	    break;
 	}
@@ -573,7 +573,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgDsaReq*>(msg)) {
-        ev << fullName() << ": DSA-REQ received, sending DSX-RVD and DSA-RSP." << endl;
+        Log(Info) << "DSA-REQ received, sending DSX-RVD and DSA-RSP." << LogEnd;
         WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
 
         Transaction Trans;
@@ -603,31 +603,31 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
-        ev << fullName() << ": DSA-ACK received." << endl;
+        Log(Info) << "DSA-ACK received";
         WMaxMsgDsaAck *dsaack = dynamic_cast<WMaxMsgDsaAck*>(msg);
 
         list<Transaction>::iterator it;
         for (it = Transactions.begin(); it!=Transactions.end(); it++) {
-        if (it->TransactionID == dsaack->getTransactionID()) {
-            ev << fullName() << ": create new connection." << endl;
-            WMaxMacAddConn *addConn = new WMaxMacAddConn();
-            addConn->setName("Add connection");
-            addConn->setGateIndex(0);
-            addConn->setCid(it->cid);
-            addConn->setQosArraySize(1);
-            addConn->setQos(0,it->qos);
-            send(addConn, "macOut");
-
-            Transactions.erase(it);
-            break;
+	    if (it->TransactionID == dsaack->getTransactionID()) {
+		Log(Cont) << ", create new connection (cid=" << it->cid << ")" << LogEnd;
+		WMaxMacAddConn *addConn = new WMaxMacAddConn();
+		addConn->setName("Add connection");
+		addConn->setGateIndex(0);
+		addConn->setCid(it->cid);
+		addConn->setQosArraySize(1);
+		addConn->setQos(0,it->qos);
+		send(addConn, "macOut");
+		
+		Transactions.erase(it);
+		break;
             }
         }
-
+	
         delete msg;
         return;
     }
 
-    ev << "Received " << msg->fullName() << " message." << endl;
+    Log(Debug) << "Received " << msg->fullName() << " message." << LogEnd;
 }
 
 

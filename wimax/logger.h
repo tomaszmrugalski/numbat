@@ -27,6 +27,14 @@
 #define LOGMODE_DEFAULT LOGMODE_SIMTIME
 
 namespace logger {
+    const int Emerg=1;
+    const int Alert=2;
+    const int Crit=3;
+    const int Error=4;
+    const int Warning=5;
+    const int Notice=6;
+    const int Info=7;
+    const int Debug=8;
 
     enum Elogmode {
 	LOGMODE_FULL,
@@ -59,6 +67,7 @@ namespace logger {
     string getLogName();
     int getLogLevel();
     void setSimTime(float x);
+    bool willPrint(int x);
     
     ostream & endl (ostream & strum);
 

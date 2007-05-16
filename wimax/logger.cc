@@ -19,8 +19,15 @@
 #include <omnetpp.h>
 #include "cenvir.h"
 
-
 namespace logger {
+//    const int Emerg=1;
+//    const int Alert=2;
+//    const int Crit=3;
+//    const int Error=4;
+//    const int Warning=5;
+//    const int Notice=6;
+//    const int Info=7;
+//    const int Debug=8;
 
     string logname="Init";
     int logLevel=8;
@@ -169,6 +176,14 @@ namespace logger {
 
     void setEv(cEnvir * x) {
 	ev = x;
+    }
+
+    bool willPrint(int x) {
+	if (curLogEntry <= logLevel) {
+	    return true;
+	} else {
+	    return false;
+	}
     }
 
     void setLogMode(string x) {

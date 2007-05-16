@@ -13,8 +13,7 @@
 #include "wmaxmac.h"
 #include "wmaxmsg_m.h"
 #include "wmaxctrl.h"
-
-#define SCHED ev << fullName() << ":"
+#include "logger.h"
 
 using namespace std;
 
@@ -31,7 +30,6 @@ bool WMaxMac::addConn(WMaxConn conn)
 {
     stringstream tmp;
     
-    ev << fullName() << ": adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type=";
     switch (conn.type) {
     case WMAX_CONN_TYPE_UGS:
 	tmp << "UGS: msr=" << conn.qos.ugs.msr << ", latency=" << conn.qos.ugs.latency 
@@ -45,7 +43,7 @@ bool WMaxMac::addConn(WMaxConn conn)
 	tmp << "nrtPS: msr=" << conn.qos.nrtps.msr << ", mrr=" << conn.qos.nrtps.mrr
 	    << ", priority=" << conn.qos.nrtps.priority;
     case WMAX_CONN_TYPE_BE:
-	ev << "BestEffort: msr=" << conn.qos.be.msr;
+	tmp << "BestEffort: msr=" << conn.qos.be.msr;
 	break;
     }
     cGate *target = gate("macOut", conn.gateIndex);
@@ -60,10 +58,10 @@ bool WMaxMac::addConn(WMaxConn conn)
     } else {
         conn.controlConn = false;
     }
-    
-    ev << tmp.str() << " gateIndex=" << conn.gateIndex << ", controlConn=" << (conn.controlConn?"YES":"NO") 
-       << ", connected to: ";
-    ev << owner->fullName() << endl;
+
+    Log(Notice) << "adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type="
+		<< tmp.str() << " gateIndex=" << conn.gateIndex << ", controlConn=" << (conn.controlConn?"YES":"NO") 
+		<< ", connected to: " << owner->fullName() << LogEnd;
 
     /// @todo - check if CID and sfid are unique
     Conns.push_back(conn);
@@ -81,23 +79,25 @@ bool WMaxMac::delConn(uint32_t sfid)
 
 void WMaxMac::printDlMap(WMaxMsgDlMap * dlmap)
 {
-    string x = fullName();
-    ev << x << ": --- DL-MAP (" << dlmap->getIEArraySize() << " IE(s) ---" << endl;
+    Log(Debug) << " --- DL-MAP (" << dlmap->getIEArraySize() << " IE(s) ---" << LogEnd;
+    if (!logger::willPrint(logger::Debug))
+	return;
 
     for (int i=0; i<dlmap->getIEArraySize(); i++) {
 	WMaxDlMapIE &ie = dlmap->getIE(i);
-	ev << x << ": IE[" << i << "]: cid=" << ie.cid << ", length=" << ie.length << ", symbols=" << ie.symbols << endl;
+	Log(Debug) << "IE[" << i << "]: cid=" << ie.cid << ", length=" << ie.length << ", symbols=" << ie.symbols << LogEnd;
     }
 }
 
 void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 {
-    string x = fullName();
-    ev << x << ": --- UL-MAP: " << ulmap->getIEArraySize() << " IE(s) ---" << endl;
+    Log(Debug) << " --- UL-MAP: " << ulmap->getIEArraySize() << " IE(s) ---" << LogEnd;
+    if (!logger::willPrint(logger::Debug))
+	return;
 
     for (int i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE &ie = ulmap->getIE(i);
-	ev << x << ": IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
+	Log(Debug) << "IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
 
 	switch (ie.uiuc) {
 	case WMAX_ULMAP_UIUC_FAST_FEEDBACK:
@@ -130,7 +130,7 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	    ev << "(DATA): duration=" << (int)ie.dataIE.duration;
 	    break;
 	}
-	ev << endl;
+	Log(Cont) << LogEnd;
     }
 }
 
@@ -168,7 +168,7 @@ void WMaxMacBS::initialize()
     int conns = gateSize("macOut");
     int cid  = 1024;
     int sfid = 1;
-    ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
+    Log(Notice) << conns << " objects connected to this MAC, creating connections." << endl;
 
 // Best Effort
     int i = conns - 1; // control connection
@@ -251,7 +251,7 @@ void WMaxMacBS::handleUlMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgCDMA*>(msg))
     {
         if (dynamic_cast<WMaxMsgCDMA*>(msg)->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
-            ev << fullName() << " Received CDMA code" << endl;
+            Log(Debug) << " Received CDMA code" << LogEnd;
             CDMAQueue.insert(msg);
             return;
         }
@@ -279,7 +279,7 @@ void WMaxMacBS::schedule()
 
     // trigger PHY to start frame
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
-    ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
+    Log(Debug) << ": Generating FrameStart trigger for PHY" << LogEnd;
     send(frameStart, "phyOut");
 }
 
@@ -331,7 +331,7 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
     ieCnt = 0;
 
     while (true) {
-	SCHED << symbols << " symbols left." << endl;
+	Log(Debug) << symbols << " symbols left." << LogEnd;
 	
 	if (!SendQueue.length()) // nothing more to send
 	    break;
@@ -344,8 +344,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	if (msg->length() > symbols*bytesPerPS) {
 	    // message won't fit in this frame. What should we do in such case?
 
-	    SCHED << " tried to schedule message (len=" << msg->length() << ", but there are only "
-		  << symbols*bytesPerPS << " bytes left." << endl;
+	    Log(Warning) << " tried to schedule message (len=" << msg->length() << ", but there are only "
+			 << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	    if (ieCnt) // something has been scheduled - ok, end scheduling
 		break;
@@ -360,7 +360,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 
             // currently used: c)
             msg = (cMessage*) SendQueue.pop();
-            SCHED << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() <<"), because it won't fit in DL subframe. Message is dropped." << endl;
+            Log(Warning) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
+			 << "), because it won't fit in DL subframe. Message is dropped." << endl;
             delete msg;
             continue;
 
@@ -390,8 +391,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	ie.symbols = lengthInPS;
 	dlmap->setIE(ieCnt-1,ie);
 
-	SCHED << "Sent msg: length=" << ie.length << ", used " << lengthInPS << " symbols, " 
-	   << symbols << " symbol(s) left" << endl;
+	Log(Debug) << "Sent msg: length=" << ie.length << ", used " << lengthInPS << " symbols, " 
+		   << symbols << " symbol(s) left" << endl;
 	
 	send(msg, "phyOut");
     }
@@ -486,7 +487,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
     
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
 	if (symbols <=0) {
-	    SCHED << "No symbols left, scheduling aborted." << endl;
+	    Log(Debug) << "No symbols left, scheduling aborted." << LogEnd;
 	    break;
 	}
 
@@ -513,8 +514,8 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 		ie.dataIE.duration = it->bandwidth;
 		ulmap->setIE(ieCnt-1, ie);
 		it->bandwidth = 0;
-		ev << fullName() << ": Adding UGS grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
-		   << symbolLength << " symbols." << endl;
+		Log(Debug) << ": Adding UGS grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+			   << symbolLength << " symbols." << LogEnd;
 		break;
 	    }
 	    
@@ -524,7 +525,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 
     for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
 	if (symbols <=0) {
-	    SCHED << "No symbols left, scheduling aborted." << endl;
+	    Log(Debug) << "No symbols left, scheduling aborted." << LogEnd;
 	    break;
 	}
 	switch (it->type) {
@@ -545,8 +546,8 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 		ie.dataIE.duration = it->bandwidth;
 		ulmap->setIE(ieCnt-1, ie);
 		it->bandwidth = 0;
-		ev << fullName() << ": Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
-		   << symbolLength << " symbols." << endl;
+		Log(Debug) << ": Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+			   << symbolLength << " symbols." << LogEnd;
 		break;
 	    }
 
@@ -572,7 +573,7 @@ void WMaxMac::handleUlMessage(cMessage *msg)
         if (hdr->ht == true) {
             for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	        if (it->cid == hdr->cid) {
-                    ev << fullName() << ": received bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << endl;
+                    Log(Debug) << "Received bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << LogEnd;
 	            it->qos.be.reqbw = hdr->bwr;
 	        }
             }
@@ -582,7 +583,8 @@ void WMaxMac::handleUlMessage(cMessage *msg)
         }
 	delete hdr;
     } else {
-	ev << fullName() << ": malformed message received: " << msg->fullName() << ". Uplink message without WMaxMacHeader structure." << endl;
+	Log(Error) << "Malformed message received: " << msg->fullName() 
+		   << ". Uplink message without WMaxMacHeader structure." << LogEnd;
 	return;
     }
 
@@ -598,11 +600,11 @@ void WMaxMac::handleUlMessage(cMessage *msg)
     }
 
     if (gateIndex != -1) {
-	ev << fullName() << ": sending message to upper (IPv6) layer (CID=" << cid << ", gateIndex=" 
-	   << gateIndex << ")" << endl;
+	Log(Debug) << "Sending message to upper (IPv6) layer (CID=" << cid << ", gateIndex=" 
+	   << gateIndex << ")" << LogEnd;
 	send(msg, "macOut", gateIndex);
     } else {
-	ev << fullName() << ": Unable to find connection for CID=" << cid << ", message dropped." << endl;
+	Log(Warning) << "Unable to find connection for CID=" << cid << ", message dropped." << LogEnd;
         delete msg;
     }
 }
@@ -623,7 +625,7 @@ void WMaxMacSS::initialize()
     int conns = gateSize("macOut");
     int cid  = 1024;
     int sfid = 1;
-    ev << fullName() << ": " << conns << " objects connected to this MAC, creating connections." << endl;
+    Log(Notice) << conns << " objects connected to this MAC, creating connections." << endl;
 
 // Best Effort
 
@@ -668,7 +670,7 @@ void WMaxMacSS::handleMessage(cMessage *msg)
     cGate * gate = msg->arrivalGate();
 
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
-        ev << fullName() << ": ALL CONNECTION TERMINATED" << endl;
+        Log(Notice) << "All connections terminated." << LogEnd;
 
         list<WMaxConn>::iterator it;
         for (it = Conns.begin(); it!=Conns.end(); it++) {
@@ -680,7 +682,6 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         initialize();
         return;
     }
-
 
     if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
         WMaxQos qos = addconn->getQos(0);
@@ -707,7 +708,7 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         return;
     }
 
-    ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
+    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
     if (!strcmp(gate->fullName(),"phyIn")) {
         //BS -> SS
 	handleUlMessage(msg);
@@ -747,31 +748,31 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 	}
     }
     if (it==Conns.end()) {
-	ev << fullName() << ": Unable to find connection for CID=" << hdr->cid << endl;
+	Log(Error) << "Unable to find connection for CID=" << hdr->cid << LogEnd;
         delete msg;
 	return;
     }
 
-if (!strcmp(fullName(), "ssMac")) {
-    switch(it->type) {
-    case WMAX_CONN_TYPE_BE:
-        ev << fullName() << ": Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
-        it->qos.be.reqbw += msg->length();
-        if(msg->length() == 0) { /// @todo sending messages with length == 0
-            it->qos.be.reqbw += 12;
-        }
-        ev << fullName() << ": CID=" << it->cid << " Requied bandwidth: " << it->qos.be.reqbw << endl; 
-        it->queue->insert(msg);
-        break;
-    case WMAX_CONN_TYPE_UGS:
-        ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
+    if (!strcmp(fullName(), "ssMac")) {
+	switch(it->type) {
+	case WMAX_CONN_TYPE_BE:
+	    Log(Debug) << "Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ") ";
+	    it->qos.be.reqbw += msg->length();
+	    if(msg->length() == 0) { /// @todo sending messages with length == 0
+		it->qos.be.reqbw += 12;
+	    }
+	    Log(Cont) << "CID=" << it->cid << " Requied bandwidth: " << it->qos.be.reqbw << LogEnd; 
+	    it->queue->insert(msg);
+	    break;
+	case WMAX_CONN_TYPE_UGS:
+	    Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << LogEnd;
+	    SendQueue.insert(msg);
+	    break;
+	}
+    } else {
+        Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << LogEnd;
         SendQueue.insert(msg);
-        break;
     }
-} else {
-        ev << fullName() << ": Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << endl;
-        SendQueue.insert(msg);
-}
 
 }
 
@@ -813,13 +814,13 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	printDlMap(dynamic_cast<WMaxMsgDlMap*>(msg));
 	Stats.dlmaps++;
 	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
-	ev << fullName() << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << endl;
+	Log(Debug) << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << LogEnd;
 
 	// handle this map to WMaxCtrl
 	list<WMaxConn>::iterator it;
 	for (it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->controlConn) {
-		ev << "Dispatching dlmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << endl;
+		Log(Debug) << "Dispatching dlmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << LogEnd;
 		send(msg, "macOut", it->gateIndex);
 	    }
 	}
@@ -835,7 +836,7 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
     int bandwidth = 0;
-    ev << fullName() << ": UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)" << endl;
+    Log(Debug) << "UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)" << LogEnd;
     int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE & ie = ulmap->getIE(i);
@@ -854,7 +855,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                     if (it->type == WMAX_CONN_TYPE_BE && it->queue->length() && bandwidth){
 
                     while (true) {
-	                 SCHED << symbols << " symbols left." << endl;
+			Log(Debug) << symbols << " symbols left." << LogEnd;
 
 	                 if (!it->queue->length()) // nothing more to send
 	                 break;
@@ -867,14 +868,16 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 if (msg->length() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
 
-	                     SCHED << " tried to schedule message (len=" << msg->length() << ", but there are only " << symbols*bytesPerPS << " bytes left." << endl;
+	                     Log(Error) << " tried to schedule message (len=" << msg->length() << ", but there are only " 
+					<< symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
 		                 break;
 
                              // currently used: c)
                              msg = (cMessage*) it->queue->pop();
-                             SCHED << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() <<"), because it won't fit in UL subframe. Message is dropped." << endl;
+                             Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
+					<<"), because it won't fit in UL subframe. Message is dropped." << LogEnd;
                              delete msg;
                              continue;
 
@@ -896,8 +899,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 if (!hdr)
 	                      opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
 
-	                 SCHED << "Sent msg: length=" << msg->length() << ", used " << lengthInPS << " symbols, " 
-	                 << symbols << " symbol(s) left" << endl;
+	                 Log(Debug) << "Sent msg: length=" << msg->length() << ", used " << lengthInPS << " symbols, " 
+				    << symbols << " symbol(s) left" << LogEnd;
 	
 	                 send(msg, "phyOut");
                     }
@@ -941,7 +944,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                         WMaxMsgCDMA *cdmamsg = new WMaxMsgCDMA("CDMA");
                         cdmamsg->setCode(cdma.code);
                         cdmamsg->setPurpose(WMAX_CDMA_PURPOSE_BWR);
-                        ev << fullName() << ": Sending CDMA code: " << cdma.code <<" (cid: " << cdma.cid << ", bandwidth: "<< cdma.bandwidth << ")" << endl;
+                        Log(Debug) << ": Sending CDMA code: " << cdma.code <<" (cid: " << cdma.cid << ", bandwidth: "
+				   << cdma.bandwidth << ")" << LogEnd;
                         send(cdmamsg, "phyOut");
                         break;
                     }
@@ -970,7 +974,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                    hdr->cid = it->cid;
                    WMaxMsgBWR *msg = new WMaxMsgBWR("Bandwidth request");
                    msg->setControlInfo(hdr);
-                   ev << fullName() << ": Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << endl;
+                   Log(Debug) << ": Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << LogEnd;
                    send(msg, "phyOut");
                    CDMAlist.erase(it);
                    break;
@@ -982,7 +986,6 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 
     if (SendQueue.length()) {
-	ev << fullName() << ": Sending message" << endl;
 	cMessage * msg = (cMessage*)SendQueue.pop();
 	send(msg, "phyOut");
     }
@@ -990,7 +993,6 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
     Stats.bandwidth += bandwidth;
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
-    ev << fullName() << ": Generating FrameStart trigger for PHY" << endl;
     send(frameStart, "phyOut");
 }
 

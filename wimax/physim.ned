@@ -4,6 +4,8 @@ import
     "BS";
 
 simple AirDummy
+    parameters:
+        LogLevel: numeric;
     gates:
         in: in[];
 endsimple
@@ -17,7 +19,7 @@ module Physim
         Dummy: AirDummy;
             gatesizes:
                 in[10];
-            display: "i=misc/cloud";
+            display: "p=169,72;i=misc/cloud";
         BS: BS[numBS];
             display: "i=device/antennatower_l";
         SS: SS;
