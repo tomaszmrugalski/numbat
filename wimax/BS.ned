@@ -29,7 +29,11 @@ simple WMaxCtrlBS
         MinDelayReg: numeric,
         MaxDelayReg: numeric,
         MinDelayHoRsp: numeric,
-        MaxDelayHoRsp: numeric;
+        MaxDelayHoRsp: numeric,
+        MinDelayDsxRvd: numeric,
+        MaxDelayDsxRvd: numeric,
+        MinDelayDsxRsp: numeric,
+        MaxDelayDsxRsp: numeric;
     gates:
         out: macOut;
         in: macIn;

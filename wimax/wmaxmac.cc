@@ -168,7 +168,6 @@ void WMaxMacBS::initialize()
     int conns = gateSize("macOut");
     int cid  = 1024;
     int sfid = 1;
-    Log(Notice) << conns << " objects connected to this MAC, creating connections." << endl;
 
 // Best Effort
     int i = conns - 1; // control connection

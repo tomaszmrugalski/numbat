@@ -228,7 +228,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cM
     case EVENT_DLMAP:
 	return STATE_WAIT_FOR_UCD;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -239,7 +239,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitforUcd(Fsm * fsm, FsmEventType e, cMes
     case EVENT_UCD:
 	return STATE_SEND_RNG_REQ;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -253,7 +253,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForCdma(Fsm * fsm, FsmEventType e, cMe
 	return f->onEvent_CdmaCode(msg);
 	
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -267,6 +267,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
     WMaxMsgRngReq * rng = new WMaxMsgRngReq();
     rng->setName("RNG-REQ");
     fsm->send(rng, "macOut");
+    SLog(fsm, Notice) << "Sending RNG-REQ." << LogEnd;
     return fsm->State();
 }
 
@@ -278,14 +279,14 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
 	if (ss->neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL) {
-	    SLog(ss, Debug) << ": Network entry type: initial, switching to 'send SBC-REQ'." << LogEnd;
+	    SLog(ss, Debug) << "Network entry type: initial, switching to 'send SBC-REQ'." << LogEnd;
 	    return STATE_SEND_SBC_REQ;
 	} else {
-	    SLog(ss, Debug) << ":Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
+	    SLog(ss, Debug) << "Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
  	    return STATE_INITIATE_SVC_FLOW_CREATION;
 	}
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -295,6 +296,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
     WMaxMsgSbcReq * req = new WMaxMsgSbcReq();
     req->setName("SBC-REQ");
     fsm->send(req, "macOut");
+    SLog(fsm, Notice) << "Sending SBC-REQ." << LogEnd;
     return fsm->State();
 }
 
@@ -305,17 +307,17 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, c
     case EVENT_SBC_RSP_RECEIVED:
 	return STATE_SEND_REG_REQ;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
-    return fsm->State();
 }
 
 // send REG-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
     WMaxMsgRegReq * reg = new WMaxMsgRegReq();
-    reg->setName("SBC-REQ");
+    reg->setName("REG-REQ");
     fsm->send(reg, "macOut");
+    SLog(fsm, Notice) << "Sending REG-REQ." << LogEnd;
     return fsm->State();
 }
 
@@ -327,9 +329,8 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, c
 //	return STATE_OPERATIONAL;
         return STATE_INITIATE_SVC_FLOW_CREATION;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
-    return fsm->State();
 }
 
 // inititae service flow creation state
@@ -359,6 +360,8 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     //ss->scheduleAt(ss->simTime() + ss->TimerHandoverValue, ss->TimerHandover);
+    SLog(fsm, Notice) << "Network entry complete." << LogEnd;
+
     STATIC_TIMER_START(ss, Handover);     // Option 2: network reentry (at target BS)
 }
 
@@ -369,7 +372,7 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
     case EVENT_HANDOVER_START:
 	return STATE_SEND_MSHO_REQ;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -390,7 +393,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, 
     case EVENT_BSHO_RSP_RECEIVED:
 	return STATE_SEND_HO_IND;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -402,6 +405,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     fsm->send(hoInd, "macOut");
     WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
     fsm->send(terminateAll, "macOut");
+    SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;
     return fsm->State();
 }
     
@@ -434,7 +438,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType 
     case EVENT_RNG_RSP_RECEIVED:
 	return STATE_SEND_RNG_REQ;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
     return fsm->State();
 }
@@ -450,7 +454,7 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
 	ss->neType = WMAX_CTRL_NETWORK_REENTRY;
 	return STATE_WAIT_FOR_CDMA;
     default:
-	CASE_IGNORE(e);
+	CASE_IGNORE(fsm, e);
     }
 }
 void WMaxCtrlSS::reConnect() {
@@ -573,7 +577,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgDsaReq*>(msg)) {
-        Log(Info) << "DSA-REQ received, sending DSX-RVD and DSA-RSP." << LogEnd;
+        Log(Notice) << "DSA-REQ received, sending DSX-RVD and (after bigger delay) DSA-RSP." << LogEnd;
         WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
 
         Transaction Trans;
@@ -582,7 +586,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsxrvd->setName("DSX-RVD");
         dsxrvd->setTransactionID(dsareq->getTransactionID());
         dsxrvd->setConfirmationCode(0);
-        send(dsxrvd, "macOut");
+	sendMsg(dsxrvd, "DelayDsxRvd", "macOut");
 
         WMaxMsgDsaRsp *dsarsp = new WMaxMsgDsaRsp();
         dsarsp->setName("DSA-RSP");
@@ -594,7 +598,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsarsp->setCid(cid); /// @todo generate CID
         Trans.cid = cid;
         cid++;
-        send(dsarsp, "macOut");
+	sendMsg(dsarsp, "DelayDsxRsp", "macOut");
 
         Transactions.push_back(Trans);
 
@@ -696,7 +700,7 @@ FsmStateType WMaxFlowSS::onEventState_Start(Fsm * fsm, FsmEventType e, cMessage 
     case EVENT_START:
         return STATE_SEND_DSA_REQ;
     default:
-        CASE_IGNORE(e);
+        CASE_IGNORE(fsm, e);
     }
 }
 
@@ -720,7 +724,7 @@ FsmStateType WMaxFlowSS::onEventState_WaitingDsxRvd(Fsm * fsm, FsmEventType e, c
     case EVENT_DSX_RVD_RECEIVED:
         return STATE_WAITING_DSA_RSP;
     default:
-        CASE_IGNORE(e);
+        CASE_IGNORE(fsm, e);
     }
 }
 
@@ -733,7 +737,7 @@ FsmStateType WMaxFlowSS::onEventState_WaitingDsaRsp(Fsm * fsm, FsmEventType e, c
     case EVENT_DSA_RSP_RECEIVED:
         return STATE_SEND_DSA_ACK;
     default:
-        CASE_IGNORE(e);
+        CASE_IGNORE(fsm, e);
     }
 }
 

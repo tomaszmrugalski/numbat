@@ -43,10 +43,10 @@ using namespace std;
 #define STATIC_TIMER_START(obj, name) \
     obj->scheduleAt(obj->simTime() + obj->Timer##name##Value, obj->Timer##name);
 
-#define CASE_IGNORE(e)                                                 \
-	ev << fsm->fullName() << ": event "                     \
+#define CASE_IGNORE(fsm,e)					       \
+    SLog(fsm, Debug) << fsm->fullName() << ": event "		       \
 	   << fsm->Events[e].fullName() << " ignored in state " \
- 	   << fsm->CurrentStateGet()->fullName() << endl; \
+ 	   << fsm->CurrentStateGet()->fullName() << LogEnd; \
         return fsm->State();
 
 #define FSM_MAX_TRANSITIONS 64

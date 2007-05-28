@@ -12,6 +12,7 @@
 #include <omnetpp.h>
 #include "wmaxphy.h"
 #include "wmaxmsg_m.h"
+#include "logger.h"
 
 /********************************************************************************/
 /*** WMax PHY BS ****************************************************************/
@@ -43,7 +44,8 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
 {   checkConnect();
     cGate * gate = msg->arrivalGate();
     // uplink message
-    ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
+    Log(Debug) << fullName() << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
+	       << gate->id() << LogEnd;
     if (!strcmp(gate->fullName(),"rfIn")) {
 	// deliver message immediately
 	
@@ -54,12 +56,12 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
     // downlink message
     if ( dynamic_cast<WMaxMsgDlMap*>(msg) ) {
 	this->DlMap = check_and_cast<WMaxMsgDlMap*>(msg);
-	ev << "DL-MAP ready to send." << endl;
+	Log(Debug) << "DL-MAP ready to send." << LogEnd;
 	return;
     }
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	this->UlMap = check_and_cast<WMaxMsgUlMap*>(msg);
-	ev << "UL-MAP ready to send." << endl;
+	Log(Debug) << "UL-MAP ready to send." << LogEnd;
 	return;
     }
     if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
@@ -75,19 +77,19 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
 void WMaxPhyBS::beginFrame()
 {
     FrameCnt++;
-    ev << fullName() << ": Frame number: " << FrameCnt << ", " << SendQueue.length() << " message(s) to send. " << endl;
+    Log(Debug) << "Frame number: " << FrameCnt << ", " << SendQueue.length() << " message(s) to send. " << LogEnd;
 
     if (this->DlMap) {
 	send(DlMap, "rfOut");
 	this->DlMap = 0;
     } else {
-	ev << "DL-MAP not set. Send skipped" << endl;
+	Log(Debug) << "DL-MAP not set. Send skipped" << LogEnd;
     }
     if (this->UlMap) {
 	send(UlMap, "rfOut");
 	this->UlMap = 0;
     } else {
-	ev << "UL-MAP not set. Send skipped" << endl;
+	Log(Debug) << "UL-MAP not set. Send skipped" << LogEnd;
     }
 
     while (!SendQueue.empty()) {
@@ -167,7 +169,7 @@ void WMaxPhySS::handleMessage(cMessage *msg)
 {   static int licz ; // test
     cGate * gate = msg->arrivalGate();
     // uplink message
-    ev << fullName() << ":Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << endl;
+    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << LogEnd;
     if (!strcmp(gate->fullName(),"rfIn")) {
 	// deliver message immediately
 	send(msg, "phyOut");
