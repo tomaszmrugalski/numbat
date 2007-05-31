@@ -9,9 +9,11 @@
  */
 
 #include <omnetpp.h>
+#include <string>
 #include "wmaxmaccs.h"
 #include "ipv6node.h"
 #include "wmaxmac.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -22,7 +24,7 @@ using namespace std;
 Define_Module(WMaxMacCS);
 
 void WMaxMacCS::initialize() {
-
+	
 }
 
 
@@ -30,7 +32,7 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
 
 
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
-        ev << fullName() << ": ALL CONNECTION TERMINATED" << endl;
+        Log(Notice) << "All connections terminated." << LogEnd;
         csTable.clear();
         delete msg;
         return;
@@ -44,10 +46,17 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
 
         csTable.push_front(rule);
 
-        ev << fullName() <<": New Covergence Sublayer table:" << endl;
+        string log;
+        log = "New Convergence Sublayer clasifier: ";
         for(it=csTable.begin(); it!=csTable.end(); it++) {
-            ev << "    CID=" << it->cid << endl;
+              stringstream ss_cid;
+              string st_cid;
+              ss_cid << it->cid;
+              ss_cid >> st_cid;
+              log = log + "CID=" + st_cid + " | ";
         }
+        
+        Log(Notice) << log << LogEnd;
 
         delete msg;
         return;
@@ -69,7 +78,7 @@ void WMaxMacCS::handleUlMessage(cMessage *msg) {
     cMessage *ipv6packet = msg->decapsulate();
     delete msg;
     send(ipv6packet, "ipOut", 0);
-    ev << fullName() << ": Message send to upper layer." << endl;
+    Log(Debug) << "Message send to upper layer." << LogEnd;
 }
 
 
@@ -83,7 +92,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
         }
     }
     if(it == csTable.end()) {
-        ev << fullName() << ": Unable to find a proper connection. Message has been droped." << endl;
+        Log(Debug) << "Unable to find a proper connection. Message has been droped." << LogEnd;
         delete msg;
         return;
     }
@@ -95,7 +104,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
      hdr->cid = it->cid;
      wmaxmacmsg->setControlInfo(hdr);
 
-     ev << fullName() << ": New message. CID=" << it->cid << endl;
+     Log(Debug) << "New message. CID=" << it->cid << LogEnd;
 
      send(wmaxmacmsg, "macOut");
 }
