@@ -12,11 +12,14 @@
 #include <vector>
 #include "wmaxmsg_m.h"
 #include "fsm.h"
+#include "hoinfo.h"
 
 using namespace std;
 
 #ifndef WMAXCTRL_H
 #define WMAXCTRL_H
+
+#define CLEAR(x) memset(x, 0, sizeof(*x));
 
 /**************************************************************/
 /*** WIMAX CONSTANTS ******************************************/
@@ -53,6 +56,10 @@ public:
     void initialize();
     void handleMessage(cMessage *msg);
     list<WMaxFlowSS*> serviceFlows;
+
+    // -- handover related info --
+    HoInfo_t * hoInfo;
+    WMaxCtrlNetworkEntryType neType;
     
 protected:
     void fsmInit();
@@ -175,8 +182,6 @@ protected:
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);
     TIMER_DEF(Reentry);
-
-    WMaxCtrlNetworkEntryType neType;
 
 };
 

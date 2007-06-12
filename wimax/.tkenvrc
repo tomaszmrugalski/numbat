@@ -22,9 +22,9 @@ config mainwin-geom	{1201x301+66+0}
 config rununtil-event	{}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
-config timeline-wantselfmsgs	{1}
-config timeline-msgnamepattern	{*}
 config logwindow-scrollbacklines	{100000}
+config timeline-msgnamepattern	{*}
+config timeline-wantselfmsgs	{1}
 config display-timeline	{1}
 config filtobjlist-maxcount	{100000}
 config log-save-filename	{omnetpp.out}

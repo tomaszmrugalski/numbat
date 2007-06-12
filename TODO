@@ -19,3 +19,9 @@
 ------------------------
 - WMaxCtrl: Implement handover (thomson)
 - UGS throughput is now defined by MSR (in bits per second).
+
+ BUGS
+------
+- After handover, connections are created using DSA (connection information is 
+  transferred to target BS, so there is no need to recreate connections)
+

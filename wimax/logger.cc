@@ -109,7 +109,9 @@ namespace logger {
 	    buffer.width(6); buffer.fill('0'); buffer << usec << "us ";
 	    break;
 	case LOGMODE_SIMTIME:
-	    buffer << "[" << simTime << "]";
+	    buffer << "[";
+	    buffer.width(5);
+	    buffer << simTime << "]";
 	    break;
 	    break;
 	case LOGMODE_SYSLOG:
@@ -119,7 +121,9 @@ namespace logger {
 	    buffer << "SYSLOG logging mode not supported yet.";
 	    break;
 	}
-	buffer << ' ' << logger::logname ;
+	buffer << ' ';
+	buffer.width(10);
+	buffer << logger::logname ;
 	buffer << ' ' << lv[x-1] << " ";
 	return buffer;
     }

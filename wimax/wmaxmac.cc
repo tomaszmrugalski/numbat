@@ -59,8 +59,8 @@ bool WMaxMac::addConn(WMaxConn conn)
         conn.controlConn = false;
     }
 
-    Log(Notice) << "adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", connection type="
-		<< tmp.str() << " gateIndex=" << conn.gateIndex << ", controlConn=" << (conn.controlConn?"YES":"NO") 
+    Log(Notice) << "Adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", type="
+		<< tmp.str() << ", controlConn=" << (conn.controlConn?"YES":"NO") 
 		<< ", connected to: " << owner->fullName() << LogEnd;
 
     /// @todo - check if CID and sfid are unique
@@ -343,8 +343,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	if (msg->length() > symbols*bytesPerPS) {
 	    // message won't fit in this frame. What should we do in such case?
 
-	    Log(Warning) << " tried to schedule message (len=" << msg->length() << ", but there are only "
-			 << symbols*bytesPerPS << " bytes left." << LogEnd;
+	    Log(Info) << "Tried to schedule message (len=" << msg->length() << ", but there are only "
+		      << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	    if (ieCnt) // something has been scheduled - ok, end scheduling
 		break;
@@ -359,8 +359,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 
             // currently used: c)
             msg = (cMessage*) SendQueue.pop();
-            Log(Warning) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
-			 << "), because it won't fit in DL subframe. Message is dropped." << endl;
+            Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
+		       << "), because it won't fit in DL subframe. Message is dropped." << endl;
             delete msg;
             continue;
 
@@ -867,8 +867,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 if (msg->length() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
 
-	                     Log(Error) << " tried to schedule message (len=" << msg->length() << ", but there are only " 
-					<< symbols*bytesPerPS << " bytes left." << LogEnd;
+	                     Log(Info) << "Tried to schedule message (len=" << msg->length() << ", but there are only " 
+				       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
 		                 break;

@@ -14,6 +14,7 @@
 #include "wmaxctrl.h"
 #include "wmaxmsg_m.h"
 #include "logger.h"
+#include "hoinfo.h"
 
 /********************************************************************************/
 /*** WMax Ctrl SS ****************************************************************/
@@ -22,7 +23,6 @@ Define_Module(WMaxCtrlSS);
 
 WMaxCtrlSS::WMaxCtrlSS()
 {
-
 }
 
 void WMaxCtrlSS::fsmInit() {
@@ -77,14 +77,25 @@ void WMaxCtrlSS::fsmInit() {
     TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
-
-    neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
 }
 
 void WMaxCtrlSS::initialize() {
+    hoInfo = new HoInfo_t();
+    CLEAR(hoInfo);
+    Log(Notice) << "HoInfo.wmax.hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
+
+    neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
+
     fsmInit();
-    // uncomment ONLY ONE of the following:
-    TIMER_START(NetworkEntry);  // Option 1: normal network entry (after SS boot)
+
+    // start with network entry
+    TIMER_START(NetworkEntry);
+
+    cModule * parent = parentModule();
+    if (parent) {
+	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
+    }
+    Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
 }
 
 /** 
@@ -282,7 +293,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 	    SLog(ss, Debug) << "Network entry type: initial, switching to 'send SBC-REQ'." << LogEnd;
 	    return STATE_SEND_SBC_REQ;
 	} else {
-	    SLog(ss, Debug) << "Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
+	SLog(ss, Debug) << "Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
  	    return STATE_INITIATE_SVC_FLOW_CREATION;
 	}
     default:
@@ -419,7 +430,6 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    SLog(fsm, Info) << "Sending CDMA code" << LogEnd;
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
 	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
@@ -428,6 +438,8 @@ FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
 	cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
 	cdma->setName("CDMA code (initial rng)");
     }
+
+    SLog(fsm, Notice) << "Sending " << cdma->name() << LogEnd;
     fsm->send(cdma, "macOut");
     return fsm->State();
 }
@@ -546,7 +558,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
 	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
-	Log(Info) << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
+	Log(Notice) << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
 	switch (cdma->getPurpose()) {
 	case WMAX_CDMA_PURPOSE_HO_RNG:
 	{
