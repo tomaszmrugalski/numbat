@@ -182,8 +182,8 @@ void Fsm::stateSet(FsmStateType newState)
 	    }
 	    
 	    if (tmp != newState) {
-		Log(Warning) << "#### " << to->fullName() << "::onEnter override: switching to "
-			     << States[tmp].fullName() << " instead of " << to->fullName() << LogEnd;
+		Log(Debug) << to->fullName() << "::onEnter override: switching to "
+			   << States[tmp].fullName() << " instead of " << to->fullName() << LogEnd;
 		transitionsCnt++;
 		newState = tmp;
 		continue;

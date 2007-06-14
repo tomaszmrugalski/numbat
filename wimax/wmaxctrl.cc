@@ -381,6 +381,12 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekRsp(Fsm *fsm, FsmEventType e, 
 // send REG-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_REG_REQ)) {
+	SLog(fsm, Warning) << "Reentry: omit-reg-req flag set, skipping REG-REQ." << LogEnd;
+        return STATE_INITIATE_SVC_FLOW_CREATION; /* state override: switch to Service flow creation */
+    }
+
     WMaxMsgRegReq * reg = new WMaxMsgRegReq();
     reg->setName("REG-REQ");
     fsm->send(reg, "macOut");
@@ -402,8 +408,14 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, c
 
 // inititae service flow creation state
 FsmStateType WMaxCtrlSS::onEnterState_InitiateSvcFlowCreation(Fsm * fsm) {
+
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER)) {
+	SLog(fsm, Warning) << "Reentry: full-state-transfer flag set, skipping service flow creation." << LogEnd;
+	return STATE_OPERATIONAL; /* state override: switch to SEND_REG_REQ */
+    }
+
     WMaxFlowSS *flow;
-    WMaxCtrlSS *ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     
     flow = new WMaxFlowSS(fsm);
 
