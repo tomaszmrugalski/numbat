@@ -73,7 +73,9 @@ protected:
 	STATE_WAIT_RNG_RSP,               // wait for RNG-RSP
 	STATE_SEND_SBC_REQ,               // send SBC-REQ
 	STATE_WAIT_SBC_RSP,               // wait for SBC-RSP
-	/// @todo: implement PKM (TEKs) support
+	STATE_WAIT_SA_TEK_CHALLANGE,      // wait for PKM-RSP (SA-TEK-Challange)
+	STATE_SEND_SA_TEK_REQ,            // send PKM-REQ (SA-TEK-Request)
+	STATE_WAIT_SA_TEK_RSP,            // wait for PKM-RSP (SA-TEK-Response)
 	STATE_SEND_REG_REQ,               // send REG-REQ
 	STATE_WAIT_REG_RSP,               // wait for REG-RSP
 
@@ -125,6 +127,15 @@ protected:
     // wait for SBC-RSP state
     static FsmStateType onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
+    // wait for SA-TEK-CHALLANGE
+    static FsmStateType onEventState_WaitForSaTekChallange(Fsm * fsm, FsmEventType e, cMessage *msg);
+
+    // send SA-TEK-REQ
+    static FsmStateType onEnterState_SendSaTekReq(Fsm * fsm);
+
+    // wait for SA-TEK-RSP
+    static FsmStateType onEventState_WaitForSaTekRsp(Fsm *fsm, FsmEventType e, cMessage *msg);
+
     // send REG-REQ state
     static FsmStateType onEnterState_SendRegReq(Fsm * fsm);
 
@@ -172,6 +183,8 @@ protected:
 	EVENT_HO_CDMA_CODE,
 	EVENT_RNG_RSP_RECEIVED,
 	EVENT_SBC_RSP_RECEIVED,
+	EVENT_SA_TEK_CHALLENGE,
+	EVENT_SA_TEK_RSP,
 	EVENT_REG_RSP_RECEIVED,
 	EVENT_NUM
     } Event;
@@ -192,6 +205,8 @@ public:
 private:
     list<Transaction> Transactions;
     int cid;
+    int pkmSupport;
+    bool pkmEnabled();
 protected:
     void fsmInit();
     virtual void initialize();

@@ -38,6 +38,11 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_WAIT_RNG_RSP,      "Waiting for RNG-RSP", onEventState_WaitForRngRsp);
     stateInit(STATE_SEND_SBC_REQ,      "Sending SBC-REQ", STATE_WAIT_SBC_RSP, onEnterState_SendSbcReq);
     stateInit(STATE_WAIT_SBC_RSP,      "Waiting for SBC-RSP", onEventState_WaitForSbcRsp);
+
+    stateInit(STATE_WAIT_SA_TEK_CHALLANGE, "Wait for SA-TEK-Challange", onEventState_WaitForSaTekChallange);
+    stateInit(STATE_SEND_SA_TEK_REQ,   "Sending SA-TEK-REQ", STATE_WAIT_SA_TEK_RSP, onEnterState_SendSaTekReq);
+    stateInit(STATE_WAIT_SA_TEK_RSP,   "Wating for SA-TEK-RSP", onEventState_WaitForSaTekRsp);
+
     stateInit(STATE_SEND_REG_REQ,      "Sending REG-REQ", STATE_WAIT_REG_RSP, onEnterState_SendRegReq);
     stateInit(STATE_WAIT_REG_RSP,      "Waiting for REG-RSP", onEventState_WaitForRegRsp);
 
@@ -66,6 +71,8 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_UCD, "UCD received");
     eventInit(EVENT_RNG_RSP_RECEIVED, "RNG-RSP received.");
     eventInit(EVENT_SBC_RSP_RECEIVED, "SBC-RSP received.");
+    eventInit(EVENT_SA_TEK_CHALLENGE, "SA-TEK-CHALLANGE received.");
+    eventInit(EVENT_SA_TEK_RSP,       "SA-TEK-RSP received.");
     eventInit(EVENT_REG_RSP_RECEIVED, "REG-RSP received.");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
@@ -147,6 +154,17 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	delete msg;
 	return;
     }
+
+    if (dynamic_cast<WMaxMsgPkmRsp*>(msg)) {
+	WMaxMsgPkmRsp * pkm = dynamic_cast<WMaxMsgPkmRsp*>(msg);
+	if (pkm->getCode() == WMAX_PKM_SA_TEK_CHALLENGE)
+	    onEvent(EVENT_SA_TEK_CHALLENGE, msg);
+	if (pkm->getCode() == WMAX_PKM_SA_TEK_RSP)
+	    onEvent(EVENT_SA_TEK_RSP, msg);
+	delete msg;
+	return;
+    }
+
     if (dynamic_cast<WMaxMsgRegRsp*>(msg)) {
 	onEvent(EVENT_REG_RSP_RECEIVED, msg);
 	delete msg;
@@ -158,7 +176,6 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	delete msg;
 	return;
     }
-
 
     // timers
     if (msg==TimerHandover) {
@@ -289,13 +306,8 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
-	if (ss->neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL) {
-	    SLog(ss, Debug) << "Network entry type: initial, switching to 'send SBC-REQ'." << LogEnd;
-	    return STATE_SEND_SBC_REQ;
-	} else {
-	SLog(ss, Debug) << "Network entry type: reentry, switching to 'INITIATE_SVC_FLOW_CREATION'." << LogEnd;
- 	    return STATE_INITIATE_SVC_FLOW_CREATION;
-	}
+	SLog(ss, Debug) << "Switching to 'send SBC-REQ'." << LogEnd;
+	return STATE_SEND_SBC_REQ;
     default:
 	CASE_IGNORE(fsm, e);
     }
@@ -304,6 +316,13 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 // send SBC-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+
+    if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_SBC_REQ)) {
+	SLog(fsm, Warning) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
+	return STATE_SEND_REG_REQ; /* state override: switch to SEND_REG_REQ */
+    }
+    
     WMaxMsgSbcReq * req = new WMaxMsgSbcReq();
     req->setName("SBC-REQ");
     fsm->send(req, "macOut");
@@ -314,8 +333,45 @@ FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 // wait for SBC-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     switch (e) {
     case EVENT_SBC_RSP_RECEIVED:
+	if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_SKIP_SA_TEK)) {
+	    SLog(fsm, Warning) << "Reentry: skip-sa-tek flag set, skipping SA-TEK exchange." << LogEnd;
+	    return STATE_SEND_REG_REQ; /* state override: switch to SEND_REG_REQ */
+	}
+	return STATE_WAIT_SA_TEK_CHALLANGE;
+    default:
+	CASE_IGNORE(fsm, e);
+    }
+}
+
+// wait for SA-TEK-CHALLANGE
+FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekChallange(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_SA_TEK_CHALLENGE:
+	return STATE_SEND_SA_TEK_REQ;
+    default:
+	CASE_IGNORE(fsm, e);
+    }
+}
+
+// send SA-TEK-REQ
+FsmStateType WMaxCtrlSS::onEnterState_SendSaTekReq(Fsm * fsm)
+{
+    WMaxMsgPkmReq * pkm = new WMaxMsgPkmReq("PKM-REQ(SA-TEK-REQ)");
+    pkm->setCode(WMAX_PKM_SA_TEK_REQ);
+    fsm->send(pkm, "macOut");
+    SLog(fsm, Notice) << "Sending PKM-REQ(SA-TEK-REQ)." << LogEnd;
+    return fsm->State();
+}
+
+// wait for SA-TEK-RSP
+FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekRsp(Fsm *fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_SA_TEK_RSP:
 	return STATE_SEND_REG_REQ;
     default:
 	CASE_IGNORE(fsm, e);
@@ -374,6 +430,8 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
     SLog(fsm, Notice) << "Network entry complete." << LogEnd;
 
     STATIC_TIMER_START(ss, Handover);     // Option 2: network reentry (at target BS)
+    
+    return fsm->State();
 }
 
 
@@ -509,6 +567,12 @@ void WMaxCtrlBS::fsmInit()
 void WMaxCtrlBS::initialize()
 {
     cid = 1024;
+    pkmSupport = true;
+}
+
+bool WMaxCtrlBS::pkmEnabled()
+{
+    return pkmSupport;
 }
 
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
@@ -528,6 +592,27 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
 	rsp->setName("SBC-RSP");
 	sendMsg(rsp, "DelaySbc", "macOut");
+	delete msg;
+
+	if (pkmEnabled()) {
+	    Log(Notice) << "Initiating PKMv2: SA-TEK 3way handshake, sending PKM-RSP" << LogEnd;
+	    WMaxMsgPkmRsp * pkm = new WMaxMsgPkmRsp("PKM-RSP (SA-TEK-Challange)");
+	    pkm->setCode(WMAX_PKM_SA_TEK_CHALLENGE);
+	    sendMsg(pkm, "DelaySaTek", "macOut");
+	}
+
+	return;
+    }
+
+    if (dynamic_cast<WMaxMsgPkmReq*>(msg)) {
+	WMaxMsgPkmReq* req = dynamic_cast<WMaxMsgPkmReq*>(msg);
+	Log(Notice) << "PKM-REQ received, sending PKM-RSP." << LogEnd;
+	WMaxMsgPkmRsp * rsp = new WMaxMsgPkmRsp("PKM-RSP(SA-TEK-RSP)");
+
+	if (req->getCode() == WMAX_PKM_SA_TEK_REQ)
+	    rsp->setCode(WMAX_PKM_SA_TEK_RSP);
+
+	sendMsg(rsp, "DelaySaTek", "macOut");
 	delete msg;
 	return;
     }

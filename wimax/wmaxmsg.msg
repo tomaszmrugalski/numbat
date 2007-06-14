@@ -56,6 +56,19 @@ message WMaxMsgSbcRsp
 {
 
 };
+
+message WMaxMsgPkmReq
+{
+fields:
+    int code;
+};
+
+message WMaxMsgPkmRsp
+{
+fields:
+    int code;
+};
+
 message WMaxMsgRegReq
 {
 

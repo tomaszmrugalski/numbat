@@ -12,6 +12,12 @@ typedef enum
     WMAX_CONN_TYPE_UGS    // Unsolicited Grant Interval
 } WMaxConnType;
 
+typedef enum
+{
+    WMAX_PKM_SA_TEK_CHALLENGE,
+    WMAX_PKM_SA_TEK_REQ,
+    WMAX_PKM_SA_TEK_RSP
+} WMaxPKMCode;
 
 typedef enum {
     WMAX_ULMAP_UIUC_FAST_FEEDBACK = 0,
@@ -106,5 +112,7 @@ typedef struct {
     WMaxConnType connType;
     uint32_t msr;
 } WMaxQos;
+
+
 
 #endif

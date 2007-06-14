@@ -149,6 +149,7 @@ void Fsm::stateSet(FsmStateType newState)
 {
     FsmState *from;
     FsmState *to;
+    FsmStateType tmp;
     int transitionsCnt = 0; // how many state changes? (by default, after transition, it should be set to 1,
                             // unless there were some transitive states)
 
@@ -159,6 +160,10 @@ void Fsm::stateSet(FsmStateType newState)
     // state transition
 
     do {
+	if (transitionsCnt > FSM_MAX_TRANSITIONS)
+	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", 
+		      fullName(), transitionsCnt);
+
 	from = &States[State()];
 	to   = &States[newState];
 
@@ -168,8 +173,22 @@ void Fsm::stateSet(FsmStateType newState)
 	CurrentState = newState;
 	stringUpdate();
 
-	if (to->onEnter)
-	    to->onEnter(this);
+	if (to->onEnter) {
+	    tmp = to->onEnter(this);
+
+	    if ( (tmp<0) || (tmp>StatesCnt) ) {
+	    opp_error("%s: Invalid state type %d returned in %s::onEnter() (0..%d allowed).\n", fullName(), tmp, 
+		      to->fullName().c_str(), StatesCnt);
+	    }
+	    
+	    if (tmp != newState) {
+		Log(Warning) << "#### " << to->fullName() << "::onEnter override: switching to "
+			     << States[tmp].fullName() << " instead of " << to->fullName() << LogEnd;
+		transitionsCnt++;
+		newState = tmp;
+		continue;
+	    }
+	}
 
 	if (to->transitive) {
 	    newState = to->transitiveTo;
@@ -177,8 +196,6 @@ void Fsm::stateSet(FsmStateType newState)
 		       << ", because " << States[State()].fullName() << " is transitive." << LogEnd;
 	}
 	transitionsCnt++;
-	if (transitionsCnt > FSM_MAX_TRANSITIONS)
-	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", fullName(), transitionsCnt);
     } while (to->transitive);
 }
 
