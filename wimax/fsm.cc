@@ -158,8 +158,10 @@ void Fsm::stateSet(FsmStateType newState)
 	return;
 
     // state transition
+    bool override;
 
     do {
+	override = false;
 	if (transitionsCnt > FSM_MAX_TRANSITIONS)
 	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", 
 		      fullName(), transitionsCnt);
@@ -186,6 +188,7 @@ void Fsm::stateSet(FsmStateType newState)
 			   << States[tmp].fullName() << " instead of " << to->fullName() << LogEnd;
 		transitionsCnt++;
 		newState = tmp;
+		override = true;
 		continue;
 	    }
 	}
@@ -196,7 +199,7 @@ void Fsm::stateSet(FsmStateType newState)
 		       << ", because " << States[State()].fullName() << " is transitive." << LogEnd;
 	}
 	transitionsCnt++;
-    } while (to->transitive);
+    } while (to->transitive || override);
 }
 
 void Fsm::stringUpdate()
@@ -207,7 +210,7 @@ void Fsm::stringUpdate()
 	displayString().setTagArg("t",0,buf);
 }
 
-void Fsm::sendMsg(cMessage * msg, char * paramName, const char * gateName)
+double Fsm::sendMsg(cMessage * msg, char * paramName, const char * gateName)
 {
     char buf[80];
     sprintf(buf, "Min%s", paramName);
@@ -216,9 +219,11 @@ void Fsm::sendMsg(cMessage * msg, char * paramName, const char * gateName)
     sprintf(buf, "Max%s", paramName);
     double max = (double)par(buf);
 
-    double delay = min + exponential(max-min);
-
-    Log(Debug) << "Sending " << msg->name() << " in " << delay << "secs." << LogEnd;
+    double delay = uniform(min, max);
+    
+    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay << "secs." << LogEnd;
 
     sendDelayed(msg, delay, gateName);
+
+    return delay;
 }

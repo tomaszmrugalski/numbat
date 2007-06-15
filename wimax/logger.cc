@@ -111,7 +111,9 @@ namespace logger {
 	case LOGMODE_SIMTIME:
 	    buffer << "[";
 	    buffer.width(5);
+	    buffer << setiosflags(ios::left);
 	    buffer << simTime << "]";
+	    buffer << resetiosflags(ios::left);
 	    break;
 	    break;
 	case LOGMODE_SYSLOG:

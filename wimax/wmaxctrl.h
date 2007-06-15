@@ -60,10 +60,7 @@ public:
     // -- handover related info --
     HoInfo_t * hoInfo;
     WMaxCtrlNetworkEntryType neType;
-    
-protected:
-    void fsmInit();
-    void reConnect();
+
     // --- STATES ---
     typedef enum {
 	// 1. network entry phase
@@ -80,9 +77,7 @@ protected:
 	STATE_WAIT_REG_RSP,               // wait for REG-RSP
 
 	// 2. service flow creation phase
-	/// @todo - implement service flow creation
-	STATE_INITIATE_SVC_FLOW_CREATION, // initialize service flow creation (i.e. start new FSMs for each flow)
-	// STATE_WAIT_FOR_SVC_FLOW_COMPLETE, // wait for service flow creation completion
+	STATE_SVC_FLOW_CREATION,             // initialize service flow creation (i.e. start new FSMs for each flow)
 
 	STATE_OPERATIONAL,                // network entry completed, service flows created, normal operation
 
@@ -104,6 +99,32 @@ protected:
 	STATE_POWER_DOWN,
 	STATE_NUM
     } State;
+
+    // --- EVENTS ---
+    typedef enum {
+	EVENT_HANDOVER_START,
+	EVENT_REENTRY_START,
+	EVENT_ENTRY_START,
+	EVENT_DLMAP,
+	EVENT_UCD,
+	EVENT_CDMA_CODE,
+	EVENT_BSHO_RSP_RECEIVED,
+	EVENT_HO_CDMA_CODE,
+	EVENT_RNG_RSP_RECEIVED,
+	EVENT_SBC_RSP_RECEIVED,
+	EVENT_SA_TEK_CHALLENGE,
+	EVENT_SA_TEK_RSP,
+	EVENT_REG_RSP_RECEIVED,
+	EVENT_SERVICE_FLOW_COMPLETE, // service flow created
+	EVENT_NUM
+    } Event;
+
+    double hoStartTimestamp;   // timestamp of handover start
+    double hoReentryTimestamp; // timestamp of the reentry start
+    
+protected:
+    void fsmInit();
+    void reConnect();
 
     // wait for DL-MAP state
     static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);
@@ -143,7 +164,8 @@ protected:
     static FsmStateType onEventState_WaitForRegRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // initiate service flow creation state
-    static FsmStateType onEnterState_InitiateSvcFlowCreation(Fsm * fsm);
+    static FsmStateType onEnterState_SvcFlowCreation(Fsm * fsm);
+    static FsmStateType onEventState_SvcFlowCreation(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // operational state
     static FsmStateType onEnterState_Operational(Fsm * fsm);
@@ -171,24 +193,6 @@ protected:
     
     static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-    // --- EVENTS ---
-    typedef enum {
-	EVENT_HANDOVER_START,
-	EVENT_REENTRY_START,
-	EVENT_ENTRY_START,
-	EVENT_DLMAP,
-	EVENT_UCD,
-	EVENT_CDMA_CODE,
-	EVENT_BSHO_RSP_RECEIVED,
-	EVENT_HO_CDMA_CODE,
-	EVENT_RNG_RSP_RECEIVED,
-	EVENT_SBC_RSP_RECEIVED,
-	EVENT_SA_TEK_CHALLENGE,
-	EVENT_SA_TEK_RSP,
-	EVENT_REG_RSP_RECEIVED,
-	EVENT_NUM
-    } Event;
-
     FsmStateType onEvent_CdmaCode(cMessage *msg);
 
     // --- TIMERS ---
@@ -196,6 +200,8 @@ protected:
     TIMER_DEF(NetworkEntry);
     TIMER_DEF(Reentry);
 
+private:
+    int sfCnt; // number of service flows
 };
 
 class WMaxCtrlBS : public Fsm

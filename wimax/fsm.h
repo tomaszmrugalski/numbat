@@ -95,14 +95,14 @@ public:
     std::vector<FsmState> States;
     std::vector<FsmEvent> Events;
 
-    void sendMsg(cMessage * msg, char * paramName, const char * gateName);
+    double sendMsg(cMessage * msg, char * paramName, const char * gateName);
+    virtual void onEvent(FsmEventType e, cMessage *msg);
 
 protected:
     virtual void fsmInit() = 0;
     bool stateVerify();
     bool eventVerify();
     void statesEventsInit(int statesCnt, int eventsCnt, FsmStateType s);
-    virtual void onEvent(FsmEventType e, cMessage *msg);
     virtual void stateInit(FsmStateType type, std::string name, onEventFunc func); // stationary state
     virtual void stateInit(FsmStateType type, std::string name, onEventFunc onEvent, onEnterFunc onEnter, onExitFunc onExit); // stationary state
     virtual void stateInit(FsmStateType type, std::string name, int targetState, onEnterFunc onEnter); // transitive state
