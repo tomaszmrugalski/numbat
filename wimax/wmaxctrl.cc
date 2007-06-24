@@ -913,6 +913,6 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
 
 // Operational state
 FsmStateType WMaxFlowSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage * msg) {
-
+return fsm->State();
 }
 

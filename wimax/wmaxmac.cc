@@ -708,15 +708,15 @@ void WMaxMacSS::handleMessage(cMessage *msg)
     }
 
     Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
-    if (!strcmp(gate->fullName(),"phyIn")) {
+    if (strcmp(gate->fullName(),"phyIn")) {
         //BS -> SS
-	handleUlMessage(msg);
+	handleDlMessage(msg);
 	return;
     }
-
-    // remaining gates must be downlink (SS -> BS)
-    handleDlMessage(msg);
-    return;
+else
+   { // remaining gates must be downlink (SS -> BS)
+   handleUlMessage(msg);
+    return;}
 }
 
 void WMaxMac::handleDlMessage(cMessage *msg)
@@ -760,7 +760,7 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 	    if(msg->length() == 0) { /// @todo sending messages with length == 0
 		it->qos.be.reqbw += 12;
 	    }
-	    Log(Cont) << "CID=" << it->cid << " Requied bandwidth: " << it->qos.be.reqbw << LogEnd; 
+	    Log(Cont) << "CID=" << it->cid << " Required bandwidth: " << it->qos.be.reqbw << LogEnd; 
 	    it->queue->insert(msg);
 	    break;
 	case WMAX_CONN_TYPE_UGS:

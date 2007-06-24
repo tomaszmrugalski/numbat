@@ -39,7 +39,7 @@ class WMaxPhyBS : public WMaxPhy
     virtual void handleMessage(cMessage *msg);
     void beginFrame();
     void checkConnect();
-
+    int checkGate(int);
     WMaxMsgDlMap * DlMap;
     WMaxMsgUlMap * UlMap;
     int       FrameCnt;

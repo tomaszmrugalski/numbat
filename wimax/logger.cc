@@ -13,7 +13,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <time.h>
 #include "logger.h"
 #include <omnetpp.h>
