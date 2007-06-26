@@ -41,7 +41,7 @@ void WMaxPhyBS::initialize()
 }
 
 void WMaxPhyBS::handleMessage(cMessage *msg)
-{   checkConnect();
+{   
     cGate * gate = msg->arrivalGate();
     // uplink message
     Log(Debug) << fullName() << "Message" << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
@@ -82,84 +82,23 @@ void WMaxPhyBS::beginFrame()
     Log(Debug) << "Frame number: " << FrameCnt << ", " << SendQueue.length() << " message(s) to send. " << LogEnd;
 
     if (this->DlMap) {
-		
-	    
-	for (int i=0; i<10; i++)   
-             {  if(checkGate(i)){
-    cMessage *copy = (cMessage *) DlMap->dup();
-    send(copy,"rfOut",i);}
-                  }
-
-	                      
+	send(DlMap,"rfOut");
 	this->DlMap = 0;
     } else {
-	Log(Debug) << "DL-MAP not set. Send skipped" << LogEnd;
+	Log(Debug) << "DL-MAP not set. Send skipped." << LogEnd;
     }
     if (this->UlMap) {
-                     
-                     for (int i=0; i<10; i++)   
-             {  if(checkGate(i)){
-    cMessage *copy = (cMessage *) UlMap->dup();
-    send(copy,"rfOut",i);}
-                  }
-                     
+	send(UlMap,"rfOut");
 	this->UlMap = 0;
     } else {
 	Log(Debug) << "UL-MAP not set. Send skipped" << LogEnd;
     }
-
+    
     while (!SendQueue.empty()) {
 	cMessage * msg = (cMessage*)SendQueue.pop();
-
-	send(msg, "rfOut", 0);
-/*	for (int i=0; i<10; i++)   
-    {   
-    if(checkGate(i)){
-    cMessage *copy = (cMessage *) msg->dup();
-    send(copy,"rfOut",i);
-                       }
-    }*/
-	      
-                                }
+	send(msg, "rfOut");
+    }
 }
-
-// checks if BS is connected to anything and connects to dummy if not
-void WMaxPhyBS::checkConnect()
-{ cModule *BS = parentModule();
-  cGate *BSout = BS->gate("out",0);
-  if(BSout->isConnected())
-  {
-                          }
-  else
-          { int gatenum=-1;
-            int connected=1; 
-            cModule *BS = parentModule();
-            cModule *physim = parentModule()->parentModule();
-            cModule *dummy = physim->submodule("Dummy");
-    
-    while( connected) {
-        gatenum++;
-    cGate *dumgate=dummy->gate("in",gatenum);
-    connected=(dumgate->isConnected());
-    
-                                       }
-    
-    BS->gate("out")->connectTo(dummy->gate("in",gatenum)) ; 
-                                                           
-           }   
-     
-   }
-
-int WMaxPhyBS::checkGate(int i)
-
-{                             
-      cModule *BS = parentModule();
-      cGate *BSout = BS->gate("out",i);
-     int con = BSout->isConnected();
-     return con;
-     
- }
- 
 
 /********************************************************************************/
 /*** WMax PHY SS ****************************************************************/
@@ -181,22 +120,25 @@ void WMaxPhySS::initialize()
 {   
     SendQueue.clear();
     SendQueue.setName("SendQueue");
-    
+
+/*     
     cModule *SS = parentModule();
     cModule *physim = parentModule()->parentModule();
     cModule *BS = physim->submodule("BS",0);
     if (!BS)
 	opp_error("There are no BS(es) defined. Number of BSes must be at least 1 to initialize sim.");
-	//connect to the first available gate on BS[0]
-	cGate *firstGate = BS->gate("out",0);
-	int connected = (firstGate->isConnected());
-	int i = 0 ;
-	while (connected){
-           i++;
-           connected = ((BS->gate("out",i))->isConnected());
-           }
-    SS->gate("out")->connectTo(BS->gate("in",i)) ; 
-    BS->gate("out",i)->connectTo(SS->gate("in")) ;
+    //connect to the first available gate on BS[0]
+    cGate *firstGate = BS->gate("out",0);
+    int connected = (firstGate->isConnected());
+    int i = 0 ;
+    while (connected) {
+	i++;
+	connected = ((BS->gate("out",i))->isConnected());
+    }
+    Log(Debug) << "#### Trying to connect to BS[0], gate " << i << LogEnd;
+    SS->gate("out")->connectTo(BS->gate("in",i)); 
+    BS->gate("out",i)->connectTo(SS->gate("in"));
+*/
 }
 
 void WMaxPhySS::beginFrame()

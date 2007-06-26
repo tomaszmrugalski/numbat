@@ -130,6 +130,8 @@ wmaxphy.o: wmaxphy.cc
 fsm.o: fsm.cc fsm.h
 	$(CXX) -c $(COPTS) fsm.cc
 
+wmaxradio.: wmaxradio.cc wmaxradio.h
+	$(CXX) -c $(COPTS) wmaxradio.cc
 
 #doc: neddoc doxy
 

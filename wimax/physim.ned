@@ -12,8 +12,8 @@ endsimple
 
 module Physim
     parameters:
-        numBS: numeric;
-
+        numBS: numeric,
+        numSS: numeric;
 
     submodules:
         Dummy: AirDummy;
@@ -21,14 +21,13 @@ module Physim
                 in[10];
             display: "p=169,72;i=misc/cloud";
         BS: BS[numBS];
+	    gatesizes:
+		in[numSS],
+		out[numSS];
             display: "i=device/antennatower_l";
-        SS: SS;
+        SS: SS[numSS];
             display: "p=239,232;i=device/pc_s";
     connections nocheck:
-
-                         //  BS[1].out --> SS.in;
-                         //  SS.out --> BS[1].in;
-
 
 
 endmodule

@@ -25,7 +25,6 @@ WMaxMac::WMaxMac()
     GateIndex = 0;
 }
 
-
 bool WMaxMac::addConn(WMaxConn conn)
 {
     stringstream tmp;
@@ -644,7 +643,7 @@ void WMaxMacSS::initialize()
     std::string st_cid;
     ss_cid << conn.cid;
     ss_cid >> st_cid;
-    std::string name = "SednQueue, CID: " + st_cid;
+    std::string name = "SendQueue, CID: " + st_cid;
     conn.queue = new cQueue(name.c_str());
     addConn(conn);
 //     }

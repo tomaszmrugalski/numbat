@@ -15,6 +15,7 @@
 #include "wmaxmsg_m.h"
 #include "logger.h"
 #include "hoinfo.h"
+#include "wmaxradio.h"
 
 /********************************************************************************/
 /*** WMax Ctrl SS ****************************************************************/
@@ -105,6 +106,13 @@ void WMaxCtrlSS::initialize() {
 	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
     }
     Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
+
+    connectBS(0); // initially start with first BS
+
+    char buf[80];
+    sprintf(buf, "WMaxCtrlSS[%d]", parentModule()->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 /** 
@@ -138,7 +146,6 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	    if ( (ie.uiuc == WMAX_ULMAP_UIUC_CDMA_BWR) ) {
 		onEvent(EVENT_CDMA_CODE, msg);
 	    }
-	    
 	}
 
 	delete msg;
@@ -523,7 +530,7 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 
     SLog(fsm, Notice) << "Handover (on serving BS) complete: " << ss->hoStartTimestamp << "-" 
 		<< ss->simTime() << LogEnd;
-    ss->reConnect();
+    ss->connectNextBS();
     ss->hoReentryTimestamp = ss->simTime();
 
     return fsm->State();
@@ -573,7 +580,61 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
 	CASE_IGNORE(fsm, e);
     }
 }
-void WMaxCtrlSS::reConnect() {
+
+void WMaxCtrlSS::connectBS(int x) {
+    
+    /* sanity checks */
+    cModule *SS = parentModule();
+    cModule *physim = parentModule()->parentModule();
+    int maxBS = physim->par("numBS");
+    if (x> maxBS) {
+	opp_error("Unable to connect to BS[%d]: there are only %d BS(es)\n",
+		  x, maxBS);
+    }
+    
+    cModule * targetBS = physim->submodule("BS",x);
+    if (!targetBS) {
+	opp_error("Unable to find BS[%d]\n", x);
+    } 
+
+    disconnect(); // disconnect from current BS (if any)
+
+    /* connect to the next BS */
+    cModule *radio = targetBS->submodule("radio");
+    if (!radio)
+	opp_error("Unable to obtain radio submodule in BS[%d]\n",
+		  x);
+
+    WMaxRadio * wmaxRadio = check_and_cast<WMaxRadio*>(radio);
+
+    wmaxRadio->connect(SS);
+}
+
+void WMaxCtrlSS::disconnect() {
+
+    cModule *SS = parentModule();
+    if (!SS->gate("out")->isConnected()) {
+	// not connected
+	return;
+    }
+    
+    cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
+    cModule *radio = BS->submodule("radio");
+    if (!radio)
+	opp_error("Unable to obtain radio submodule in BS[%d]\n",
+		  BS->index());
+    WMaxRadio * wmaxRadio = check_and_cast<WMaxRadio*>(radio);
+    wmaxRadio->disconnect(SS);
+    wmaxRadio->connect(SS);
+    wmaxRadio->disconnect(SS);
+    wmaxRadio->connect(SS);
+}
+
+/** 
+ * thie method reconnects (creates Omnet module-module connections) to the next BS
+ * 
+ */
+void WMaxCtrlSS::connectNextBS() {
     
     cModule *SS = parentModule();
     cModule *physim = parentModule()->parentModule();
@@ -584,12 +645,9 @@ void WMaxCtrlSS::reConnect() {
     cModule *BSnext = physim->submodule("BS", nextBS);
     if (!BSnext)
 	opp_error("Unable to find BS:%d\n", nextBS);
-    
-    SS->gate("out")->disconnect();
-    BS->gate("out")->disconnect();
-    BSnext->gate("out")->disconnect();
-    SS->gate("out")->connectTo(BSnext->gate("in")) ; 
-    BSnext->gate("out")->connectTo(SS->gate("in")) ;
+
+    disconnect(); // disconnect from current BS
+    connectBS(nextBS); // connect to the next BS
 
     // after reconnecting to other BS, perform Reentry, not normal entry
     neType = WMAX_CTRL_NETWORK_REENTRY; 

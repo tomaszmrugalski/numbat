@@ -124,7 +124,9 @@ public:
     
 protected:
     void fsmInit();
-    void reConnect();
+    void connectNextBS();
+    void connectBS(int x); // connect (i.e. make Omnet connections) to BS[x]
+    void disconnect();
 
     // wait for DL-MAP state
     static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);

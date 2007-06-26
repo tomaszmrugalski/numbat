@@ -41,18 +41,27 @@ simple WMaxCtrlBS
         in: macIn;
 endsimple
 
-module BS
+//Simulates transmission between 1 BS and 0..n SSes.
+simple WMaxRadio
     gates:
-        out: out;
-        in: in;
+        in: phyIn;
+        out: phyOut;
+        out: radioOut[];
+        in: radioIn[];
+endsimple
+module BS
+    parameters:
 
+    gates:
+        out: out[];
+        in: in[];
     submodules:
         bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=152,280;q=SendQueue";
+            display: "i=abstract/accesspoint,#40e221;p=176,208;q=SendQueue";
         bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=152,200;q=SendQueue";
+            display: "i=block/control,#40e221;p=280,208;q=SendQueue";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=80,56;tx=Tx,rx";
+            display: "i=block/app,#40e221;p=280,40;tx=Tx,rx";
         //         bsIPv6_1: IPv6Node;
         //             parameters:
         //                 BurstInterval = 0.027, // TBD
@@ -60,10 +69,16 @@ module BS
         //                 BurstPacketSize = 400; // TBD
         //             display: "i=block/app,#40e221;p=232,80";
         WMaxCtrlBS: WMaxCtrlBS;
-            display: "i=block/cogwheel,#40e221;p=240,160";
+            display: "i=block/cogwheel,#40e221;p=392,208";
         bsCS: WMaxMacCS;
-            display: "p=152,120;i=block/classifier,#40e221";
-    connections:
+            display: "p=280,128;i=block/classifier,#40e221";
+        radio: WMaxRadio;
+	    gatesizes:
+		radioIn[sizeof(in)],
+		radioOut[sizeof(in)]; // use in, for consistency
+		
+            display: "p=64,208;i=device/receiverdish,#40e221,30";
+    connections nocheck:
 
         bsMac.phyOut --> bsPhy.phyIn;
         bsPhy.phyOut --> bsMac.phyIn;
@@ -83,10 +98,11 @@ module BS
         bsMac.macOut++ --> WMaxCtrlBS.macIn;
         WMaxCtrlBS.macOut --> bsMac.macIn++;
 
-        in --> bsPhy.rfIn;
-        bsPhy.rfOut --> out;
-
-    display: "b=280,344";
+        radio.phyOut --> bsPhy.rfIn;
+        bsPhy.rfOut --> radio.phyIn; //
+                                     //
+				     
+    display: "b=448,248";
 endmodule
 
 
