@@ -17,12 +17,18 @@
 
 using namespace std;
 
+ostream & operator<<(ostream & strum, WMaxMacCDMA &x) {
+    strum << "code=" << x.code << " bandwidth=" << x.bandwidth << " cid=" << x.cid;
+    return strum;
+}
+
 /********************************************************************************/
 /*** WMax Mac (common for BS/SS) ************************************************/
 /********************************************************************************/
 WMaxMac::WMaxMac()
 {
     GateIndex = 0;
+    this->CDMAQueue = new cQueue("CDMAQueue");
 }
 
 bool WMaxMac::addConn(WMaxConn conn)
@@ -141,7 +147,6 @@ Define_Module(WMaxMacBS);
 void WMaxMacBS::initialize()
 {
     SendQueue.setName("SendQueue");
-    CDMAQueue.setName("CDMAQueue");
     FrameLength = par("FrameLength");
 
     TxStart = new cMessage("TxStart");
@@ -236,26 +241,26 @@ void WMaxMacBS::handleMessage(cMessage *msg)
 
     cGate * gate = msg->arrivalGate();
     if (!strcmp(gate->fullName(),"phyIn")) {
-	handleUlMessage(msg);
+	handleRxMessage(msg);
 	return;
     }
 
     // remaining gates must be downlink
-    handleDlMessage(msg);
+    handleTxMessage(msg);
 }
 
-void WMaxMacBS::handleUlMessage(cMessage *msg)
+void WMaxMacBS::handleRxMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgCDMA*>(msg))
     {
         if (dynamic_cast<WMaxMsgCDMA*>(msg)->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
-            Log(Debug) << " Received CDMA code" << LogEnd;
-            CDMAQueue.insert(msg);
+            Log(Debug) << " Received CDMA code (purpose=BWR)." << LogEnd;
+            CDMAQueue->insert(msg);
             return;
         }
     }
 
-    WMaxMac::handleUlMessage(msg);
+    WMaxMac::handleRxMessage(msg);
 }
 
 void WMaxMacBS::schedule()
@@ -452,7 +457,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	symbols--; // use just 1 symbol for Initial Ranging
     }
 
-    if (CDMAQueue.length()) {
+    if (CDMAQueue->length()) {
 	// append IE for allocation of bandwidth to a user that requested bandwidth using a CDMA code
 	ieCnt++;
 	schedCdmaInitRngCnt=0;
@@ -460,7 +465,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	CLEAR(&ie);
 	ie.cid  = WMAX_CID_BROADCAST;
 	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_ALLOC;
-	WMaxMsgCDMA *msgcdma = (WMaxMsgCDMA*)CDMAQueue.pop();
+	WMaxMsgCDMA *msgcdma = (WMaxMsgCDMA*)CDMAQueue->pop();
 	ie.cdmaAllocIE.rangingCode = msgcdma->getCode();
 	/// @todo - duration, rangingSymbol, rangingSubchannel
 	ulmap->setIE(ieCnt-1,ie);
@@ -559,7 +564,12 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
     return ulmap;
 }
 
-void WMaxMac::handleUlMessage(cMessage *msg)
+/** 
+ * method used to process received (RX) message (i.e. received from PHY, handled to MAC)
+ * 
+ * @param msg 
+ */
+void WMaxMac::handleRxMessage(cMessage *msg)
 {
     int cid = -1;
     int gateIndex = -1;
@@ -615,26 +625,25 @@ Define_Module(WMaxMacSS);
 void WMaxMacSS::initialize()
 {
     BEpoint = 0;
-
     SendQueue.setName("SendQueue");
-
     CLEAR(&Stats);
 
+    // Create permanent INITIAL-RANGING connection
+    addRangingConn();
+
+
+    WATCH_LIST(CDMAlist);
+}
+
+void WMaxMac::addRangingConn()
+{
     int conns = gateSize("macOut");
-    int cid  = 1024;
-    int sfid = 1;
-    Log(Notice) << conns << " objects connected to this MAC, creating connections." << endl;
-
-// Best Effort
-
-//     for (int i=0; i<conns; i++) {
     int i = conns - 1; // control connection
     WMaxConn conn;
     CLEAR(&conn);
     conn.type= WMAX_CONN_TYPE_BE;
-    conn.sfid = sfid++;
-//     conn.cid  = cid++;
-    conn.cid = 1023; /// @todo generate CID
+    conn.sfid = 0; // not important/not used
+    conn.cid = 0; // CID=0 (well known CID for initial ranging)
     conn.gateIndex = i;
     conn.qos.be.msr = 80000; // 100kbps
     conn.qos.be.reqbw = 0;
@@ -646,21 +655,7 @@ void WMaxMacSS::initialize()
     std::string name = "SendQueue, CID: " + st_cid;
     conn.queue = new cQueue(name.c_str());
     addConn(conn);
-//     }
-
-
-// UGS
-
-/*    for (int i=1; i<conns; i++) {
-	WMaxConn conn;
-	CLEAR(&conn);
-	conn.type= WMAX_CONN_TYPE_UGS;
-	conn.sfid = sfid++;
-	conn.cid  = cid++;
-	conn.gateIndex = i;
-	conn.qos.ugs.msr = 80000; // 100kbps
-	addConn(conn);
-    }*/
+    Log(Debug) << "Initial-ranging connection added." << LogEnd;
 }
 
 void WMaxMacSS::handleMessage(cMessage *msg)
@@ -701,26 +696,28 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         addConn(conn);
 
         send(msg, "macOut", 0);  // send add conn msg to CS
-
-        //delete msg;
         return;
     }
 
     Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
     if (strcmp(gate->fullName(),"phyIn")) {
-        //BS -> SS
-	handleDlMessage(msg);
+        //"phyIn gate: downlink (BS->SS)
+	handleTxMessage(msg);
+	return;
+    } else
+    { // "macIn" remaining gates must be uplink (SS -> BS)
+	handleRxMessage(msg);
 	return;
     }
-else
-   { // remaining gates must be downlink (SS -> BS)
-   handleUlMessage(msg);
-    return;}
 }
 
-void WMaxMac::handleDlMessage(cMessage *msg)
+/** 
+ * method used to handle to-be-transmitted (TX) message (i.e. received from MAC, to be sent to PHY)
+ * 
+ * @param msg 
+ */
+void WMaxMac::handleTxMessage(cMessage *msg)
 {
-
 
 /// @todo find proper connection 
      cGate * gate = msg->arrivalGate();
@@ -751,6 +748,7 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 	return;
     }
 
+//    if (dynamic_cast<WMaxMacSS*>(this)) {
     if (!strcmp(fullName(), "ssMac")) {
 	switch(it->type) {
 	case WMAX_CONN_TYPE_BE:
@@ -774,7 +772,7 @@ void WMaxMac::handleDlMessage(cMessage *msg)
 
 }
 
-void WMaxMacSS::handleUlMessage(cMessage *msg)
+void WMaxMacSS::handleRxMessage(cMessage *msg)
 {
     bool bcastMsg = false; // is this a broadcast message?
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
@@ -828,13 +826,13 @@ void WMaxMacSS::handleUlMessage(cMessage *msg)
 	return;
     }
 
-    WMaxMac::handleUlMessage(msg);
+    WMaxMac::handleRxMessage(msg);
 }
 
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
     int bandwidth = 0;
-    Log(Debug) << "UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)" << LogEnd;
+    Log(Debug) << "UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)." << LogEnd;
     int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE & ie = ulmap->getIE(i);
@@ -942,7 +940,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                         WMaxMsgCDMA *cdmamsg = new WMaxMsgCDMA("CDMA");
                         cdmamsg->setCode(cdma.code);
                         cdmamsg->setPurpose(WMAX_CDMA_PURPOSE_BWR);
-                        Log(Debug) << ": Sending CDMA code: " << cdma.code <<" (cid: " << cdma.cid << ", bandwidth: "
+                        Log(Debug) << "Sending CDMA code: " << cdma.code <<" (cid: " << cdma.cid << ", bandwidth: "
 				   << cdma.bandwidth << ")" << LogEnd;
                         send(cdmamsg, "phyOut");
                         break;

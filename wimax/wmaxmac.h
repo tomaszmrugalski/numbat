@@ -105,6 +105,8 @@ typedef struct {
 } WMaxMacCDMA;
 
 
+ostream & operator<<(ostream & strum, WMaxMacCDMA &x);
+
 /** 
  * this structure represents connection
  * 
@@ -154,18 +156,19 @@ class WMaxMac : public cSimpleModule
     virtual void handleMessage(cMessage *msg) = 0;
     bool addConn(WMaxConn conn);
     bool delConn(uint32_t sfid);
+    void addRangingConn();
 
     // --- runtime parameters ---
     cQueue SendQueue;
-    cQueue CDMAQueue;
+    cQueue * CDMAQueue;
     int GateIndex;
 
     // --- configuration parameters ---
     list<WMaxConn> Conns;
     double FrameLength;
 
-    virtual void handleUlMessage(cMessage *msg);
-    virtual void handleDlMessage(cMessage *msg);
+    virtual void handleRxMessage(cMessage *msg);
+    virtual void handleTxMessage(cMessage *msg);
     virtual void printDlMap(WMaxMsgDlMap * dlmap);
     virtual void printUlMap(WMaxMsgUlMap * ulmap);
 };
@@ -176,7 +179,8 @@ class WMaxMacBS: public WMaxMac
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    void handleUlMessage(cMessage* msg);
+    //void handleUlMessage(cMessage* msg);
+    void handleRxMessage(cMessage* msg);
 
     void schedule();
     void scheduleBcastMessages(); // prepare broadcast messages sent periodically (DCD, UCD, Neighbor-Advertisements)
@@ -218,12 +222,12 @@ class WMaxMacSS: public WMaxMac
     virtual void handleMessage(cMessage* msg);
     virtual void finish();
 
-    list<WMaxMacCDMA> CDMAlist;
+    list<WMaxMacCDMA> CDMAlist; //WMaxMac::cdmaQueue is used instead
     int BEpoint;
 
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
-    void         handleUlMessage(cMessage* msg);
+    void         handleRxMessage(cMessage* msg);
 
     WMaxStatsSS Stats;
 };
