@@ -209,21 +209,3 @@ void Fsm::stringUpdate()
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);
 }
-
-double Fsm::sendMsg(cMessage * msg, char * paramName, const char * gateName)
-{
-    char buf[80];
-    sprintf(buf, "Min%s", paramName);
-    double min = (double)par(buf);
-
-    sprintf(buf, "Max%s", paramName);
-    double max = (double)par(buf);
-
-    double delay = uniform(min, max);
-    
-    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay << "secs." << LogEnd;
-
-    sendDelayed(msg, delay, gateName);
-
-    return delay;
-}

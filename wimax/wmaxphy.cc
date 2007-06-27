@@ -44,12 +44,11 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
 {   
     cGate * gate = msg->arrivalGate();
     // uplink message
-    Log(Debug) << fullName() << "Message" << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
+    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
 	       << gate->id() << LogEnd;
-	       //checks if message is UL - i is the string to compare with the incoming gate
+    //checks if message is UL - i is the string to compare with the incoming gate
   
-    char i[]="rfIn[";
-    if (strspn(i,gate->fullName())==5) {
+    if (!strcmp("rfIn",gate->fullName())) {
 	// deliver message immediately
 	send(msg,"phyOut");
 	return;
@@ -68,7 +67,7 @@ void WMaxPhyBS::handleMessage(cMessage *msg)
     }
     if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
 	beginFrame();
-	
+	delete msg;
 	return;
     }
 

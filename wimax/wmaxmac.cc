@@ -168,42 +168,8 @@ void WMaxMacBS::initialize()
     schedDcdCnt          = 0;
     schedUcdCnt          = 0;
 
-    // configure connections
-    int conns = gateSize("macOut");
-    int cid  = 1024;
-    int sfid = 1;
-
-// Best Effort
-    int i = conns - 1; // control connection
-    WMaxConn conn;
-    CLEAR(&conn);
-    conn.type= WMAX_CONN_TYPE_BE;
-    conn.sfid = sfid++;
-//     conn.cid  = cid++;
-    conn.cid = 1023; /// @todo generate CID
-    conn.gateIndex = i;
-    conn.qos.be.msr = 80000; // 100kbps
-    conn.qos.be.reqbw = 0;
-    conn.bandwidth = 0;
-    std::stringstream ss_cid;
-    std::string st_cid;
-    ss_cid << conn.cid;
-    ss_cid >> st_cid;
-    std::string name = "SednQueue, CID: " + st_cid;
-    conn.queue = new cQueue(name.c_str());
-    addConn(conn);
-
-// UGS
-/*    for (int i=1; i<conns; i++) {
-	WMaxConn conn;
-	CLEAR(&conn);
-	conn.type= WMAX_CONN_TYPE_UGS;
-	conn.sfid = sfid++;
-	conn.cid  = cid++;
-	conn.gateIndex = i;
-	conn.qos.ugs.msr = 80000; // 100kbps
-	addConn(conn);
-    }*/
+    // Create permanent INITIAL-RANGING connection
+    addRangingConn();
 }
 
 void WMaxMacBS::handleMessage(cMessage *msg)
@@ -229,7 +195,7 @@ void WMaxMacBS::handleMessage(cMessage *msg)
         std::string st_cid;
         ss_cid << conn.cid;
         ss_cid >> st_cid;
-        std::string name = "SednQueue, CID: " + st_cid;
+        std::string name = "SendQueue, CID: " + st_cid;
         conn.queue = new cQueue(name.c_str());
         addConn(conn);
 
@@ -574,25 +540,26 @@ void WMaxMac::handleRxMessage(cMessage *msg)
     int cid = -1;
     int gateIndex = -1;
     if (dynamic_cast<WMaxMacHeader*>(msg->controlInfo())) {
-	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->removeControlInfo());
+	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
 	cid = hdr->cid;
 
         // bandwidth request
         if (hdr->ht == true) {
+	    Log(Debug) << "Received bandwidth request, CID=" << hdr->cid << " bandwidth: " << hdr->bwr << LogEnd;
             for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
 	        if (it->cid == hdr->cid) {
-                    Log(Debug) << "Received bandwidth request, CID= " << hdr->cid << " bandwidth: " << hdr->bwr << LogEnd;
 	            it->qos.be.reqbw = hdr->bwr;
+		    delete msg;
+		    return;
 	        }
             }
+	    Log(Error) << "Received BWR for unknown (cid=" << hdr->cid << ") connection. Ignored." << LogEnd;
             delete msg;
-            delete hdr;
             return;
         }
-	delete hdr;
     } else {
 	Log(Error) << "Malformed message received: " << msg->fullName() 
-		   << ". Uplink message without WMaxMacHeader structure." << LogEnd;
+		   << ". WMaxMacHeader structure missing." << LogEnd;
 	return;
     }
 
@@ -723,17 +690,19 @@ void WMaxMac::handleTxMessage(cMessage *msg)
      cGate * gate = msg->arrivalGate();
      list<WMaxConn>::iterator it;
 
-    // message from WMaxCtrl - add header
-    for (it = Conns.begin(); it!=Conns.end(); it++) {
-	if ((it->gateIndex == gate->index()) && (it->controlConn == true)) {
-	    WMaxMacHeader * hdr = new WMaxMacHeader();
-	    hdr->cid = it->cid;
-	    msg->setControlInfo(hdr);
-	    break;
-	}
-    }
+     // message from WMaxCtrl - add header
+     if (!msg->controlInfo()) {
+	 for (it = Conns.begin(); it!=Conns.end(); it++) {
+	     if ((it->gateIndex == gate->index()) && (it->controlConn == true)) {
+		 WMaxMacHeader * hdr = new WMaxMacHeader();
+		 hdr->cid = it->cid;
+		 msg->setControlInfo(hdr);
+		 break;
+	     }
+	 }
+     }
 
-    WMaxMacHeader * hdr = new WMaxMacHeader();
+    WMaxMacHeader * hdr = 0;
     hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
 
     // find proper connection, not just get first one
@@ -970,7 +939,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                    hdr->cid = it->cid;
                    WMaxMsgBWR *msg = new WMaxMsgBWR("Bandwidth request");
                    msg->setControlInfo(hdr);
-                   Log(Debug) << ": Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << LogEnd;
+                   Log(Debug) << "Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << LogEnd;
                    send(msg, "phyOut");
                    CDMAlist.erase(it);
                    break;

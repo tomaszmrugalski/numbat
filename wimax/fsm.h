@@ -95,7 +95,6 @@ public:
     std::vector<FsmState> States;
     std::vector<FsmEvent> Events;
 
-    double sendMsg(cMessage * msg, char * paramName, const char * gateName);
     virtual void onEvent(FsmEventType e, cMessage *msg);
 
 protected:

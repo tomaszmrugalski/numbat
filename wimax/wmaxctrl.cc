@@ -16,6 +16,16 @@
 #include "logger.h"
 #include "hoinfo.h"
 #include "wmaxradio.h"
+#include "wmaxmac.h"
+
+static int GetCidFromMsg(cMessage * msg)
+{
+    WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+    if (!hdr) {
+	opp_error("Unable to find MacHeader in message %s\n", msg->fullName());
+    }
+    return hdr->cid;
+}
 
 /********************************************************************************/
 /*** WMax Ctrl SS ****************************************************************/
@@ -679,13 +689,36 @@ bool WMaxCtrlBS::pkmEnabled()
     return pkmSupport;
 }
 
+double WMaxCtrlBS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
+{
+    char buf[80];
+    sprintf(buf, "Min%s", paramName);
+    double min = (double)par(buf);
+
+    sprintf(buf, "Max%s", paramName);
+    double max = (double)par(buf);
+
+    double delay = uniform(min, max);
+    
+    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay 
+	       << "secs (cid=" << cid << ")." << LogEnd;
+
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr->cid = cid;
+    msg->setControlInfo(hdr);
+
+    sendDelayed(msg, delay, gateName);
+
+    return delay;
+}
+
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
 	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
 	rsp->setName("RNG-RSP");
 	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-	double x = sendMsg(rsp, "DelayCdma", "macOut");
+	double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
 	Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs." << LogEnd;
 	delete msg;
 	return;
@@ -694,16 +727,16 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgSbcReq*>(msg)) {
 	WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
 	rsp->setName("SBC-RSP");
-	double x = sendMsg(rsp, "DelaySbc", "macOut");
+	double x = sendMsg(rsp, "DelaySbc", "macOut", GetCidFromMsg(msg));
 	Log(Notice) << "SBC-REQ received, sending SBC-RSP in " << x << "secs." << LogEnd;
-	delete msg;
 
 	if (pkmEnabled()) {
 	    Log(Notice) << "Initiating PKMv2: SA-TEK 3way handshake, sending PKM-RSP" << LogEnd;
 	    WMaxMsgPkmRsp * pkm = new WMaxMsgPkmRsp("PKM-RSP (SA-TEK-Challange)");
 	    pkm->setCode(WMAX_PKM_SA_TEK_CHALLENGE);
-	    sendMsg(pkm, "DelaySaTek", "macOut");
+	    sendMsg(pkm, "DelaySaTek", "macOut", GetCidFromMsg(msg));
 	}
+	delete msg;
 
 	return;
     }
@@ -715,7 +748,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 	if (req->getCode() == WMAX_PKM_SA_TEK_REQ)
 	    rsp->setCode(WMAX_PKM_SA_TEK_RSP);
 
-	double x = sendMsg(rsp, "DelaySaTek", "macOut");
+	double x = sendMsg(rsp, "DelaySaTek", "macOut", GetCidFromMsg(msg));
 	Log(Notice) << "PKM-REQ received, sending PKM-RSP in " << x << "secs." << LogEnd;
 	delete msg;
 	return;
@@ -724,7 +757,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgRegReq*>(msg)) {
 	WMaxMsgRegRsp * rsp = new WMaxMsgRegRsp("REG-RSP");
 	rsp->setName("REG-RSP");
-	double x = sendMsg(rsp, "DelayReg", "macOut");
+	double x = sendMsg(rsp, "DelayReg", "macOut", GetCidFromMsg(msg));
 	Log(Notice) << "REG-REQ received, sending REG-RSP in " << x << "secs." << LogEnd;
 	delete msg;
 	return;
@@ -733,7 +766,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgMSHOREQ*>(msg)) {
 	WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
 	bshoRsp->setName("BSHO-RSP");
-	double x = sendMsg(bshoRsp, "DelayHoRsp", "macOut");
+	double x = sendMsg(bshoRsp, "DelayHoRsp", "macOut", GetCidFromMsg(msg));
 	Log(Notice) << "MSHO-REQ received, sending BSHO-RSP in " << x << "secs." << LogEnd;
 	delete msg;
 	return;
@@ -786,7 +819,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsxrvd->setName("DSX-RVD");
         dsxrvd->setTransactionID(dsareq->getTransactionID());
         dsxrvd->setConfirmationCode(0);
-	double x = sendMsg(dsxrvd, "DelayDsxRvd", "macOut");
+	double x = sendMsg(dsxrvd, "DelayDsxRvd", "macOut", GetCidFromMsg(msg));
 
         WMaxMsgDsaRsp *dsarsp = new WMaxMsgDsaRsp();
         dsarsp->setName("DSA-RSP");
@@ -798,7 +831,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsarsp->setCid(cid); /// @todo generate CID
         Trans.cid = cid;
         cid++;
-	double y = sendMsg(dsarsp, "DelayDsxRsp", "macOut");
+	double y = sendMsg(dsarsp, "DelayDsxRsp", "macOut", GetCidFromMsg(msg));
 
         Log(Notice) << "DSA-REQ received, sending DSX-RVD (after " << x << "secs) and DSA-RSP (after " 
 		    << y << "secs)." << LogEnd;

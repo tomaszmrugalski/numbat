@@ -137,6 +137,7 @@ class WMaxMacHeader : public cPolymorphic
 {
 public:
     WMaxMacHeader() { cid=0xffff; ht=0; bwr=0; }
+    virtual cPolymorphic *dup() const  {return new WMaxMacHeader(*this);}
     uint16_t cid;
     bool ht;
     int bwr;

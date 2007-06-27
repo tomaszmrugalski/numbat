@@ -219,6 +219,7 @@ protected:
     void fsmInit();
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
 };
 
 class WMaxFlowSS : public Fsm
