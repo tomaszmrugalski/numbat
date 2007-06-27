@@ -635,9 +635,6 @@ void WMaxCtrlSS::disconnect() {
 		  BS->index());
     WMaxRadio * wmaxRadio = check_and_cast<WMaxRadio*>(radio);
     wmaxRadio->disconnect(SS);
-    wmaxRadio->connect(SS);
-    wmaxRadio->disconnect(SS);
-    wmaxRadio->connect(SS);
 }
 
 /** 

@@ -22,9 +22,9 @@ config mainwin-geom	{1201x301+53+28}
 config rununtil-event	{912}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
-config timeline-wantselfmsgs	{1}
-config timeline-msgnamepattern	{*}
 config logwindow-scrollbacklines	{100000}
+config timeline-msgnamepattern	{*}
+config timeline-wantselfmsgs	{1}
 config display-timeline	{1}
 config filtobjlist-maxcount	{100000}
 config log-save-filename	{omnetpp.out}
@@ -58,10 +58,10 @@ inspector "physim.SS.ssCS" "WMaxMacCS" "3" "506x258+373+687"
 inspector "physim.SS[1]" "SS" "3" "762x449+3+541"
 inspector "physim.WMaxCtrlBS" "WMaxCtrlBS" "3" "826x308+29+637"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
-inspector "physim.bsMac" "WMaxMacBS" "3" "1019x258+0+712"
 inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "598x258+633+674"
-inspector "physim" "PhySim" "2" "644x499+624+492"
+inspector "physim.bsMac" "WMaxMacBS" "3" "1019x258+0+712"
 inspector "physim.SS" "SS" "2" "374x459+905+525"
+inspector "physim" "PhySim" "2" "644x499+624+492"
 inspector "physim.SS[1].ssMac" "WMaxMacSS" "1" "460x315+422+675"
 inspector "physim.WMaxCtrlSS" "WMaxCtrlSS" "3" "826x247+29+357"
 

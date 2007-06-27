@@ -72,6 +72,7 @@ void WMaxRadio::connect(cModule * ss)
 	    bsGate = bs->gate("in", i);
 	    bsGate->disconnect();
 	    g = gate("radioIn", i);
+	    ss->gate("out")->disconnect();
 	    ss->gate("out")->connectTo(bsGate);
 	    bsGate->connectTo(g);
 	    return;
@@ -101,4 +102,5 @@ void WMaxRadio::disconnect(cModule * ss)
 
     bs->gate("in", ind)->disconnect();
     bs->gate("out", ind)->disconnect();
+
 }
