@@ -30,7 +30,8 @@ endsimple
 module SS //
           //
     parameters:
-        wmaxHoOptim: numeric;
+        wmaxHoOptim: numeric,
+        wmaxIsMobile: numeric;
     gates:
         out: out;
         in: in; //

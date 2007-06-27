@@ -26,6 +26,7 @@
 #define WMAX_HO_OPTIM_REENTRY_CONFIRM           (1 << 12) /* bit #12 */
 #define WMAX_HO_OPTIM_TRIGGER_HIGHER_LAYER      (1 << 13) /* bit #13 */
 
+
 /* handover related parameters on the WiMAX layer */
 typedef struct {
     int hoOptim; /* see table 367 in 802.16 Corr2 Draft3, pg. 405, section 11.5 */
@@ -49,6 +50,7 @@ typedef struct {
 
 /* general structure describing handover procedure */
 typedef struct HoInfo_s {
+    int            isMobile;
     HoWMax_t       wmax;
     HoIPv6_t       ipv6;
     HoDHCPv6_t     dhcp;

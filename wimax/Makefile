@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/studia/omnetpp/omnetpp-3.3/bin/nedtool
+NEDC=/usr/local/omnetpp/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -39,16 +39,16 @@ AR=ar cr
 SHLIB_LD=g++ -shared 
 MAKEDEPEND=opp_makedep -Y --objdirtree
 
-CFLAGS=-O0 -DNDEBUG=1 -g   -DWITH_PARSIM -DWITH_NETBUILDER
+CFLAGS=-g -O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
-LDFLAGS= -Wl,--export-dynamic
+LDFLAGS= -Wl,--export-dynamic,-lefence
 EXE_SUFFIX=
 
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/studia/omnetpp/omnetpp-3.3/include
-OMNETPP_LIB_DIR=/home/thomson/studia/omnetpp/omnetpp-3.3/lib
+OMNETPP_INCL_DIR=/usr/local/omnetpp/include
+OMNETPP_LIB_DIR=/usr/local/omnetpp/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
@@ -220,6 +220,8 @@ wmaxctrl.o: wmaxctrl.cc \
   wmaxmsg_m.h \
   logger.h \
   hoinfo.h \
+  wmaxradio.h \
+  wmaxmac.h \
   fsm.h \
   wmaxmsg.h
 wmaxmac.o: wmaxmac.cc \
@@ -247,4 +249,5 @@ wmaxphy.o: wmaxphy.cc \
   wmaxmsg.h
 wmaxradio.o: wmaxradio.cc \
   wmaxradio.h \
+  logger.h \
   fsm.h

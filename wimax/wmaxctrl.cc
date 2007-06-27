@@ -113,6 +113,7 @@ void WMaxCtrlSS::initialize() {
 
     cModule * parent = parentModule();
     if (parent) {
+	hoInfo->isMobile = parent->par("wmaxIsMobile");
 	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
     }
     Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
@@ -485,7 +486,8 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 	SLog(fsm, Notice) << "Initial network entry complete." << LogEnd;
     }
 
-    STATIC_TIMER_START(ss, Handover);
+    if (ss->hoInfo->isMobile)
+        STATIC_TIMER_START(ss, Handover);
     
     return fsm->State();
 }

@@ -26,7 +26,7 @@ module Physim
 		out[numSS];
             display: "i=device/antennatower_l";
         SS: SS[numSS];
-            display: "p=239,232;i=device/pc_s";
+            display: "i=device/pc_s";
     connections nocheck:
 
 

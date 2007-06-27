@@ -832,7 +832,6 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 	                 if (msg->length() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
-
 	                     Log(Info) << "Tried to schedule message (len=" << msg->length() << ", but there are only " 
 				       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
@@ -851,7 +850,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 		             msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
 	                     break;*/
 	                 }
-	
+
 	                 // message will fit in this frame, send it
 	                 ieCnt++;
 
@@ -931,8 +930,9 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                        if (it2->cid == it->cid){
                            cMessage * msg;
                            msg = (cMessage*) it2->queue->tail();
-                           if(hdr->bwr < msg->length())
-                               hdr->bwr = msg->length();
+/// @todo segfault!
+//                           if(hdr->bwr < msg->length())
+//                               hdr->bwr = msg->length();
                        }
                    }
 
