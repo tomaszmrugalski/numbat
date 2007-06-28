@@ -102,7 +102,6 @@ void WMaxCtrlSS::fsmInit() {
 void WMaxCtrlSS::initialize() {
     hoInfo = new HoInfo_t();
     CLEAR(hoInfo);
-    Log(Notice) << "HoInfo.wmax.hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
 
     neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
 
@@ -112,13 +111,17 @@ void WMaxCtrlSS::initialize() {
     TIMER_START(NetworkEntry);
 
     cModule * parent = parentModule();
+    int initialBS;
     if (parent) {
 	hoInfo->isMobile = parent->par("wmaxIsMobile");
 	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
+        initialBS = parent->par("initialBS");
     }
     Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
+    Log(Notice) << "isMobile=" << hoInfo->isMobile << LogEnd;
+    Log(Notice) << "initialBS=" << initialBS << LogEnd;
 
-    connectBS(0); // initially start with first BS
+    connectBS(initialBS);
 
     char buf[80];
     sprintf(buf, "WMaxCtrlSS[%d]", parentModule()->index());

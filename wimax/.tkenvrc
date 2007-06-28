@@ -18,7 +18,7 @@ option bubbles	{1}
 option animation_speed	{2.37}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{1201x301+53+28}
+config mainwin-geom	{1201x329+79+0}
 config rununtil-event	{912}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
@@ -49,7 +49,7 @@ config filtobjlist-order	{Class}
 inspector "physim.BS[0]" "BS" "2" "506x347+382+398"
 inspector "physim.SS[0]" "SS" "2" "374x459+0+384"
 inspector "physim.SS[1]" "SS" "2" "374x459+1018+190"
-inspector "physim" "Physim" "2" "472x499+896+485"
+inspector "physim" "Physim" "2" "611x556+643+409"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"

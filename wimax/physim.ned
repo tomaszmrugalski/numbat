@@ -19,16 +19,15 @@ module Physim
         Dummy: AirDummy;
             gatesizes:
                 in[10];
-            display: "p=169,72;i=misc/cloud";
+            display: "i=misc/cloud";
         BS: BS[numBS];
-	    gatesizes:
-		in[numSS],
-		out[numSS];
+            gatesizes:
+                in[numSS],
+                out[numSS];
             display: "i=device/antennatower_l";
         SS: SS[numSS];
             display: "i=device/pc_s";
     connections nocheck:
-
 
 endmodule
 

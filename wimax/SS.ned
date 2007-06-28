@@ -31,7 +31,8 @@ module SS //
           //
     parameters:
         wmaxHoOptim: numeric,
-        wmaxIsMobile: numeric;
+        wmaxIsMobile: numeric,
+        initialBS: numeric;
     gates:
         out: out;
         in: in; //
