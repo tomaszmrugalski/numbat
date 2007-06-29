@@ -928,11 +928,11 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
                    for (list<WMaxConn>::iterator it2=Conns.begin(); it2!=Conns.end(); it2++) {
                        if (it2->cid == it->cid){
-                           cMessage * msg;
-                           msg = (cMessage*) it2->queue->tail();
-/// @todo segfault!
-//                           if(hdr->bwr < msg->length())
-//                               hdr->bwr = msg->length();
+                           if (!it2->queue->empty()) {
+                               cMessage * msg = (cMessage*) it2->queue->tail();
+                               if(hdr->bwr < msg->length())
+                                   hdr->bwr = msg->length();
+                           }
                        }
                    }
 
