@@ -101,7 +101,7 @@ typedef struct {
 typedef struct {
     int code;
     int bandwidth;
-    int cid;
+    uint16_t cid;
 } WMaxMacCDMA;
 
 
@@ -151,6 +151,7 @@ class WMaxMac : public cSimpleModule
 {
  public:
     WMaxMac();
+    void addManagementConn(uint16_t cid);
 
  protected:
     virtual void initialize() = 0;

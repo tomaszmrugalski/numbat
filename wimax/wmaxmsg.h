@@ -113,6 +113,15 @@ typedef struct {
     uint32_t msr;
 } WMaxQos;
 
+// Table 364
+typedef struct {
+    uint64_t macAddr;
+} WMaxRngReq;
 
+// Table 367
+typedef struct {
+    uint64_t ssMacAddr;
+    uint16_t basicCid;
+} WMaxRngRsp;
 
 #endif

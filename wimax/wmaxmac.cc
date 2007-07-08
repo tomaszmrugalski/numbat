@@ -205,6 +205,13 @@ void WMaxMacBS::handleMessage(cMessage *msg)
         return;
     }
 
+    if (WMaxMacAddMngmntConn *addconn = dynamic_cast<WMaxMacAddMngmntConn*>(msg)) {
+        uint16_t cid = addconn->getCid();
+        addManagementConn(cid);
+        delete msg;
+        return;
+    }
+
     cGate * gate = msg->arrivalGate();
     if (!strcmp(gate->fullName(),"phyIn")) {
 	handleRxMessage(msg);
@@ -625,6 +632,30 @@ void WMaxMac::addRangingConn()
     Log(Debug) << "Initial-ranging connection added." << LogEnd;
 }
 
+void WMaxMac::addManagementConn(uint16_t cid)
+{
+    int conns = gateSize("macOut");
+    int i = conns - 1; // control connection
+    WMaxConn conn;
+    CLEAR(&conn);
+    conn.type= WMAX_CONN_TYPE_BE;
+    conn.sfid = 0; // not important/not used
+    conn.cid = cid;
+    conn.gateIndex = i;
+    conn.qos.be.msr = 80000; // 100kbps
+    conn.qos.be.reqbw = 0;
+    conn.bandwidth = 0;
+    std::stringstream ss_cid;
+    std::string st_cid;
+    ss_cid << conn.cid;
+    ss_cid >> st_cid;
+    std::string name = "SendQueue, CID: " + st_cid;
+    conn.queue = new cQueue(name.c_str());
+    addConn(conn);
+    Log(Notice) << "Management connection added. CID: " << cid << LogEnd;
+}
+
+
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
     cGate * gate = msg->arrivalGate();
@@ -638,8 +669,17 @@ void WMaxMacSS::handleMessage(cMessage *msg)
             delete it->queue;
         }
         Conns.clear();
+        CDMAlist.clear();
         send(msg, "macOut", 0);
-        initialize();
+        //initialize();
+        addRangingConn();
+        return;
+    }
+
+    if (WMaxMacAddMngmntConn *addconn = dynamic_cast<WMaxMacAddMngmntConn*>(msg)) {
+        uint16_t cid = addconn->getCid();
+        addManagementConn(cid);
+        delete msg;
         return;
     }
 
@@ -768,6 +808,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 		// << ", ctrl=" << ((int)(it->controlConn)) << endl;
 		cMessage * copy = (cMessage*)msg->dup();
 		send(copy, "macOut", it->gateIndex);
+		break;
 	    }
 	}
 
@@ -787,6 +828,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 	    if (it->controlConn) {
 		Log(Debug) << "Dispatching dlmap to gate " << it->gateIndex << ", ctrl=" << ((int)(it->controlConn)) << LogEnd;
 		send(msg, "macOut", it->gateIndex);
+		break;
 	    }
 	}
 

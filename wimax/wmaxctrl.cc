@@ -17,6 +17,7 @@
 #include "hoinfo.h"
 #include "wmaxradio.h"
 #include "wmaxmac.h"
+#include "ssinfo.h"
 
 static int GetCidFromMsg(cMessage * msg)
 {
@@ -128,6 +129,32 @@ void WMaxCtrlSS::initialize() {
     if (ev.isGUI()) 
         setName(buf);
 }
+
+double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
+{
+/*    char buf[80];
+    sprintf(buf, "Min%s", paramName);
+    double min = (double)par(buf);
+
+    sprintf(buf, "Max%s", paramName);
+    double max = (double)par(buf);
+
+    double delay = uniform(min, max);*/
+
+    double delay = 0;
+
+    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay 
+	       << "secs (cid=" << cid << ")." << LogEnd;
+
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr->cid = cid;
+    msg->setControlInfo(hdr);
+
+    sendDelayed(msg, delay, gateName);
+
+    return delay;
+}
+
 
 /** 
  * general dispatcher
@@ -315,9 +342,22 @@ FsmStateType WMaxCtrlSS::onEvent_CdmaCode(cMessage *msg)
 
 FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+
+    cModule *SS = ss->parentModule();
+    cModule *SSInfo = SS->submodule("ssInfo");
+    if (!SSInfo)
+        opp_error("Unable to obtain ssInfo submodule in SS[%d]\n", SS->index());
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(SSInfo);
+
+    WMaxRngReq rngReq;
+    rngReq.macAddr = ssinfo->info.macAddr;
+
     WMaxMsgRngReq * rng = new WMaxMsgRngReq();
     rng->setName("RNG-REQ");
-    fsm->send(rng, "macOut");
+    rng->setRngReq(rngReq);
+    ss->sendMsg(rng, "", "macOut", 0);
+
     SLog(fsm, Notice) << "Sending RNG-REQ." << LogEnd;
     return fsm->State();
 }
@@ -326,11 +366,22 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    WMaxMsgRngRsp * rng = dynamic_cast<WMaxMsgRngRsp*>(msg);
+    WMaxRngRsp rngRsp;
+    WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
 
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
-	SLog(ss, Debug) << "Switching to 'send SBC-REQ'." << LogEnd;
-	return STATE_SEND_SBC_REQ;
+        rngRsp = rng->getRngRsp();
+        if (rngRsp.ssMacAddr == ssinfo->info.macAddr) {
+            ssinfo->info.basicCid = rngRsp.basicCid;
+            ssinfo->stringUpdate();
+            addConn->setCid(rngRsp.basicCid);
+            ss->send(addConn,"macOut");
+	    SLog(ss, Debug) << "Switching to 'send SBC-REQ'." << LogEnd;
+	    return STATE_SEND_SBC_REQ;
+        }
     default:
 	CASE_IGNORE(fsm, e);
     }
@@ -340,6 +391,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
 
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_SBC_REQ)) {
 	SLog(fsm, Warning) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
@@ -348,7 +400,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
     
     WMaxMsgSbcReq * req = new WMaxMsgSbcReq();
     req->setName("SBC-REQ");
-    fsm->send(req, "macOut");
+    ss->sendMsg(req, "", "macOut", ssinfo->info.basicCid);
     SLog(fsm, Notice) << "Sending SBC-REQ." << LogEnd;
     return fsm->State();
 }
@@ -383,9 +435,11 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekChallange(Fsm * fsm, FsmEventT
 // send SA-TEK-REQ
 FsmStateType WMaxCtrlSS::onEnterState_SendSaTekReq(Fsm * fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
     WMaxMsgPkmReq * pkm = new WMaxMsgPkmReq("PKM-REQ(SA-TEK-REQ)");
     pkm->setCode(WMAX_PKM_SA_TEK_REQ);
-    fsm->send(pkm, "macOut");
+    ss->sendMsg(pkm, "", "macOut", ssinfo->info.basicCid);
     SLog(fsm, Notice) << "Sending PKM-REQ(SA-TEK-REQ)." << LogEnd;
     return fsm->State();
 }
@@ -405,6 +459,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekRsp(Fsm *fsm, FsmEventType e, 
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_REG_REQ)) {
 	SLog(fsm, Warning) << "Reentry: omit-reg-req flag set, skipping REG-REQ." << LogEnd;
         return STATE_SVC_FLOW_CREATION; /* state override: switch to Service flow creation */
@@ -412,7 +467,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 
     WMaxMsgRegReq * reg = new WMaxMsgRegReq();
     reg->setName("REG-REQ");
-    fsm->send(reg, "macOut");
+    ss->sendMsg(reg, "", "macOut", ssinfo->info.basicCid);
     SLog(fsm, Notice) << "Sending REG-REQ." << LogEnd;
     return fsm->State();
 }
@@ -480,7 +535,6 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
 
-
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
 	double x = ss->simTime() - ss->hoReentryTimestamp;
 	SLog(fsm, Warning) << "Network reentry complete: " << x << "secs (" 
@@ -509,10 +563,12 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 // send MSHO-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
     WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
     mshoReq->setName("MSHO-REQ");
     SLog(fsm, Notice) << "Sending MSHO-REQ message." << LogEnd;
-    fsm->send(mshoReq, "macOut");
+    ss->sendMsg(mshoReq, "", "macOut", ssinfo->info.basicCid);
     return fsm->State();
 }
 
@@ -530,11 +586,15 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, 
 // sent HO-IND state
 FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 {
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
     WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
     hoInd->setName("HO-IND");
-    fsm->send(hoInd, "macOut");
+    ss->sendMsg(hoInd, "", "macOut", ssinfo->info.basicCid);
     WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
     fsm->send(terminateAll, "macOut");
+    ssinfo->info.basicCid = 0;
+    ssinfo->stringUpdate();
     SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;
     return fsm->State();
 }
@@ -717,11 +777,24 @@ double WMaxCtrlBS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
+        WMaxMsgRngReq * req = dynamic_cast<WMaxMsgRngReq*>(msg);
+        WMaxRngReq rngReq = req->getRngReq();
+
 	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
+        WMaxRngRsp rngRsp;
+        rngRsp.ssMacAddr = rngReq.macAddr;
+        rngRsp.basicCid = cid;
 	rsp->setName("RNG-RSP");
+        rsp->setRngRsp(rngRsp);
 	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
 	double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
 	Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs." << LogEnd;
+
+        WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
+        addConn->setCid(cid);
+        send(addConn,"macOut");
+
+        cid++;
 	delete msg;
 	return;
     }

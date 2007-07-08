@@ -1,15 +1,15 @@
 /**
- * @file   wmaxmaccs.h
+ * @file   ssinfo.h
  * @author Maciej Jureko <maciek01@gmail.com>
- * @date   2007-04-20 23:09:38+0100
+ * @date   2007-06-30 21:01:52+0200
  * 
- * @brief  WMax MAC convergence sublayer
- * @licence GNU GPLv2 or later
+ * @brief  SS parameters
+ * @licence GNU GPLv2
  * 
  */
 
-#ifndef WMAXMACCS_H
-#define WMAXMACCS_H
+#ifndef SSINFO_H
+#define SSINFO_H
 
 #include <stdint.h>
 #include <omnetpp.h>
@@ -21,27 +21,23 @@ using namespace std;
 /*** STRUCTURES ***********************************************/
 /**************************************************************/
 
-typedef struct {
-     uint16_t cid;
-     //int gateIndex; 
-     /// @todo IPv6 source and destination addr
-} WMaxMacCSRule;
-
+typedef struct SSInfo_s {
+    uint64_t macAddr;
+    uint16_t basicCid;
+} SSInfo_t;
 
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
 
-class WMaxMacCS : public cSimpleModule {
+class ssInfo : public cSimpleModule {
 public:
+    SSInfo_s info;
+    void stringUpdate();
 
 protected:
     virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
-    virtual void handleUlMessage(cMessage *msg);
-    virtual void handleDlMessage(cMessage *msg);
 
-    list<WMaxMacCSRule> csTable;
 };
 
 #endif

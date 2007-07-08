@@ -18,8 +18,8 @@ option bubbles	{1}
 option animation_speed	{2.37}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
-config mainwin-geom	{1201x329+79+0}
-config rununtil-event	{912}
+config mainwin-geom	{1201x310+88+0}
+config rununtil-event	{}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
 config logwindow-scrollbacklines	{100000}
@@ -30,7 +30,7 @@ config filtobjlist-maxcount	{100000}
 config log-save-filename	{omnetpp.out}
 config editor-findstring	{Unable}
 config timeline-wantnonselfmsgs	{1}
-config rununtil-time	{0.7}
+config rununtil-time	{1.5}
 config dontshow	{}
 config editor-regexp	{0}
 config timeline-msgclassnamepattern	{*}
@@ -46,12 +46,12 @@ config timeline-maxnumevents	{1000}
 config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
-inspector "physim.BS[0]" "BS" "2" "506x347+0+384"
-inspector "physim.SS[0]" "SS" "2" "374x459+248+446"
-inspector "physim.SS[1]" "SS" "2" "374x461+565+443"
+inspector "physim.BS[0]" "BS" "2" "506x347+0+198"
+inspector "physim.BS[1]" "BS" "2" "492x348+-24+417"
+inspector "physim.SS[0]" "SS" "2" "447x387+476+546"
+inspector "physim.SS[1]" "SS" "2" "476x395+0+581"
+inspector "physim.SS[2]" "SS" "2" "476x395+514+125"
 inspector "physim" "Physim" "2" "480x519+900+384"
-inspector "physim.SS[3]" "SS" "2" "374x459+905+0"
-inspector "physim.BS[1]" "BS" "2" "492x348+0+581"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"

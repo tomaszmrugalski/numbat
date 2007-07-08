@@ -31,7 +31,7 @@ using namespace std;
 
 typedef struct {
     int TransactionID;
-    int cid;
+    uint16_t cid;
     WMaxQos qos;
 } Transaction;
 
@@ -127,6 +127,7 @@ protected:
     void connectNextBS();
     void connectBS(int x); // connect (i.e. make Omnet connections) to BS[x]
     void disconnect();
+    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
 
     // wait for DL-MAP state
     static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);
@@ -212,7 +213,7 @@ public:
     WMaxCtrlBS();
 private:
     list<Transaction> Transactions;
-    int cid;
+    uint16_t cid;
     int pkmSupport;
     bool pkmEnabled();
 protected:
@@ -226,7 +227,7 @@ class WMaxFlowSS : public Fsm
 {
 public:
     WMaxFlowSS(Fsm * fsm);
-    int cid;
+    uint16_t cid;
     int gate;
     int transactionID;
     WMaxQos qos;

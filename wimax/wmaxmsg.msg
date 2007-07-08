@@ -6,6 +6,8 @@ struct WMaxUlMapIE;
 struct WMaxDlMapIE;
 struct WMaxBSFull;
 struct WMaxQos;
+struct WMaxRngReq;
+struct WMaxRngRsp;
 
 // ********************************************************************************
 // *** real WiMAX MAC messages ****************************************************
@@ -40,12 +42,14 @@ message WMaxMsgRngReq
 {
 fields:
     int purpose;
+    WMaxRngReq rngReq;
 };
 
 message WMaxMsgRngRsp
 {
 fields:
     int purpose;
+    WMaxRngRsp rngRsp;
 };
 
 message WMaxMsgSbcReq
@@ -168,6 +172,12 @@ fields:
     int gateIndex;
     int cid;
     WMaxQos qos[];
+}
+
+message WMaxMacAddMngmntConn
+{
+fields:
+    int cid;
 }
 
 message WMaxMacTerminateAllConns
