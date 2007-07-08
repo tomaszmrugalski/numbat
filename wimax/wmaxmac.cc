@@ -587,6 +587,7 @@ void WMaxMac::handleRxMessage(cMessage *msg)
 	send(msg, "macOut", gateIndex);
     } else {
 	Log(Warning) << "Unable to find connection for CID=" << cid << ", message dropped." << LogEnd;
+	STAT_INC(dropInvalidCid);
         delete msg;
     }
 }
@@ -706,7 +707,7 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         return;
     }
 
-    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << endl;
+    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << LogEnd;
     if (strcmp(gate->fullName(),"phyIn")) {
         //"phyIn gate: downlink (BS->SS)
 	handleTxMessage(msg);
@@ -787,7 +788,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
 	printUlMap(ulmap);
-	Stats.ulmaps++;
+	STAT_INC(rcvdUlmaps);
 	bcastMsg = true;
 
 	schedule(ulmap);
@@ -818,7 +819,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
 	printDlMap(dynamic_cast<WMaxMsgDlMap*>(msg));
-	Stats.dlmaps++;
+	STAT_INC(rcvdDlmaps);
 	WMaxMsgDlMap* dlmap = dynamic_cast<WMaxMsgDlMap*>(msg);
 	Log(Debug) << "DL-MAP received: expecting " << dlmap->getIEArraySize() << " messages in this frame." << LogEnd;
 
@@ -851,7 +852,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	    if (it->cid==ie.cid) {
 		if (ie.uiuc>=WMAX_ULMAP_UIUC_DATA_1 || ie.uiuc<=WMAX_ULMAP_UIUC_DATA_10) {
 		    bandwidth = ie.dataIE.duration;
-		    Stats.grants++;
+		    STAT_INC(rcvdGrants);
 
                     int bytesPerPS = WMAX_BYTES_PER_SYMBOL; // this depends on modulation used, use 12 bytes/symbol for now
                     int lengthInPS;
@@ -997,7 +998,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	send(msg, "phyOut");
     }
 
-    Stats.bandwidth += bandwidth;
+    STAT_ADD(rcvdBandwidth, bandwidth);
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
     send(frameStart, "phyOut");
@@ -1007,8 +1008,11 @@ void WMaxMacSS::finish()
 {
     ev << " Stats for " << fullName() << endl;
     ev << "-----------------------" << endl;
-    ev << "Grants            : " << Stats.grants << endl;
-    ev << "Bandwidth granted : " << Stats.bandwidth << endl;
-    ev << "UL-MAPs received  : " << Stats.ulmaps << endl;
-    ev << "DL-MAPs received  : " << Stats.dlmaps << endl;
+    ev << "Grants            : " << Stats.rcvdGrants << endl;
+    ev << "Bandwidth granted : " << Stats.rcvdBandwidth << endl;
+    ev << "UL-MAPs received  : " << Stats.rcvdUlmaps << endl;
+    ev << "DL-MAPs received  : " << Stats.rcvdDlmaps << endl;
+
+    ev << "---errors--------------" << endl;
+    ev << "Dropped frames (invalid CID): " << Stats.dropInvalidCid << endl;
 }

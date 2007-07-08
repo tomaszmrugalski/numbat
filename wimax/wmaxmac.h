@@ -146,6 +146,19 @@ public:
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
+class WMaxStatsSS 
+{
+public:
+    int rcvdGrants;    /* number of grants received */
+    int rcvdBandwidth; /* total bandwidth granted */
+    int rcvdDlmaps;    /* number of dlmaps received */
+    int rcvdUlmaps;    /* number of ulmaps received */
+    
+    int dropInvalidCid; /* number of dropped messages due to invalid cid (missing connection?) */
+};
+
+#define STAT_INC(a) this->Stats. a ++;
+#define STAT_ADD(a, x) this->Stats. a += x;
 
 class WMaxMac : public cSimpleModule
 {
@@ -173,6 +186,8 @@ class WMaxMac : public cSimpleModule
     virtual void handleTxMessage(cMessage *msg);
     virtual void printDlMap(WMaxMsgDlMap * dlmap);
     virtual void printUlMap(WMaxMsgUlMap * ulmap);
+
+    WMaxStatsSS Stats;
 };
 
 
@@ -207,15 +222,6 @@ class WMaxMacBS: public WMaxMac
     cMessage * TxStart;
 };
 
-class WMaxStatsSS 
-{
-public:
-    int grants;    /* number of grants received */
-    int bandwidth; /* total bandwidth granted */
-    int dlmaps;    /* number of dlmaps received */
-    int ulmaps;    /* number of ulmaps received */
-};
-
 class WMaxMacSS: public WMaxMac
 {
 
@@ -230,8 +236,6 @@ class WMaxMacSS: public WMaxMac
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
     void         handleRxMessage(cMessage* msg);
-
-    WMaxStatsSS Stats;
 };
 
 #endif
