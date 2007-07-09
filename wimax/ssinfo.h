@@ -24,6 +24,8 @@ using namespace std;
 typedef struct SSInfo_s {
     uint64_t macAddr;
     uint16_t basicCid;
+
+    string getMac();
 } SSInfo_t;
 
 /**************************************************************/
@@ -39,5 +41,7 @@ protected:
     virtual void initialize();
 
 };
+
+ostream & operator<<(ostream & strum, SSInfo_t &ss);
 
 #endif

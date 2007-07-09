@@ -16,6 +16,23 @@
 
 using namespace std;
 
+ostream & operator<<(ostream & str, SSInfo_t &xx) {
+    str << "MAC=" << xx.getMac() << ", basicCid=" << xx.basicCid;
+    return str;
+}
+
+std::string SSInfo_t::getMac() {
+    char buf[30];
+    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", 
+	    (unsigned char)((macAddr >> 40) & 0xff),
+	    (unsigned char)((macAddr >> 32) & 0xff),
+	    (unsigned char)((macAddr >> 24) & 0xff),
+	    (unsigned char)((macAddr >> 16) & 0xff),
+	    (unsigned char)((macAddr >>  8) & 0xff),
+	    (unsigned char)((macAddr )      & 0xff));
+    return string(buf);
+}
+
 /********************************************************************************/
 /*** ssInfo  ********************************************************************/
 /********************************************************************************/
@@ -24,19 +41,18 @@ Define_Module(ssInfo);
 
 void ssInfo::initialize() {
     info.macAddr = ((uint64_t)0x0018de << 24) + (rand()%(((uint64_t)1 << 24) - 1));
-
-    Log(Notice) << "macAddr=" << hex << info.macAddr << dec << LogEnd;
-
     info.basicCid = 0;
 
-    stringUpdate();
+    char buf[80];
 
+    stringUpdate();
+    Log(Notice) << "Creating new SS: " << info.getMac() << LogEnd;
 }
 
 void ssInfo::stringUpdate() {
     if (ev.isGUI()) {
         stringstream displayIt;
-        displayIt << "macAddr=" << hex << info.macAddr << endl;
+        displayIt << "macAddr=" << info.getMac() << endl;
         displayIt << "basicCID=" << dec << info.basicCid;
 
         displayString().setTagArg("t",0, (displayIt.str()).c_str());

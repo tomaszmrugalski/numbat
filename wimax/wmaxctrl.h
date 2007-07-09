@@ -13,6 +13,7 @@
 #include "wmaxmsg_m.h"
 #include "fsm.h"
 #include "hoinfo.h"
+#include "ssinfo.h"
 
 using namespace std;
 
@@ -213,6 +214,7 @@ public:
     WMaxCtrlBS();
 private:
     list<Transaction> Transactions;
+    list<SSInfo_t> ssList;
     uint16_t cid;
     int pkmSupport;
     bool pkmEnabled();

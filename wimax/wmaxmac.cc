@@ -168,6 +168,11 @@ void WMaxMacBS::initialize()
     schedDcdCnt          = 0;
     schedUcdCnt          = 0;
 
+    char buf[80];
+    sprintf(buf, "MacBS[%d]", parentModule()->index());
+    if (ev.isGUI()) 
+        setName(buf);
+
     // Create permanent INITIAL-RANGING connection
     addRangingConn();
 }
@@ -605,7 +610,6 @@ void WMaxMacSS::initialize()
 
     // Create permanent INITIAL-RANGING connection
     addRangingConn();
-
 
     WATCH_LIST(CDMAlist);
 }

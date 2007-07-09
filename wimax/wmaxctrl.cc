@@ -118,9 +118,6 @@ void WMaxCtrlSS::initialize() {
 	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
         initialBS = parent->par("initialBS");
     }
-    Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << LogEnd;
-    Log(Notice) << "isMobile=" << hoInfo->isMobile << LogEnd;
-    Log(Notice) << "initialBS=" << initialBS << LogEnd;
 
     connectBS(initialBS);
 
@@ -128,6 +125,9 @@ void WMaxCtrlSS::initialize() {
     sprintf(buf, "WMaxCtrlSS[%d]", parentModule()->index());
     if (ev.isGUI()) 
         setName(buf);
+
+    Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << ", isMobile=" << hoInfo->isMobile 
+		<< ", initialBS=" << initialBS << LogEnd;
 }
 
 double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
@@ -744,6 +744,15 @@ void WMaxCtrlBS::initialize()
 {
     cid = 1024;
     pkmSupport = true;
+    Transactions.clear();
+    ssList.clear();
+
+    char buf[80];
+    sprintf(buf, "WMaxCtrlBS[%d]", parentModule()->index());
+    if (ev.isGUI()) 
+        setName(buf);
+
+    WATCH_LIST(ssList);
 }
 
 bool WMaxCtrlBS::pkmEnabled()
@@ -788,13 +797,21 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         rsp->setRngRsp(rngRsp);
 	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
 	double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
-	Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs." << LogEnd;
 
         WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
         addConn->setCid(cid);
+	Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs (new basic connection created, cid=" 
+		    << cid << ")." << LogEnd;
         send(addConn,"macOut");
-
         cid++;
+
+	// remember that this SS is being supported
+	SSInfo_t * ss  = new SSInfo_t();
+	ss->macAddr  = rngReq.macAddr;
+	ss->basicCid = addConn->getCid();
+	ssList.push_back(*ss);
+	Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
+
 	delete msg;
 	return;
     }
@@ -848,7 +865,10 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-	Log(Notice) << ":HO-IND received." << LogEnd;
+	Log(Notice) << "HO-IND received (cid=" << GetCidFromMsg(msg) << "." << LogEnd;
+
+	/// @todo - find this SS and delete it
+
 	delete msg;
 	return;
     }
