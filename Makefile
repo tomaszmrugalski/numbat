@@ -6,10 +6,12 @@ tags:
 wimax:
 	cd wimax; $(MAKE)
 
-snapshot:
-	cd wimax; $(MAKE) clean
+snapshot: clean
 	rm -f numbat-*-svn.tar.gz
 	cd ..; tar czvf numbat-svn.tar.gz --exclude=.svn --exclude=*~ $(DIR)
 	mv ../numbat-svn.tar.gz numbat-`date +%Y%m%d`-svn.tar.gz
 
-.PHONY: tags wimax
+clean:
+	cd wimax; $(MAKE) clean
+
+.PHONY: tags wimax clean
