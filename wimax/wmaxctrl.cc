@@ -19,6 +19,24 @@
 #include "wmaxmac.h"
 #include "ssinfo.h"
 
+static uint32_t transactionID = 1;
+
+// global function shared by all flows from all SSes
+uint32_t GetNextTransactionID() { return transactionID++; }
+
+ostream & operator <<(ostream & s, Transaction &trans)
+{
+  s << "TransID=" << trans.TransactionID << ", cid=" << trans.cid << ", qos.connType=" 
+    << trans.qos.connType << endl;
+  return s;
+}
+
+ostream & operator <<(ostream & s, WMaxFlowSS &f) 
+{
+  s << "transID=" << f.transactionID << " cid=" << f.cid;
+  return s;
+}
+
 static int GetCidFromMsg(cMessage * msg)
 {
     WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
@@ -128,6 +146,8 @@ void WMaxCtrlSS::initialize() {
 
     Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << ", isMobile=" << hoInfo->isMobile 
 		<< ", initialBS=" << initialBS << LogEnd;
+
+    WATCH_PTRLIST(serviceFlows);
 }
 
 double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
@@ -753,6 +773,7 @@ void WMaxCtrlBS::initialize()
         setName(buf);
 
     WATCH_LIST(ssList);
+    WATCH_LIST(Transactions);
 }
 
 bool WMaxCtrlBS::pkmEnabled()
@@ -783,129 +804,155 @@ double WMaxCtrlBS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
     return delay;
 }
 
+SSInfo_t * WMaxCtrlBS::getSS(uint16_t basicCid, string reason)
+{
+  list<SSInfo_t>::iterator ss;
+  for (ss = ssList.begin(); ss!=ssList.end(); ss++) {
+    if (basicCid == ss->basicCid) {
+      return &(*ss);
+    }
+  }
+   
+  opp_error("Unable to find SS with cid=%d while %s\n", basicCid, reason.c_str());
+}
+
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
+      if (GetCidFromMsg(msg) != WMAX_CID_RANGING )
+        opp_error("Received RNG-REQ on non-ranging connection (cid=%d)", GetCidFromMsg(msg));
+
         WMaxMsgRngReq * req = dynamic_cast<WMaxMsgRngReq*>(msg);
         WMaxRngReq rngReq = req->getRngReq();
 
-	WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
+        WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
         WMaxRngRsp rngRsp;
         rngRsp.ssMacAddr = rngReq.macAddr;
         rngRsp.basicCid = cid;
-	rsp->setName("RNG-RSP");
+        rsp->setName("RNG-RSP");
         rsp->setRngRsp(rngRsp);
-	rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-	double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
+        rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
+        double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
 
         WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
         addConn->setCid(cid);
-	Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs (new basic connection created, cid=" 
-		    << cid << ")." << LogEnd;
+        Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs (new basic connection created, cid=" 
+                    << cid << ")." << LogEnd;
         send(addConn,"macOut");
         cid++;
 
-	// remember that this SS is being supported
-	SSInfo_t * ss  = new SSInfo_t();
-	ss->macAddr  = rngReq.macAddr;
-	ss->basicCid = addConn->getCid();
-	ssList.push_back(*ss);
-	Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
-
-	delete msg;
-	return;
+        // remember that this SS is being supported
+        SSInfo_t * ss  = new SSInfo_t();
+        ss->macAddr  = rngReq.macAddr;
+        ss->basicCid = addConn->getCid();
+        ssList.push_back(*ss);
+        Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
+        
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgSbcReq*>(msg)) {
-	WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
-	rsp->setName("SBC-RSP");
-	double x = sendMsg(rsp, "DelaySbc", "macOut", GetCidFromMsg(msg));
-	Log(Notice) << "SBC-REQ received, sending SBC-RSP in " << x << "secs." << LogEnd;
+        WMaxMsgSbcRsp * rsp = new WMaxMsgSbcRsp("SBC-RSP");
+        getSS( GetCidFromMsg(msg), "SBC-REQ received");
+        
+        rsp->setName("SBC-RSP");
+        double x = sendMsg(rsp, "DelaySbc", "macOut", GetCidFromMsg(msg));
+        Log(Notice) << "SBC-REQ received, sending SBC-RSP in " << x << "secs." << LogEnd;
+        
+        if (pkmEnabled()) {
+            Log(Notice) << "Initiating PKMv2: SA-TEK 3way handshake, sending PKM-RSP" << LogEnd;
+            WMaxMsgPkmRsp * pkm = new WMaxMsgPkmRsp("PKM-RSP (SA-TEK-Challange)");
+            pkm->setCode(WMAX_PKM_SA_TEK_CHALLENGE);
+            sendMsg(pkm, "DelaySaTek", "macOut", GetCidFromMsg(msg));
+        }
+        delete msg;
 
-	if (pkmEnabled()) {
-	    Log(Notice) << "Initiating PKMv2: SA-TEK 3way handshake, sending PKM-RSP" << LogEnd;
-	    WMaxMsgPkmRsp * pkm = new WMaxMsgPkmRsp("PKM-RSP (SA-TEK-Challange)");
-	    pkm->setCode(WMAX_PKM_SA_TEK_CHALLENGE);
-	    sendMsg(pkm, "DelaySaTek", "macOut", GetCidFromMsg(msg));
-	}
-	delete msg;
-
-	return;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgPkmReq*>(msg)) {
-	WMaxMsgPkmReq* req = dynamic_cast<WMaxMsgPkmReq*>(msg);
-	WMaxMsgPkmRsp * rsp = new WMaxMsgPkmRsp("PKM-RSP(SA-TEK-RSP)");
-
-	if (req->getCode() == WMAX_PKM_SA_TEK_REQ)
-	    rsp->setCode(WMAX_PKM_SA_TEK_RSP);
-
-	double x = sendMsg(rsp, "DelaySaTek", "macOut", GetCidFromMsg(msg));
-	Log(Notice) << "PKM-REQ received, sending PKM-RSP in " << x << "secs." << LogEnd;
-	delete msg;
-	return;
+        getSS( GetCidFromMsg(msg), "PKM-REQ received");
+      
+        WMaxMsgPkmReq* req = dynamic_cast<WMaxMsgPkmReq*>(msg);
+        WMaxMsgPkmRsp * rsp = new WMaxMsgPkmRsp("PKM-RSP(SA-TEK-RSP)");
+        
+        if (req->getCode() == WMAX_PKM_SA_TEK_REQ)
+          rsp->setCode(WMAX_PKM_SA_TEK_RSP);
+        
+        double x = sendMsg(rsp, "DelaySaTek", "macOut", GetCidFromMsg(msg));
+        Log(Notice) << "PKM-REQ received, sending PKM-RSP in " << x << "secs." << LogEnd;
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgRegReq*>(msg)) {
-	WMaxMsgRegRsp * rsp = new WMaxMsgRegRsp("REG-RSP");
-	rsp->setName("REG-RSP");
-	double x = sendMsg(rsp, "DelayReg", "macOut", GetCidFromMsg(msg));
-	Log(Notice) << "REG-REQ received, sending REG-RSP in " << x << "secs." << LogEnd;
-	delete msg;
-	return;
+        getSS( GetCidFromMsg(msg), "REG-REQ received");
+
+        WMaxMsgRegRsp * rsp = new WMaxMsgRegRsp("REG-RSP");
+        rsp->setName("REG-RSP");
+        double x = sendMsg(rsp, "DelayReg", "macOut", GetCidFromMsg(msg));
+        Log(Notice) << "REG-REQ received, sending REG-RSP in " << x << "secs." << LogEnd;
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgMSHOREQ*>(msg)) {
-	WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
-	bshoRsp->setName("BSHO-RSP");
-	double x = sendMsg(bshoRsp, "DelayHoRsp", "macOut", GetCidFromMsg(msg));
-	Log(Notice) << "MSHO-REQ received, sending BSHO-RSP in " << x << "secs." << LogEnd;
-	delete msg;
-	return;
+        getSS( GetCidFromMsg(msg), "MSHO-REQ received");
+
+        WMaxMsgBSHORSP * bshoRsp = new WMaxMsgBSHORSP();
+        bshoRsp->setName("BSHO-RSP");
+        double x = sendMsg(bshoRsp, "DelayHoRsp", "macOut", GetCidFromMsg(msg));
+        Log(Notice) << "MSHO-REQ received, sending BSHO-RSP in " << x << "secs." << LogEnd;
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-	Log(Notice) << "HO-IND received (cid=" << GetCidFromMsg(msg) << "." << LogEnd;
-
-	/// @todo - find this SS and delete it
-
-	delete msg;
+        getSS( GetCidFromMsg(msg), "MSHO-REQ received");
+	    Log(Notice) << "HO-IND received (cid=" << GetCidFromMsg(msg) << "." << LogEnd;
+        
+        /// @todo - find this SS and delete it
+        
+        delete msg;
 	return;
     }
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
-	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
-	Log(Notice) << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
-	switch (cdma->getPurpose()) {
-	case WMAX_CDMA_PURPOSE_HO_RNG:
-	{
-	    Log(Cont) << ", sending Anonymous (handover) RNG-RSP." << LogEnd;
-	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
-	    rsp->setName("Anonymous RNG-RSP");
-	    send(rsp, "macOut");
-	    break;
-	}
-	case WMAX_CDMA_PURPOSE_INITIAL_RNG:
-	{
-	    Log(Cont) << ", sending Anonymous (initial) RNG-RSP." << LogEnd;
-	    WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
-	    rsp->setName("Anonymous (initial) RNG-RSP");
-	    send(rsp, "macOut");
-	    break;
-	}
-	case WMAX_CDMA_PURPOSE_BWR:
-	default:
-	    /// @todo - Best effort traffic.
-	    Log(Cont) << ", not supported." << LogEnd;
-	    opp_error("That type of CDMA code is not supported yet (purpose=%d).", cdma->getPurpose());
-	    break;
-	}
-	
-	delete msg;
-	return;
+        WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
+        Log(Notice) << msg->fullName() << " (purpose=" << int(cdma->getPurpose()) << ") received";
+        switch (cdma->getPurpose()) {
+          case WMAX_CDMA_PURPOSE_HO_RNG:
+            {
+              Log(Cont) << ", sending Anonymous (handover) RNG-RSP." << LogEnd;
+              WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
+              rsp->setName("Anonymous RNG-RSP");
+              send(rsp, "macOut");
+              break;
+            }
+          case WMAX_CDMA_PURPOSE_INITIAL_RNG:
+            {
+              Log(Cont) << ", sending Anonymous (initial) RNG-RSP." << LogEnd;
+              WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp();
+              rsp->setName("Anonymous (initial) RNG-RSP");
+              send(rsp, "macOut");
+              break;
+            }
+          case WMAX_CDMA_PURPOSE_BWR:
+          default:
+            /// @todo - Best effort traffic.
+            Log(Cont) << ", not supported." << LogEnd;
+            opp_error("That type of CDMA code is not supported yet (purpose=%d).", cdma->getPurpose());
+            break;
+        }
+        
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgDsaReq*>(msg)) {
+        getSS( GetCidFromMsg(msg), "DSA-REQ received");
+
         WMaxMsgDsaReq *dsareq = dynamic_cast<WMaxMsgDsaReq*>(msg);
 
         Transaction Trans;
@@ -914,7 +961,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsxrvd->setName("DSX-RVD");
         dsxrvd->setTransactionID(dsareq->getTransactionID());
         dsxrvd->setConfirmationCode(0);
-	double x = sendMsg(dsxrvd, "DelayDsxRvd", "macOut", GetCidFromMsg(msg));
+        double x = sendMsg(dsxrvd, "DelayDsxRvd", "macOut", GetCidFromMsg(msg));
 
         WMaxMsgDsaRsp *dsarsp = new WMaxMsgDsaRsp();
         dsarsp->setName("DSA-RSP");
@@ -923,13 +970,14 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         dsarsp->setQosArraySize(1);
         dsarsp->setQos(0,dsareq->getQos(0));
         Trans.qos = dsareq->getQos(0);
-        dsarsp->setCid(cid); /// @todo generate CID
-        Trans.cid = cid;
-        cid++;
-	double y = sendMsg(dsarsp, "DelayDsxRsp", "macOut", GetCidFromMsg(msg));
+        dsarsp->setCid( getNextCid() );
+        Trans.cid = dsarsp->getCid();
+
+        double y = sendMsg(dsarsp, "DelayDsxRsp", "macOut", GetCidFromMsg(msg));
 
         Log(Notice) << "DSA-REQ received, sending DSX-RVD (after " << x << "secs) and DSA-RSP (after " 
-		    << y << "secs)." << LogEnd;
+                    << y << "secs), cid=" << GetCidFromMsg(msg) << " (added transaction: transID=" 
+                    << dsareq->getTransactionID() << ", cid=" << Trans.cid << ")." << LogEnd;
 
         Transactions.push_back(Trans);
 
@@ -937,27 +985,45 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         return;
     }
 
-    if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
-        Log(Info) << "DSA-ACK received";
-        WMaxMsgDsaAck *dsaack = dynamic_cast<WMaxMsgDsaAck*>(msg);
+    bool transFound = false;
 
+    if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
+        getSS( GetCidFromMsg(msg), "DSA-ACK received");
+
+        WMaxMsgDsaAck *dsaack = dynamic_cast<WMaxMsgDsaAck*>(msg);
+        Log(Notice) << "DSA-ACK received (transID=" << dsaack->getTransactionID() << "),";
+        
         list<Transaction>::iterator it;
         for (it = Transactions.begin(); it!=Transactions.end(); it++) {
-	    if (it->TransactionID == dsaack->getTransactionID()) {
-		Log(Cont) << ", create new connection (cid=" << it->cid << ")" << LogEnd;
-		WMaxMacAddConn *addConn = new WMaxMacAddConn();
-		addConn->setName("Add connection");
-		addConn->setGateIndex(0);
-		addConn->setCid(it->cid);
-		addConn->setQosArraySize(1);
-		addConn->setQos(0,it->qos);
-		send(addConn, "macOut");
-		
-		Transactions.erase(it);
-		break;
-            }
+          if (it->TransactionID == dsaack->getTransactionID()) {
+            Log(Cont) << " transaction found, creating new connection (cid=" << it->cid << ")" << LogEnd;
+            WMaxMacAddConn *addConn = new WMaxMacAddConn();
+            addConn->setName("Add connection");
+            addConn->setGateIndex(0);
+            addConn->setCid(it->cid);
+            addConn->setQosArraySize(1);
+            addConn->setQos(0,it->qos);
+            send(addConn, "macOut");
+
+            transFound = true;
+
+            // find this SS
+            SSInfo_t * ss = getSS( GetCidFromMsg(msg), "Received DSA-ACK" );
+            ss->sf[ss->sfCnt].cid = it->cid;
+            ss->sfCnt++;
+            Log(Notice) << "Assigning connection (cid=" << it->cid << ") to SS " << ss->getMac() 
+                        << " (SS has " << ss->sfCnt << " conns)." << LogEnd;
+
+            Transactions.erase(it);
+            delete msg;
+            return;
+          }
         }
-	
+        
+        Log(Cont) << ", transaction NOT found." << LogEnd;
+        Log(Error) << "Received DSA-ACK for unknown transaction (cid=" << GetCidFromMsg(msg) 
+                   << ", transID=" << dsaack->getTransactionID() << ")." << LogEnd;
+
         delete msg;
         return;
     }
@@ -975,8 +1041,8 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 WMaxFlowSS::WMaxFlowSS(Fsm * fsm) {
     parentFsm = fsm;
     fsmInit();
-//     WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
-//     handleMessage(msg);
+
+    transactionID = 0; // it doesn't matter now, it will be set in WMaxFlowSS::onEventState_Start()
 }
 
 void WMaxFlowSS::fsmInit() {
@@ -1024,13 +1090,13 @@ void WMaxFlowSS::handleMessage(cMessage *msg) {
 FsmStateType WMaxFlowSS::onEventState_Start(Fsm * fsm, FsmEventType e, cMessage * msg){
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
     WMaxCtrlFlowCreationStart *flowcrstart = dynamic_cast<WMaxCtrlFlowCreationStart*>(msg);
-    flow->qos = flowcrstart->getQos(0);
-    flow->gate = flowcrstart->getGateIndex();
-    flow->transactionID=rand();
+    flow->qos           = flowcrstart->getQos(0);
+    flow->gate          = flowcrstart->getGateIndex();
+    flow->transactionID = GetNextTransactionID();
     switch (e) {
-    case EVENT_START:
+      case EVENT_START:
         return STATE_SEND_DSA_REQ;
-    default:
+      default:
         CASE_IGNORE(fsm, e);
     }
 }
@@ -1044,8 +1110,13 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaReq(Fsm * fsm) {
     //flow->qos.msr=800000;
     msg->setQosArraySize(1);
     msg->setQos(0,flow->qos);
+
     WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
-    ctrlSS->send(msg, "macOut");
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->parentModule()->submodule("ssInfo"));
+    SLog(fsm, Notice) << "Sending DSA-REQ (cid=" << ssinfo->info.basicCid << ", transID=" << msg->getTransactionID() 
+              << ")" << LogEnd;
+    ctrlSS->sendMsg(msg, "", "macOut", ssinfo->info.basicCid);
+
     return fsm->State();
 }
 
@@ -1082,7 +1153,10 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
     msg->setTransactionID(flow->transactionID);
     msg->setQosArraySize(1);
     msg->setQos(0,flow->qos);
-    ctrlSS->send(msg, "macOut");
+
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->parentModule()->submodule("ssInfo"));
+    SLog(fsm, Notice) << "Received DSA-RSP, sending DSA-ACK (transID=" << msg->getTransactionID() << ")." << LogEnd;
+    ctrlSS->sendMsg(msg, "", "macOut", ssinfo->info.basicCid);
 
     WMaxMacAddConn *addConn = new WMaxMacAddConn();
     addConn->setName("Add connection");

@@ -17,6 +17,12 @@
 
 using namespace std;
 
+ostream & operator <<(ostream & s, WMaxMacCSRule &rule)
+{
+  s << "cid=" << rule.cid;
+  return s;
+}
+
 /********************************************************************************/
 /*** WMaxMacCS ******************************************************************/
 /********************************************************************************/
@@ -24,7 +30,7 @@ using namespace std;
 Define_Module(WMaxMacCS);
 
 void WMaxMacCS::initialize() {
-	
+  WATCH_LIST(csTable);
 }
 
 

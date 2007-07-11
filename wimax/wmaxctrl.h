@@ -123,12 +123,13 @@ public:
     double hoStartTimestamp;   // timestamp of handover start
     double hoReentryTimestamp; // timestamp of the reentry start
     
+    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
+
 protected:
     void fsmInit();
     void connectNextBS();
     void connectBS(int x); // connect (i.e. make Omnet connections) to BS[x]
     void disconnect();
-    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
 
     // wait for DL-MAP state
     static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);
@@ -223,6 +224,8 @@ protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
+    uint16_t getNextCid() { return cid++; };
+    SSInfo_t * getSS(uint16_t basicCid, string reason);
 };
 
 class WMaxFlowSS : public Fsm
@@ -267,6 +270,8 @@ protected:
 
 };
 
+ostream & operator <<(ostream & s, Transaction &trans);
+ostream & operator <<(ostream & s, WMaxFlowSS &f);
 
 /// @todo class WMaxFlowBS
 #endif

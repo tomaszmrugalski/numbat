@@ -16,8 +16,12 @@
 
 using namespace std;
 
-ostream & operator<<(ostream & str, SSInfo_t &xx) {
-    str << "MAC=" << xx.getMac() << ", basicCid=" << xx.basicCid;
+ostream & operator<<(ostream & str, SSInfo_t &ss) {
+    str << "MAC=" << ss.getMac() << ", basicCid=" << ss.basicCid << " sfCnt="
+        << ss.sfCnt;
+    for (int i=0; i < ss.sfCnt; i++) {
+      str << " sf[" << i << "].cid=" << ss.sf[i].cid;
+    }
     return str;
 }
 

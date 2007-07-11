@@ -20,12 +20,18 @@ using namespace std;
 /**************************************************************/
 /*** STRUCTURES ***********************************************/
 /**************************************************************/
-
 typedef struct SSInfo_s {
     uint64_t macAddr;
     uint16_t basicCid;
 
     string getMac();
+
+    // used on BS-side only
+    struct {
+      uint16_t cid;
+    } sf[32];
+    uint16_t sfCnt;
+
 } SSInfo_t;
 
 /**************************************************************/

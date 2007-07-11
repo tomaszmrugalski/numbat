@@ -44,4 +44,6 @@ protected:
     list<WMaxMacCSRule> csTable;
 };
 
+ostream & operator <<(ostream & s, WMaxMacCSRule &f);
+
 #endif
