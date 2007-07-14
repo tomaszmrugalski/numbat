@@ -92,7 +92,7 @@ void IPv6Node::generateTraffic()
 void IPv6Node::updateStats()
 {
     char buf[80];
-    sprintf(buf, "sent=%ld(%ld), rcvd=%ld(%ld)", 
+    sprintf(buf, "sent=%u(%u), rcvd=%u(%u)", 
 	    SentPkts, SentBytes, RcvdPkts, RcvdBytes);
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);

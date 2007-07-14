@@ -24,6 +24,7 @@ simple WMaxCtrlSS
     gates:
         out: macOut;
         in: macIn;
+	in: eventIn;
 endsimple
 
 
@@ -61,7 +62,7 @@ module SS //
             display: "p=216,144;i=block/classifier,#ce1821";
         ssInfo: ssInfo;
             display: "p=336,144;i=block/blackboard,#ce1821";
-    connections:
+    connections nocheck:
         ssMac.phyOut --> ssPhy.phyIn;
         ssPhy.phyOut --> ssMac.phyIn;
 

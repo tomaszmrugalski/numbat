@@ -117,6 +117,7 @@ public:
 	EVENT_SA_TEK_RSP,
 	EVENT_REG_RSP_RECEIVED,
 	EVENT_SERVICE_FLOW_COMPLETE, // service flow created
+	EVENT_HO_IND_SENT,
 	EVENT_NUM
     } Event;
 
@@ -183,7 +184,9 @@ protected:
     static FsmStateType onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // sent HO-IND state
+    static FsmStateType onEventState_SendHoInd(Fsm * fsm, FsmEventType e, cMessage *msg);
     static FsmStateType onEnterState_SendHoInd(Fsm *fsm);
+    static FsmStateType onExitState_SendHoInd(Fsm * fsm);
     
     // handover complete state
     static FsmStateType onEnterState_HandoverComplete(Fsm * fsm);

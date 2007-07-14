@@ -22,17 +22,44 @@ ostream & operator<<(ostream & strum, WMaxMacCDMA &x) {
     return strum;
 }
 
+ostream & operator<<(ostream & s, WMaxConn &x) {
+    s << "type=" << x.type << " sfid=" << x.sfid << " cid=" << x.cid << " runtime:[ bandwidth=" 
+      << x.bandwidth << "] gateIndex=" << x.gateIndex << " controlConn=" << (x.controlConn?"YES":"NO");
+    return s;
+}
+
+
 /********************************************************************************/
 /*** WMax Mac (common for BS/SS) ************************************************/
 /********************************************************************************/
 WMaxMac::WMaxMac()
 {
     GateIndex = 0;
+    queuedMsgsCnt = 0;
     this->CDMAQueue = new cQueue("CDMAQueue");
+
+    WATCH_LIST(Conns);
+}
+
+void WMaxMac::stringUpdate() {
+    if (ev.isGUI()) {
+	// count all messages in the queue
+
+        stringstream displayIt;
+        displayIt << queuedMsgsCnt << "msgs in " << Conns.size() << " queues.";
+        displayString().setTagArg("t",0, (displayIt.str()).c_str());
+    }
 }
 
 bool WMaxMac::addConn(WMaxConn conn)
 {
+    std::stringstream ss_cid;
+    std::string st_cid;
+    ss_cid << conn.cid;
+    ss_cid >> st_cid;
+    std::string name = "SendQueue, CID: " + st_cid;
+    conn.queue = new cQueue(name.c_str());
+
     stringstream tmp;
     
     switch (conn.type) {
@@ -75,9 +102,17 @@ bool WMaxMac::addConn(WMaxConn conn)
     return true;
 }
  
-bool WMaxMac::delConn(uint32_t sfid)
+bool WMaxMac::delConn(uint16_t cid)
 {
-    /// @todo - implement this
+    for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
+	if (it->cid==cid) {
+	    delete it->queue;
+	    Conns.erase(it);
+	    Log(Notice) << "Connection (cid=" << cid << ") removed." << LogEnd;
+	    return true;
+	}
+    }
+    Log(Error) << "Unable to delete connection with cid=" << cid << "." << LogEnd;
     return false;
 }
 
@@ -196,12 +231,6 @@ void WMaxMacBS::handleMessage(cMessage *msg)
         conn.qos.be.msr = qos.msr; // 100kbps
         conn.qos.be.reqbw = 0;
         conn.bandwidth = 0;
-        std::stringstream ss_cid;
-        std::string st_cid;
-        ss_cid << conn.cid;
-        ss_cid >> st_cid;
-        std::string name = "SendQueue, CID: " + st_cid;
-        conn.queue = new cQueue(name.c_str());
         addConn(conn);
 
         send(msg, "macOut", 0);  // send add conn msg to CS
@@ -215,6 +244,13 @@ void WMaxMacBS::handleMessage(cMessage *msg)
         addManagementConn(cid);
         delete msg;
         return;
+    }
+
+    if (WMaxEvent_DelConn* delconn = dynamic_cast<WMaxEvent_DelConn*>(msg)) {
+	delConn(delconn->getCid());
+	
+	send(msg, "macOut", 0); // send delConn to CS
+	return;
     }
 
     cGate * gate = msg->arrivalGate();
@@ -277,6 +313,7 @@ void WMaxMacBS::scheduleBcastMessages()
 	hdr->cid = WMAX_CID_BROADCAST;
 	dcd->setControlInfo(hdr);
 	SendQueue.insert(dcd);
+	queuedMsgsCnt++;
     }
 
     if (schedUcdFreq && schedUcdFreq<=schedUcdCnt++) {
@@ -287,6 +324,7 @@ void WMaxMacBS::scheduleBcastMessages()
 	hdr->cid = WMAX_CID_BROADCAST;
 	ucd->setControlInfo(hdr);
 	SendQueue.insert(ucd);
+	queuedMsgsCnt++;
     }
 }
 
@@ -341,6 +379,7 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 
             // currently used: c)
             msg = (cMessage*) SendQueue.pop();
+	    queuedMsgsCnt--;
             Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
 		       << "), because it won't fit in DL subframe. Message is dropped." << endl;
             delete msg;
@@ -359,8 +398,9 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	/// @todo - DL-MAP generation
 	
 	msg = (cMessage*)SendQueue.pop();
+	queuedMsgsCnt--;
+
 	lengthInPS = (int)ceil(double(msg->length())/bytesPerPS);
-	
 	symbols -= lengthInPS;
 	
 	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
@@ -381,6 +421,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
     dlmap->setControlInfo(hdr);
+
+    stringUpdate();
 
     return dlmap;
 }
@@ -627,12 +669,6 @@ void WMaxMac::addRangingConn()
     conn.qos.be.msr = 80000; // 100kbps
     conn.qos.be.reqbw = 0;
     conn.bandwidth = 0;
-    std::stringstream ss_cid;
-    std::string st_cid;
-    ss_cid << conn.cid;
-    ss_cid >> st_cid;
-    std::string name = "SendQueue, CID: " + st_cid;
-    conn.queue = new cQueue(name.c_str());
     addConn(conn);
     Log(Debug) << "Initial-ranging connection added." << LogEnd;
 }
@@ -650,12 +686,6 @@ void WMaxMac::addManagementConn(uint16_t cid)
     conn.qos.be.msr = 80000; // 100kbps
     conn.qos.be.reqbw = 0;
     conn.bandwidth = 0;
-    std::stringstream ss_cid;
-    std::string st_cid;
-    ss_cid << conn.cid;
-    ss_cid >> st_cid;
-    std::string name = "SendQueue, CID: " + st_cid;
-    conn.queue = new cQueue(name.c_str());
     addConn(conn);
     Log(Notice) << "Management connection added. CID: " << cid << LogEnd;
 }
@@ -703,8 +733,6 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         std::string st_cid;
         ss_cid << conn.cid;
         ss_cid >> st_cid;
-        std::string name = "SednQueue, CID: " + st_cid;
-        conn.queue = new cQueue(name.c_str());
         addConn(conn);
 
         send(msg, "macOut", 0);  // send add conn msg to CS
@@ -749,7 +777,8 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 
     WMaxMacHeader * hdr = 0;
     hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
-
+    if (!hdr)
+	opp_error("Unable to handle %s message: no header included", msg->fullName());
     // find proper connection, not just get first one
     for (it = Conns.begin(); it!=Conns.end(); it++) {
 	if (it->cid == hdr->cid) {
@@ -762,8 +791,8 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 	return;
     }
 
-//    if (dynamic_cast<WMaxMacSS*>(this)) {
-    if (!strcmp(fullName(), "ssMac")) {
+    if (dynamic_cast<WMaxMacSS*>(this)) {
+//    if (!strcmp(fullName(), "ssMac")) {
 	switch(it->type) {
 	case WMAX_CONN_TYPE_BE:
 	    Log(Debug) << "Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ") ";
@@ -783,7 +812,8 @@ void WMaxMac::handleTxMessage(cMessage *msg)
         Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << LogEnd;
         SendQueue.insert(msg);
     }
-
+    queuedMsgsCnt++;
+    stringUpdate();
 }
 
 void WMaxMacSS::handleRxMessage(cMessage *msg)
@@ -889,6 +919,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                              msg = (cMessage*) it->queue->pop();
                              Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
 					<<"), because it won't fit in UL subframe. Message is dropped." << LogEnd;
+			     queuedMsgsCnt--;
                              delete msg;
                              continue;
 
@@ -902,6 +933,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 ieCnt++;
 
                          msg = (cMessage*)it->queue->pop();
+			 queuedMsgsCnt--;
+
                          lengthInPS = (int)ceil(double(msg->length())/bytesPerPS);
 	
                          symbols -= lengthInPS;
@@ -999,6 +1032,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
     if (SendQueue.length()) {
 	cMessage * msg = (cMessage*)SendQueue.pop();
+	queuedMsgsCnt--;
 	send(msg, "phyOut");
     }
 
@@ -1006,6 +1040,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
     send(frameStart, "phyOut");
+    
+    stringUpdate();
 }
 
 void WMaxMacSS::finish()

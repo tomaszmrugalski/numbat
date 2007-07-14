@@ -180,7 +180,19 @@ fields:
     int cid;
 }
 
+message WMaxEvent_DelConn
+{
+fields:
+    int cid;
+}
+
 message WMaxMacTerminateAllConns
+{
+
+};
+
+// used to report by WMaxPhySS to WMaxCtrlSS that HO-IND was actually transmitted
+message WMaxEvent_HoIndSent
 {
 
 };

@@ -82,7 +82,7 @@ void WMaxCtrlSS::fsmInit() {
     stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational, onEnterState_Operational, 0);
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
-    stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", STATE_HANDOVER_COMPLETE, onEnterState_SendHoInd);
+    stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", onEventState_SendHoInd, onEnterState_SendHoInd, 0);
     stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", STATE_WAIT_FOR_CDMA, onEnterState_HandoverComplete);
 
     stateInit(STATE_WAIT_FOR_CDMA,     "Waiting for CDMA opportunity", onEventState_WaitForCdma);
@@ -109,6 +109,7 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
     eventInit(EVENT_SERVICE_FLOW_COMPLETE, "Service Flow complete");
+    eventInit(EVENT_HO_IND_SENT,  "HO-IND transmitted");
     eventVerify();
 
     TIMER(NetworkEntry, 0.1, "Start Network entry");
@@ -317,6 +318,11 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
         return;
     }
 
+    if (dynamic_cast<WMaxEvent_HoIndSent*>(msg)) {
+	onEvent(EVENT_HO_IND_SENT, msg);
+	delete msg;
+	return;
+    }
 }
 
 // wait for DL-MAP state
@@ -611,12 +617,28 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
     hoInd->setName("HO-IND");
     ss->sendMsg(hoInd, "", "macOut", ssinfo->info.basicCid);
-    WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
-    fsm->send(terminateAll, "macOut");
     ssinfo->info.basicCid = 0;
     ssinfo->stringUpdate();
     SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;
     return fsm->State();
+}
+
+FsmStateType WMaxCtrlSS::onExitState_SendHoInd(Fsm * fsm)
+{
+    SLog(fsm, Notice) << "#### onExit: SendHoInd" << LogEnd;
+    WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
+    fsm->send(terminateAll, "macOut");
+}
+
+FsmStateType WMaxCtrlSS::onEventState_SendHoInd(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    switch (e) {
+    case EVENT_HO_IND_SENT:
+	return STATE_HANDOVER_COMPLETE;
+    default:
+	CASE_IGNORE(fsm, e);
+    }
 }
     
 // handover complete state
@@ -909,10 +931,24 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-        getSS( GetCidFromMsg(msg), "MSHO-REQ received");
-	    Log(Notice) << "HO-IND received (cid=" << GetCidFromMsg(msg) << "." << LogEnd;
-        
-        /// @todo - find this SS and delete it
+        SSInfo_t * ss = getSS( GetCidFromMsg(msg), "HO-IND received");
+	std::stringstream x;
+	x << "HO-IND received (SS " << ss->getMac() << "), removing connections (cid=):"
+	  << ss->basicCid << "(basic)";
+
+	WMaxEvent_DelConn * delConn;
+	delConn = new WMaxEvent_DelConn();
+	delConn->setCid(ss->basicCid);
+	send(delConn, "macOut");
+
+	for (int i=0;i <ss->sfCnt; i++) {
+	    x << " " << ss->sf[i].cid;
+	    WMaxEvent_DelConn * delConn = new WMaxEvent_DelConn();
+	    delConn->setCid(ss->sf[i].cid);
+            send(delConn, "macOut");
+	}
+
+	Log(Notice) << x.str() << LogEnd;
         
         delete msg;
 	return;

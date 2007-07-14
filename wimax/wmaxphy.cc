@@ -119,25 +119,6 @@ void WMaxPhySS::initialize()
 {   
     SendQueue.clear();
     SendQueue.setName("SendQueue");
-
-/*     
-    cModule *SS = parentModule();
-    cModule *physim = parentModule()->parentModule();
-    cModule *BS = physim->submodule("BS",0);
-    if (!BS)
-	opp_error("There are no BS(es) defined. Number of BSes must be at least 1 to initialize sim.");
-    //connect to the first available gate on BS[0]
-    cGate *firstGate = BS->gate("out",0);
-    int connected = (firstGate->isConnected());
-    int i = 0 ;
-    while (connected) {
-	i++;
-	connected = ((BS->gate("out",i))->isConnected());
-    }
-    Log(Debug) << "#### Trying to connect to BS[0], gate " << i << LogEnd;
-    SS->gate("out")->connectTo(BS->gate("in",i)); 
-    BS->gate("out",i)->connectTo(SS->gate("in"));
-*/
 }
 
 void WMaxPhySS::beginFrame()
@@ -145,9 +126,17 @@ void WMaxPhySS::beginFrame()
     while (!SendQueue.empty()) {
 	cMessage * msg = (cMessage*)SendQueue.pop();
 	send(msg, "rfOut");
-    }
-    
 
+	if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
+	    Log(Notice) << "HO-IND was actually transmitted." << LogEnd;
+	    cModule * ss = parentModule();
+	    char buf[80];
+	    sprintf(buf, "WMaxCtrlSS[%d]", ss->index());
+	    cModule * ctrlSS = ss->submodule(buf);
+	    WMaxEvent_HoIndSent * x = new WMaxEvent_HoIndSent();
+	    sendDirect(x, 0.0, ctrlSS, "eventIn");
+	}
+    }
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
@@ -169,7 +158,4 @@ void WMaxPhySS::handleMessage(cMessage *msg)
     }
    // downlink message
     SendQueue.insert(msg);
-
-    
-
 }

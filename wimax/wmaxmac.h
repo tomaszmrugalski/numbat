@@ -104,9 +104,6 @@ typedef struct {
     uint16_t cid;
 } WMaxMacCDMA;
 
-
-ostream & operator<<(ostream & strum, WMaxMacCDMA &x);
-
 /** 
  * this structure represents connection
  * 
@@ -143,6 +140,9 @@ public:
     int bwr;
 };
 
+ostream & operator<<(ostream & strum, WMaxMacCDMA &x);
+ostream & operator<<(ostream & s, WMaxConn &x);
+
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
@@ -170,7 +170,7 @@ class WMaxMac : public cSimpleModule
     virtual void initialize() = 0;
     virtual void handleMessage(cMessage *msg) = 0;
     bool addConn(WMaxConn conn);
-    bool delConn(uint32_t sfid);
+    bool delConn(uint16_t cid);
     void addRangingConn();
 
     // --- runtime parameters ---
@@ -186,6 +186,8 @@ class WMaxMac : public cSimpleModule
     virtual void handleTxMessage(cMessage *msg);
     virtual void printDlMap(WMaxMsgDlMap * dlmap);
     virtual void printUlMap(WMaxMsgUlMap * ulmap);
+    virtual void stringUpdate();
+    int queuedMsgsCnt;
 
     WMaxStatsSS Stats;
 };

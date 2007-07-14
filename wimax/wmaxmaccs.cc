@@ -67,7 +67,11 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
         delete msg;
         return;
     }
-
+    if (WMaxEvent_DelConn *delcon = dynamic_cast<WMaxEvent_DelConn*>(msg)) {
+	Log(Error) << "Delete connection not implemented in WMaxMAC CS." << LogEnd;
+	delete msg;
+	return;
+    }
 
     cGate * gate = msg->arrivalGate();
     if(!strcmp(gate->fullName(),"macIn")) {
