@@ -130,14 +130,22 @@ typedef struct {
     bool controlConn; // is this a control connection? (i.e. send DL-MAP,UL-MAP there?)
 } WMaxConn;
 
-class WMaxMacHeader : public cPolymorphic
+class WMaxMacHeader : public WMaxMacHeader_Base //public cPolymorphic
 {
 public:
     WMaxMacHeader() { cid=0xffff; ht=0; bwr=0; }
-    virtual cPolymorphic *dup() const  {return new WMaxMacHeader(*this);}
+    virtual WMaxMacHeader_Base *dup() const  {return new WMaxMacHeader(*this);}
     uint16_t cid;
     bool ht;
     int bwr;
+
+    virtual int getCid() const { return cid; }
+    virtual void setCid(int cid_var) { cid=cid_var; }
+    virtual bool getHt() const { return ht; }
+    virtual void setHt(bool ht_var) { ht=ht_var; }
+    virtual int getBwr() const { return bwr; }
+    virtual void setBwr(int bwr_var) { bwr=bwr_var; }
+
 };
 
 ostream & operator<<(ostream & strum, WMaxMacCDMA &x);

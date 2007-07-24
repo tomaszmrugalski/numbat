@@ -17,6 +17,9 @@
 
 using namespace std;
 
+Register_Class(WMaxMacHeader);
+
+
 ostream & operator<<(ostream & strum, WMaxMacCDMA &x) {
     strum << "code=" << x.code << " bandwidth=" << x.bandwidth << " cid=" << x.cid;
     return strum;

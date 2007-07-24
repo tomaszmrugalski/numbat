@@ -13,6 +13,16 @@ struct WMaxRngRsp;
 // *** real WiMAX MAC messages ****************************************************
 // ********************************************************************************
 
+class WMaxMacHeader
+{
+properties:
+    customize=true;
+fields:
+    abstract int cid;
+    abstract bool ht;
+    abstract int bwr;
+};
+
 message WMaxMsgDlMap
 {
 fields:
