@@ -53,6 +53,10 @@ message WMaxMsgRngReq
 fields:
     int purpose;
     WMaxRngReq rngReq;
+
+// used during HO (to perform CID update and recreate connections at target BS)
+    WMaxQos SfQos[];
+    int     SfCid[];
 };
 
 message WMaxMsgRngRsp
@@ -60,6 +64,10 @@ message WMaxMsgRngRsp
 fields:
     int purpose;
     WMaxRngRsp rngRsp;
+
+// used during HO (to perform CID update and recreate connections at target BS)
+    int oldCid[];
+    int newCid[];
 };
 
 message WMaxMsgSbcReq
@@ -169,9 +177,10 @@ message WMaxPhyDummyFrameStart
 
 };
 
-message WMaxCtrlFlowCreationStart
+message WMaxEvent_FlowCreationStart
 {
 fields:
+    int skipDSA;
     int gateIndex;
     WMaxQos qos[];
 }
@@ -188,13 +197,23 @@ message WMaxMacAddMngmntConn
 {
 fields:
     int cid;
-}
+};
 
 message WMaxEvent_DelConn
 {
 fields:
     int cid;
-}
+};
+
+message WMaxEvent_FlowEnable
+{
+
+};
+
+message WMaxEvent_FlowDisable
+{
+
+};
 
 message WMaxMacTerminateAllConns
 {

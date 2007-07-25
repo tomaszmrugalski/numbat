@@ -210,6 +210,8 @@ protected:
 
 private:
     int sfCnt; // number of service flows
+
+    WMaxEvent_FlowCreationStart * createNewFlowEvent();
 };
 
 class WMaxCtrlBS : public Fsm
@@ -229,6 +231,7 @@ protected:
     double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
     uint16_t getNextCid() { return cid++; };
     SSInfo_t * getSS(uint16_t basicCid, string reason);
+    void deleteSS(uint16_t basicCid);
 };
 
 class WMaxFlowSS : public Fsm
@@ -254,6 +257,7 @@ protected:
         STATE_WAITING_DSA_RSP,
         STATE_SEND_DSA_ACK,
         STATE_OPERATIONAL,
+        STATE_DISABLED, 
         STATE_NUM
     } State;
 
@@ -263,11 +267,14 @@ protected:
     static FsmStateType onEventState_WaitingDsaRsp(Fsm * fsm, FsmEventType e, cMessage * msg);
     static FsmStateType onEnterState_SendDsaAck(Fsm * fsm);
     static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage * msg);
+    static FsmStateType onEventState_Disabled(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     typedef enum {
         EVENT_START,
         EVENT_DSX_RVD_RECEIVED,
         EVENT_DSA_RSP_RECEIVED,
+        EVENT_FLOW_DISABLE,
+        EVENT_FLOW_ENABLE,
         EVENT_NUM
     } Event;
 

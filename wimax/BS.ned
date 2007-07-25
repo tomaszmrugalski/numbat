@@ -24,6 +24,8 @@ simple WMaxCtrlBS
     parameters:
         MinDelayCdma: numeric,
         MaxDelayCdma: numeric,
+        MinDelayRng: numeric,
+        MaxDelayRng: numeric,
         MinDelaySbc: numeric,
         MaxDelaySbc: numeric,
         MinDelayReg: numeric,
@@ -61,7 +63,7 @@ module BS
         bsMac: WMaxMacBS;
             display: "i=block/control,#40e221;p=280,208;q=SendQueue";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=280,40;tx=Tx,rx";
+            display: "i=block/app,#40e221;p=368,56;tx=Tx,rx";
         //         bsIPv6_1: IPv6Node;
         //             parameters:
         //                 BurstInterval = 0.027, // TBD
@@ -69,14 +71,14 @@ module BS
         //                 BurstPacketSize = 400; // TBD
         //             display: "i=block/app,#40e221;p=232,80";
         WMaxCtrlBS: WMaxCtrlBS;
-            display: "i=block/cogwheel,#40e221;p=392,208";
+            display: "i=block/cogwheel,#40e221;p=392,232";
         bsCS: WMaxMacCS;
-            display: "p=280,128;i=block/classifier,#40e221";
+            display: "p=232,104;i=block/classifier,#40e221";
         radio: WMaxRadio;
-	    gatesizes:
-		radioIn[sizeof(in)],
-		radioOut[sizeof(in)]; // use in, for consistency
-		
+            gatesizes:
+                radioIn[sizeof(in)],
+                radioOut[sizeof(in)]; // use in, for consistency
+
             display: "p=64,208;i=device/receiverdish,#40e221,30";
     connections nocheck:
 
@@ -101,8 +103,8 @@ module BS
         radio.phyOut --> bsPhy.rfIn;
         bsPhy.rfOut --> radio.phyIn; //
                                      //
-				     
-    display: "b=448,248";
+
+    display: "b=440,280";
 endmodule
 
 

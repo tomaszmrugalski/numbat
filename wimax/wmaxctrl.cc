@@ -33,7 +33,9 @@ ostream & operator <<(ostream & s, Transaction &trans)
 
 ostream & operator <<(ostream & s, WMaxFlowSS &f) 
 {
-  s << "transID=" << f.transactionID << " cid=" << f.cid;
+  s << "state=" << f.CurrentStateGet()->fullName()
+    << ", transID=" << f.transactionID << " cid=" << f.cid
+    << " qos=[connType=" << f.qos.connType << ", msr=" << f.qos.msr << "]";
   return s;
 }
 
@@ -368,6 +370,7 @@ FsmStateType WMaxCtrlSS::onEvent_CdmaCode(cMessage *msg)
 
 FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 {
+    string purpose = "initial";
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
 
     cModule *SS = ss->parentModule();
@@ -382,9 +385,31 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
     WMaxMsgRngReq * rng = new WMaxMsgRngReq();
     rng->setName("RNG-REQ");
     rng->setRngReq(rngReq);
+
+    if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
+        int cnt = 0;
+        for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
+             it!=ss->serviceFlows.end(); it++) {
+          cnt++;
+        }
+        SLog(fsm, Info) << "Generating reentry RNG-REQ (" << cnt << " flows)." << LogEnd;
+        rng->setSfCidArraySize(cnt);
+        rng->setSfQosArraySize(cnt);
+        int i=0;
+        for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
+             it!=ss->serviceFlows.end(); it++) {
+          cnt++;
+          rng->setSfCid(i, (*it)->cid);
+          rng->setSfQos(i, (*it)->qos);
+          i++;
+        }
+        
+        purpose = "handover";
+    }
+
     ss->sendMsg(rng, "", "macOut", 0);
 
-    SLog(fsm, Notice) << "Sending RNG-REQ." << LogEnd;
+    SLog(fsm, Notice) << "Sending " << purpose << " RNG-REQ." << LogEnd;
     return fsm->State();
 }
 
@@ -393,21 +418,48 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
-    WMaxMsgRngRsp * rng = dynamic_cast<WMaxMsgRngRsp*>(msg);
-    WMaxRngRsp rngRsp;
-    WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
 
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
-        rngRsp = rng->getRngRsp();
+      {
+        WMaxMsgRngRsp * rng = dynamic_cast<WMaxMsgRngRsp*>(msg);
+        WMaxRngRsp rngRsp = rng->getRngRsp();
         if (rngRsp.ssMacAddr == ssinfo->info.macAddr) {
-            ssinfo->info.basicCid = rngRsp.basicCid;
-            ssinfo->stringUpdate();
-            addConn->setCid(rngRsp.basicCid);
-            ss->send(addConn,"macOut");
-	    SLog(ss, Debug) << "Switching to 'send SBC-REQ'." << LogEnd;
-	    return STATE_SEND_SBC_REQ;
+          ssinfo->info.basicCid = rngRsp.basicCid;
+          ssinfo->stringUpdate();
+          WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
+          addConn->setCid(rngRsp.basicCid);
+          ss->send(addConn,"macOut");
+          
+          for (int i=0; i<rng->getOldCidArraySize(); i++) {
+              int oldCid = rng->getOldCid(i);
+              int newCid = rng->getNewCid(i);
+
+              for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin();
+                   it!=ss->serviceFlows.end(); it++) {
+		  SLog(ss, Debug) << "Trying to update cid " << oldCid << "->" << newCid << LogEnd;
+		  if ((*it)->cid == oldCid) {
+		      SLog(ss, Debug) << "SF found. Performing update." << LogEnd;
+		      (*it)->cid = newCid;
+		      WMaxEvent_FlowEnable * en = new WMaxEvent_FlowEnable();
+		      (*it)->handleMessage(en);
+		      
+		      SLog(ss, Info) << "Creating SF cid=" << newCid << LogEnd;
+		      WMaxMacAddConn *addConn = new WMaxMacAddConn();
+		      addConn->setName("Add connection");
+		      addConn->setGateIndex(0);
+		      addConn->setCid((*it)->cid);
+		      addConn->setQosArraySize(1);
+		      addConn->setQos(0,(*it)->qos);
+		      ss->send(addConn, "macOut");
+		  }
+              }
+          }
+
+          SLog(ss, Debug) << "Switching to 'send SBC-REQ'." << LogEnd;
+          return STATE_SEND_SBC_REQ;
         }
+      }
     default:
 	CASE_IGNORE(fsm, e);
     }
@@ -519,24 +571,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SvcFlowCreation(Fsm * fsm) {
 	return STATE_OPERATIONAL; /* state override: switch to SEND_REG_REQ */
     }
 
-    WMaxFlowSS *flow;
-    
-    flow = new WMaxFlowSS(fsm);
-
-/// @todo WMacCtrlFlowCreationStart should be send by WMaxMac ??
-    WMaxCtrlFlowCreationStart *msg = new WMaxCtrlFlowCreationStart();
-    msg->setGateIndex(0);
-    WMaxQos qos;
-    qos.connType = WMAX_CONN_TYPE_BE;
-    qos.msr = 80000;
-    msg->setQosArraySize(1);
-    msg->setQos(0,qos);
-    msg->setGateIndex(0);
-    flow->handleMessage(msg);
-
+    WMaxFlowSS *flow = new WMaxFlowSS(fsm);
+    flow->handleMessage( ss->createNewFlowEvent() );
     ss->serviceFlows.push_back(flow);
-
-    ss->sfCnt = 1; // @todo - there is only one flow, for now it's ok, but support for more service flow must be added
+    ss->sfCnt = 1;
+    // @todo - there is only one flow, for now it's ok, but support for more service flow must be added
     
     return fsm->State();
 }
@@ -579,10 +618,10 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
     switch (e) {
-    case EVENT_HANDOVER_START:
-	return STATE_SEND_MSHO_REQ;
-    default:
-	CASE_IGNORE(fsm, e);
+      case EVENT_HANDOVER_START:
+        return STATE_SEND_MSHO_REQ;
+      default:
+        CASE_IGNORE(fsm, e);
     }
 }
 
@@ -590,6 +629,7 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    ss->hoStartTimestamp = fsm->simTime();
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
     WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
     mshoReq->setName("MSHO-REQ");
@@ -620,12 +660,18 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     ssinfo->info.basicCid = 0;
     ssinfo->stringUpdate();
     SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;
+
+    // disable all service flows
+    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
+      WMaxEvent_FlowDisable * dis = new WMaxEvent_FlowDisable();
+      (*it)->handleMessage(dis);
+    }
+
     return fsm->State();
 }
 
 FsmStateType WMaxCtrlSS::onExitState_SendHoInd(Fsm * fsm)
 {
-    SLog(fsm, Notice) << "#### onExit: SendHoInd" << LogEnd;
     WMaxMacTerminateAllConns *terminateAll = new WMaxMacTerminateAllConns();
     fsm->send(terminateAll, "macOut");
 }
@@ -634,9 +680,9 @@ FsmStateType WMaxCtrlSS::onEventState_SendHoInd(Fsm * fsm, FsmEventType e, cMess
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     switch (e) {
-    case EVENT_HO_IND_SENT:
-	return STATE_HANDOVER_COMPLETE;
-    default:
+      case EVENT_HO_IND_SENT:
+        return STATE_HANDOVER_COMPLETE;
+      default:
 	CASE_IGNORE(fsm, e);
     }
 }
@@ -658,11 +704,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SendCdma(Fsm *fsm)
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     WMaxMsgCDMA * cdma = new WMaxMsgCDMA();
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
-	cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
-	cdma->setName("CDMA code (ho rng)");
+        cdma->setPurpose(WMAX_CDMA_PURPOSE_HO_RNG);
+        cdma->setName("CDMA code (ho rng)");
     } else {
-	cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-	cdma->setName("CDMA code (initial rng)");
+        cdma->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
+        cdma->setName("CDMA code (initial rng)");
     }
 
     SLog(fsm, Notice) << "Sending " << cdma->name() << LogEnd;
@@ -684,7 +730,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForAnonRngRsp(Fsm * fsm, FsmEventType 
 FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    ss->hoStartTimestamp = fsm->simTime();
+
     switch (e) {
     case EVENT_ENTRY_START:
 	ss->neType = WMAX_CTRL_NETWORK_ENTRY_INITIAL;
@@ -838,37 +884,81 @@ SSInfo_t * WMaxCtrlBS::getSS(uint16_t basicCid, string reason)
   opp_error("Unable to find SS with cid=%d while %s\n", basicCid, reason.c_str());
 }
 
+void WMaxCtrlBS::deleteSS(uint16_t basicCid)
+{
+  list<SSInfo_t>::iterator ss;
+  for (ss = ssList.begin(); ss!=ssList.end(); ss++) {
+    if (basicCid == ss->basicCid) {
+      ssList.erase(ss);
+      return;
+    }
+  }
+   
+  opp_error("Unable to delete SS with cid=%d. SS not found.\n", basicCid);
+}
+
 void WMaxCtrlBS::handleMessage(cMessage *msg) 
 {
     if (dynamic_cast<WMaxMsgRngReq*>(msg)) {
+      int basicCid;
       if (GetCidFromMsg(msg) != WMAX_CID_RANGING )
         opp_error("Received RNG-REQ on non-ranging connection (cid=%d)", GetCidFromMsg(msg));
 
         WMaxMsgRngReq * req = dynamic_cast<WMaxMsgRngReq*>(msg);
         WMaxRngReq rngReq = req->getRngReq();
-
         WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
+
+        // remember that this SS is being supported
+        basicCid = getNextCid();
+        SSInfo_t * ss  = new SSInfo_t();
+        ss->macAddr  = rngReq.macAddr;
+        ss->basicCid = basicCid;
+        Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
+
+        rsp->setOldCidArraySize(req->getSfCidArraySize());
+        rsp->setNewCidArraySize(req->getSfCidArraySize());
+
+        for (int i=0; i<req->getSfCidArraySize(); i++) {
+            int oldCid = 0, newCid = 0;
+
+            WMaxMacAddConn *addConn = new WMaxMacAddConn();
+
+            oldCid = req->getSfCid(i);
+            newCid = getNextCid();
+
+            addConn->setName("Add connection");
+            addConn->setGateIndex(0);
+            addConn->setCid( newCid );
+            addConn->setQosArraySize(1);
+            WMaxQos qos = req->getSfQos(i);
+            addConn->setQos(0, qos);
+
+            Log(Info) << "Creating new connection: oldCid=" << oldCid << ", newCid=" << newCid 
+		      << ", qos[connType=" << qos.connType << ", msr=" << qos.msr << "]" << LogEnd;
+            send(addConn, "macOut");
+
+            rsp->setOldCid(i, oldCid);
+            rsp->setNewCid(i, newCid);
+
+            ss->sf[ss->sfCnt].cid = newCid;
+            ss->sfCnt++;
+        }
+
+        ssList.push_back(*ss);
+
         WMaxRngRsp rngRsp;
         rngRsp.ssMacAddr = rngReq.macAddr;
-        rngRsp.basicCid = cid;
+        rngRsp.basicCid = basicCid;
         rsp->setName("RNG-RSP");
         rsp->setRngRsp(rngRsp);
         rsp->setPurpose(WMAX_CDMA_PURPOSE_INITIAL_RNG);
-        double x = sendMsg(rsp, "DelayCdma", "macOut", GetCidFromMsg(msg) );
+        double x = sendMsg(rsp, "DelayRng", "macOut", GetCidFromMsg(msg) );
 
         WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
-        addConn->setCid(cid);
-        Log(Notice) << "RNG-REQ received, sending RNG-RSP in " << x << "secs (new basic connection created, cid=" 
-                    << cid << ")." << LogEnd;
+        addConn->setCid(basicCid);
+        Log(Notice) << "RNG-REQ (" << req->getSfCidArraySize() << " SFs updated) received, sending RNG-RSP in " 
+		    << x << "secs (new basic connection created, cid=" << basicCid << ")." << LogEnd;
         send(addConn,"macOut");
-        cid++;
-
-        // remember that this SS is being supported
-        SSInfo_t * ss  = new SSInfo_t();
-        ss->macAddr  = rngReq.macAddr;
-        ss->basicCid = addConn->getCid();
-        ssList.push_back(*ss);
-        Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
         
         delete msg;
         return;
@@ -932,26 +1022,29 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 
     if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
         SSInfo_t * ss = getSS( GetCidFromMsg(msg), "HO-IND received");
-	std::stringstream x;
-	x << "HO-IND received (SS " << ss->getMac() << "), removing connections (cid=):"
-	  << ss->basicCid << "(basic)";
-
-	WMaxEvent_DelConn * delConn;
-	delConn = new WMaxEvent_DelConn();
-	delConn->setCid(ss->basicCid);
-	send(delConn, "macOut");
-
-	for (int i=0;i <ss->sfCnt; i++) {
-	    x << " " << ss->sf[i].cid;
-	    WMaxEvent_DelConn * delConn = new WMaxEvent_DelConn();
-	    delConn->setCid(ss->sf[i].cid);
-            send(delConn, "macOut");
-	}
-
-	Log(Notice) << x.str() << LogEnd;
+        std::stringstream x;
+        x << "HO-IND received (SS " << ss->getMac() << "), removing connections (cid=):"
+          << ss->basicCid << "(basic)";
         
+        WMaxEvent_DelConn * delConn;
+        delConn = new WMaxEvent_DelConn();
+        delConn->setCid(ss->basicCid);
+        send(delConn, "macOut");
+        
+        for (int i=0;i <ss->sfCnt; i++) {
+          x << " " << ss->sf[i].cid;
+          WMaxEvent_DelConn * delConn = new WMaxEvent_DelConn();
+          delConn->setCid(ss->sf[i].cid);
+          send(delConn, "macOut");
+        }
+
+        Log(Notice) << x.str() << LogEnd;
+
+        Log(Debug) << "Deleting SS " << ss->getMac() << LogEnd;
+        deleteSS(ss->basicCid);
+
         delete msg;
-	return;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgCDMA*>(msg)) {
@@ -1090,6 +1183,7 @@ void WMaxFlowSS::fsmInit() {
     stateInit(STATE_WAITING_DSX_RVD, "Waiting for DSX-RVD", onEventState_WaitingDsxRvd);
     stateInit(STATE_WAITING_DSA_RSP, "Waiting for DSA-RSP", onEventState_WaitingDsaRsp);
     stateInit(STATE_SEND_DSA_ACK, "Sending DSA-ACK", STATE_OPERATIONAL, onEnterState_SendDsaAck);
+    stateInit(STATE_DISABLED, "Flow disabled", onEventState_Disabled);
     stateInit(STATE_OPERATIONAL, "Operational", onEventState_Operational);
 
     stateVerify();
@@ -1097,15 +1191,25 @@ void WMaxFlowSS::fsmInit() {
     eventInit(EVENT_START, "Service flow creation started");
     eventInit(EVENT_DSX_RVD_RECEIVED, "Received DSX-RVD");
     eventInit(EVENT_DSA_RSP_RECEIVED, "Received DSA-RSP");
+    eventInit(EVENT_FLOW_DISABLE, "Flow disable");
+    eventInit(EVENT_FLOW_ENABLE, "Flow enable");
 
     eventVerify();
 }
 
 
 void WMaxFlowSS::handleMessage(cMessage *msg) {
-    if(dynamic_cast<WMaxCtrlFlowCreationStart*>(msg)) {
-        onEvent(EVENT_START, msg);
-        delete msg;
+    if(dynamic_cast<WMaxEvent_FlowCreationStart*>(msg)) {
+        WMaxEvent_FlowCreationStart* start = dynamic_cast<WMaxEvent_FlowCreationStart*>(msg);
+        if (!start->getSkipDSA()) {
+          // normal init (during network entry)
+          onEvent(EVENT_START, msg);
+          delete msg;
+        } else {
+          // handover reentry (skip DSA procedure)
+          onEvent(EVENT_FLOW_DISABLE, msg);
+          delete msg;
+        }
         return;
     }
 
@@ -1120,12 +1224,26 @@ void WMaxFlowSS::handleMessage(cMessage *msg) {
         delete msg;
         return;
     }
+
+    if (dynamic_cast<WMaxEvent_FlowEnable*>(msg)) {
+        onEvent(EVENT_FLOW_ENABLE, msg);
+        Log(Debug) <<  "Enabling SF." << LogEnd;
+        delete msg;
+        return;
+    }
+
+    if (dynamic_cast<WMaxEvent_FlowDisable*>(msg)) {
+        Log(Debug) <<  "Disabling SF." << LogEnd;
+        onEvent(EVENT_FLOW_DISABLE, msg);
+        delete msg;
+        return;
+    }
 }
 
 // Start state
 FsmStateType WMaxFlowSS::onEventState_Start(Fsm * fsm, FsmEventType e, cMessage * msg){
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
-    WMaxCtrlFlowCreationStart *flowcrstart = dynamic_cast<WMaxCtrlFlowCreationStart*>(msg);
+    WMaxEvent_FlowCreationStart *flowcrstart = dynamic_cast<WMaxEvent_FlowCreationStart*>(msg);
     flow->qos           = flowcrstart->getQos(0);
     flow->gate          = flowcrstart->getGateIndex();
     flow->transactionID = GetNextTransactionID();
@@ -1209,6 +1327,47 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
 
 // Operational state
 FsmStateType WMaxFlowSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage * msg) {
-return fsm->State();
+    switch (e) {
+    case EVENT_FLOW_DISABLE:
+        /// @todo - disable this flow
+        return STATE_DISABLED;
+    default:
+        CASE_IGNORE(fsm, e);
+    }
+
+    return fsm->State();
 }
 
+FsmStateType WMaxFlowSS::onEventState_Disabled(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(fsm);
+
+    switch (e) {
+    case EVENT_FLOW_ENABLE:
+        return STATE_OPERATIONAL;
+    default:
+        CASE_IGNORE(fsm, e);
+    }
+}
+
+
+/** 
+ * this method creates ne WMaxEvent_FlowCreationStart event, which is used
+ * during service flow creation
+ * 
+ * @return 
+ */
+WMaxEvent_FlowCreationStart * WMaxCtrlSS::createNewFlowEvent()
+{
+    WMaxEvent_FlowCreationStart *msg = new WMaxEvent_FlowCreationStart();
+    msg->setGateIndex(0);
+    WMaxQos qos;
+    qos.connType = WMAX_CONN_TYPE_BE;
+    qos.msr = 80000;
+    msg->setQosArraySize(1);
+    msg->setQos(0,qos);
+    msg->setGateIndex(0);
+    msg->setSkipDSA(0);
+
+    return msg;
+}
