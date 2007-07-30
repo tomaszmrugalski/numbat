@@ -59,11 +59,11 @@ module BS
         in: in[];
     submodules:
         bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=176,208;q=SendQueue";
+            display: "i=abstract/accesspoint,#40e221;p=104,368;q=SendQueue";
         bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=280,208;q=SendQueue";
+            display: "i=block/control,#40e221;p=104,264;q=SendQueue";
         bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=368,56;tx=Tx,rx";
+            display: "i=block/app,#40e221;p=104,64;tx=Tx,rx";
         //         bsIPv6_1: IPv6Node;
         //             parameters:
         //                 BurstInterval = 0.027, // TBD
@@ -71,15 +71,15 @@ module BS
         //                 BurstPacketSize = 400; // TBD
         //             display: "i=block/app,#40e221;p=232,80";
         WMaxCtrlBS: WMaxCtrlBS;
-            display: "i=block/cogwheel,#40e221;p=392,232";
+            display: "i=block/cogwheel,#40e221;p=216,160";
         bsCS: WMaxMacCS;
-            display: "p=232,104;i=block/classifier,#40e221";
+            display: "p=104,160;i=block/classifier,#40e221";
         radio: WMaxRadio;
             gatesizes:
                 radioIn[sizeof(in)],
                 radioOut[sizeof(in)]; // use in, for consistency
 
-            display: "p=64,208;i=device/receiverdish,#40e221,30";
+            display: "p=104,480;i=device/receiverdish,#40e221,30";
     connections nocheck:
 
         bsMac.phyOut --> bsPhy.phyIn;
@@ -104,7 +104,7 @@ module BS
         bsPhy.rfOut --> radio.phyIn; //
                                      //
 
-    display: "b=440,280";
+    display: "b=272,544";
 endmodule
 
 

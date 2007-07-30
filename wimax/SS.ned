@@ -45,11 +45,11 @@ module SS //
                 //
     submodules:
         ssPhy: WMaxPhySS;
-            display: "i=abstract/accesspoint,#ce1821;p=80,64;q=SendQueue";
+            display: "i=abstract/accesspoint,#ce1821;p=80,232;q=SendQueue";
         ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=232,64;q=SendQueue";
+            display: "i=block/control,#ce1821;p=232,232;q=SendQueue";
         ssIPv6: IPv6Node;
-            display: "i=block/app,#ce1821;p=232,256;tx=Tx,rx";
+            display: "i=block/app,#ce1821;p=232,56;tx=Tx,rx";
         //         ssIPv6_1: IPv6Node;
         //             parameters:
         //                 BurstInterval = 0.026, // TBD
@@ -57,11 +57,11 @@ module SS //
         //                 BurstPacketSize = 100; // TBD
         //             display: "i=block/app,#ce1821;p=248,80";
         WMaxCtrlSS: WMaxCtrlSS;
-            display: "i=block/cogwheel,#ce1821;p=392,104";
+            display: "i=block/cogwheel,#ce1821;p=384,232";
         ssCS: WMaxMacCS;
-            display: "p=128,168;i=block/classifier,#ce1821";
+            display: "p=144,144;i=block/classifier,#ce1821";
         ssInfo: ssInfo;
-            display: "p=392,200;i=block/blackboard,#ce1821";
+            display: "p=384,96;i=block/blackboard,#ce1821";
     connections nocheck:
         ssMac.phyOut --> ssPhy.phyIn;
         ssPhy.phyOut --> ssMac.phyIn;
@@ -80,6 +80,6 @@ module SS //
 
         ssPhy.rfOut --> out;
         in --> ssPhy.rfIn;
-    display: "b=480,296";
+    display: "b=456,296";
 endmodule
 

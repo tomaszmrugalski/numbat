@@ -387,24 +387,26 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
     rng->setRngReq(rngReq);
 
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
-        int cnt = 0;
-        for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
-             it!=ss->serviceFlows.end(); it++) {
-          cnt++;
-        }
-        SLog(fsm, Info) << "Generating reentry RNG-REQ (" << cnt << " flows)." << LogEnd;
-        rng->setSfCidArraySize(cnt);
-        rng->setSfQosArraySize(cnt);
-        int i=0;
-        for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
-             it!=ss->serviceFlows.end(); it++) {
-          cnt++;
-          rng->setSfCid(i, (*it)->cid);
-          rng->setSfQos(i, (*it)->qos);
-          i++;
-        }
-        
         purpose = "handover";
+
+	if (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER) {
+	    int cnt = 0;
+	    for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
+		 it!=ss->serviceFlows.end(); it++) {
+		cnt++;
+	    }
+	    SLog(fsm, Info) << "Generating reentry RNG-REQ (" << cnt << " flows)." << LogEnd;
+	    rng->setSfCidArraySize(cnt);
+	    rng->setSfQosArraySize(cnt);
+	    int i=0;
+	    for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
+		 it!=ss->serviceFlows.end(); it++) {
+		cnt++;
+		rng->setSfCid(i, (*it)->cid);
+		rng->setSfQos(i, (*it)->qos);
+		i++;
+	    }
+        }
     }
 
     ss->sendMsg(rng, "", "macOut", 0);
@@ -662,10 +664,21 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;
 
     // disable all service flows
-    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
-      WMaxEvent_FlowDisable * dis = new WMaxEvent_FlowDisable();
-      (*it)->handleMessage(dis);
-    }
+    if (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER) {
+	    // disable all flows
+	    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
+		WMaxEvent_FlowDisable * dis = new WMaxEvent_FlowDisable();
+		(*it)->handleMessage(dis);
+	    } 
+	} else {
+	    // delete flows
+	    ss->serviceFlows.clear();
+#if 0
+	    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
+		ss->serviceFlows.erase(*it);
+	    } 
+#endif
+	}
 
     return fsm->State();
 }
