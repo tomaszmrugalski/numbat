@@ -40,6 +40,7 @@ protected:
     virtual void handleMessage(cMessage *msg);
     virtual void handleUlMessage(cMessage *msg);
     virtual void handleDlMessage(cMessage *msg);
+    virtual void updateLog();
 
     list<WMaxMacCSRule> csTable;
 };

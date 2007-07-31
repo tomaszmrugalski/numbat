@@ -39,7 +39,7 @@ AR=ar cr
 SHLIB_LD=g++ -shared 
 MAKEDEPEND=opp_makedep -Y --objdirtree
 
-CFLAGS=-g -O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
+CFLAGS=-O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
 LDFLAGS= -Wl,--export-dynamic
 EXE_SUFFIX=
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   fsm.o ipv6node.o logger.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   fsm.o ipv6node.o logger.o  ssinfo.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -216,9 +216,11 @@ ipv6node.o: ipv6node.cc \
   ipv6node.h
 logger.o: logger.cc \
   logger.h
+physim_n.o: physim_n.cc
 ssinfo.o: ssinfo.cc \
   logger.h \
   ssinfo.h
+SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
   wmaxmsg_m.h \
@@ -236,7 +238,8 @@ wmaxmac.o: wmaxmac.cc \
   logger.h \
   wmaxmsg.h \
   fsm.h \
-  hoinfo.h
+  hoinfo.h \
+  ssinfo.h
 wmaxmaccs.o: wmaxmaccs.cc \
   wmaxmaccs.h \
   ipv6node.h \

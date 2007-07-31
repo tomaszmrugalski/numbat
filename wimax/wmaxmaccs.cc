@@ -47,30 +47,27 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
     if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
         WMaxMacCSRule rule;
         rule.cid  = addconn->getCid();
-
         list<WMaxMacCSRule>::iterator it;
-
         csTable.push_front(rule);
-
-        string log;
-        log = "New Convergence Sublayer clasifier: ";
-        for(it=csTable.begin(); it!=csTable.end(); it++) {
-              stringstream ss_cid;
-              string st_cid;
-              ss_cid << it->cid;
-              ss_cid >> st_cid;
-              log = log + "CID=" + st_cid + " | ";
-        }
-        
-        Log(Notice) << log << LogEnd;
-
+        updateLog();
         delete msg;
         return;
     }
+
     if (WMaxEvent_DelConn *delcon = dynamic_cast<WMaxEvent_DelConn*>(msg)) {
-	Log(Error) << "Delete connection not implemented in WMaxMAC CS." << LogEnd;
-	delete msg;
-	return;
+        list<WMaxMacCSRule>::iterator it;
+        for(it=csTable.begin(); it!=csTable.end(); it++) {
+            if((it->cid == delcon->getCid())) {
+                csTable.erase(it);
+                Log(Notice) << "Connection cid=" << delcon->getCid() << " removed." << LogEnd;
+                updateLog();
+                delete msg;
+                return;
+            }
+        }
+        Log(Error) << "Unable to delete connection with cid=" << delcon->getCid() << "." << LogEnd;
+        delete msg;
+        return;
     }
 
     cGate * gate = msg->arrivalGate();
@@ -117,4 +114,19 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
      Log(Debug) << "New message. CID=" << it->cid << LogEnd;
 
      send(wmaxmacmsg, "macOut");
+}
+
+
+void WMaxMacCS::updateLog() {
+    list<WMaxMacCSRule>::iterator it;
+    string log;
+    log = "Convergence Sublayer clasifier: ";
+    for(it=csTable.begin(); it!=csTable.end(); it++) {
+        stringstream ss_cid;
+        string st_cid;
+        ss_cid << it->cid;
+        ss_cid >> st_cid;
+        log = log + "CID=" + st_cid + " | ";
+    }
+    Log(Notice) << log << LogEnd;
 }
