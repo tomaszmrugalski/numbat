@@ -1,5 +1,7 @@
 import
     "common";
+import 
+    "IPv6";
 
 simple WMaxPhySS
     gates:
@@ -48,7 +50,7 @@ module SS //
             display: "i=abstract/accesspoint,#ce1821;p=80,232;q=SendQueue";
         ssMac: WMaxMacSS;
             display: "i=block/control,#ce1821;p=232,232;q=SendQueue";
-        ssIPv6: IPv6Node;
+        ssIPv6: IPv6Client;
             display: "i=block/app,#ce1821;p=232,56;tx=Tx,rx";
         //         ssIPv6_1: IPv6Node;
         //             parameters:

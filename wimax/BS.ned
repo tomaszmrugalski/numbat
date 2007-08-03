@@ -1,5 +1,7 @@
 import
     "common";
+import
+    "IPv6";
 
 //ssPhy
 simple WMaxPhyBS
