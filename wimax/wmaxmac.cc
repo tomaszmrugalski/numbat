@@ -182,8 +182,24 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 /********************************************************************************/
 Define_Module(WMaxMacBS);
 
+void WMaxMacBS::setInitialPosition() {
+    cModule *BS = parentModule();
+    cDisplayString dispstr = BS->displayString();
+    long int x = BS->par("x");
+    long int y = BS->par("y");
+    dispstr.setTagArg("p", 0, x);
+    dispstr.setTagArg("p", 1, y);
+    BS->setDisplayString(dispstr);
+
+    char buf[80];
+    sprintf(buf, "(%s,%s)", (BS->displayString()).getTagArg("p",0), (BS->displayString()).getTagArg("p",1));
+    BS->displayString().setTagArg("t",0, buf);
+}
+
 void WMaxMacBS::initialize()
 {
+    setInitialPosition();
+
     SendQueue.setName("SendQueue");
     FrameLength = par("FrameLength");
 
@@ -647,6 +663,24 @@ void WMaxMac::handleRxMessage(cMessage *msg)
 /********************************************************************************/
 Define_Module(WMaxMacSS);
 
+void WMaxMacSS::setInitialPosition() {
+    cModule *SS = parentModule();
+    cModule *physim = SS->parentModule();
+    cModule *BS = physim->submodule("BS",SS->par("initialBS"));
+
+    cDisplayString dispstr = SS->displayString();
+    long int x = atoi(BS->displayString().getTagArg("p", 0)) + rand()%200 - 100;
+    long int y = atoi(BS->displayString().getTagArg("p", 1)) + rand()%200 - 100;
+    dispstr.setTagArg("p", 0, x);
+    dispstr.setTagArg("p", 1, y);
+    SS->setDisplayString(dispstr);
+
+    char buf[80];
+    sprintf(buf, "(%s,%s)", (SS->displayString()).getTagArg("p",0), (SS->displayString()).getTagArg("p",1));
+    SS->displayString().setTagArg("t",0, buf);
+}
+
+
 void WMaxMacSS::initialize()
 {
     BEpoint = 0;
@@ -657,6 +691,14 @@ void WMaxMacSS::initialize()
     addRangingConn();
 
     WATCH_LIST(CDMAlist);
+
+    setInitialPosition();
+    if(parentModule()->par("wmaxIsMobile")) {
+        parentModule()->displayString().setTagArg("i",0,"device/laptop_s");
+        ChangePosition = new cMessage("ChangePosition");
+        scheduleAt(0.0, ChangePosition);
+    }
+
 }
 
 void WMaxMac::addRangingConn()
@@ -696,6 +738,13 @@ void WMaxMac::addManagementConn(uint16_t cid)
 
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
+
+    if (msg==ChangePosition) {
+	changePosition();
+	scheduleAt(simTime()+0.02, ChangePosition);
+	return;
+    }
+
     cGate * gate = msg->arrivalGate();
 
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
@@ -878,6 +927,22 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
     WMaxMac::handleRxMessage(msg);
 }
 
+void WMaxMacSS::changePosition() {
+    cModule * SS = parentModule();
+    cDisplayString dispstr = SS->displayString();
+    long int x = atoi(dispstr.getTagArg("p",0));
+    long int y = atoi(dispstr.getTagArg("p",1));
+    x++;
+
+    dispstr.setTagArg("p",0,x);
+    dispstr.setTagArg("p",1,y);
+    SS->setDisplayString(dispstr);
+
+    char buf[80];
+    sprintf(buf, "(%s,%s)", (SS->displayString()).getTagArg("p",0), (SS->displayString()).getTagArg("p",1));
+    SS->displayString().setTagArg("t",0, buf);
+}
+
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
     int bandwidth = 0;
@@ -1043,7 +1108,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
     send(frameStart, "phyOut");
-    
+
     stringUpdate();
 }
 

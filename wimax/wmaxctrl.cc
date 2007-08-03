@@ -18,6 +18,7 @@
 #include "wmaxradio.h"
 #include "wmaxmac.h"
 #include "ssinfo.h"
+#include <math.h>
 
 static uint32_t transactionID = 1;
 
@@ -82,6 +83,10 @@ void WMaxCtrlSS::fsmInit() {
 	      onEventState_SvcFlowCreation, onEnterState_SvcFlowCreation, 0);
 
     stateInit(STATE_OPERATIONAL,       "Operational", onEventState_Operational, onEnterState_Operational, 0);
+
+    stateInit(STATE_SEND_MOB_SCN_REQ,     "Sending MOB_SCN-REQ", STATE_WAIT_MOB_SCN_RSP, onEnterState_SendMobScnReq);
+    stateInit(STATE_WAIT_MOB_SCN_RSP,     "Waiting for MOB_SCN-RSP", onEventState_WaitForMobScnRsp);
+
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
     stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", onEventState_SendHoInd, onEnterState_SendHoInd, onExitState_SendHoInd);
@@ -108,6 +113,7 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_SA_TEK_RSP,       "SA-TEK-RSP received.");
     eventInit(EVENT_REG_RSP_RECEIVED, "REG-RSP received.");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
+    eventInit(EVENT_MOB_SCN_RSP_RECEIVED, "MOB_SCN-RSP received");
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
     eventInit(EVENT_SERVICE_FLOW_COMPLETE, "Service Flow complete");
@@ -115,7 +121,7 @@ void WMaxCtrlSS::fsmInit() {
     eventVerify();
 
     TIMER(NetworkEntry, 0.1, "Start Network entry");
-    TIMER(Handover,     0.3, "Start handover");
+    TIMER(Handover,     0.2, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
 
     stringUpdate();
@@ -242,6 +248,12 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	onEvent(EVENT_REG_RSP_RECEIVED, msg);
 	delete msg;
 	return;
+    }
+
+    if (dynamic_cast<WMaxMsgMobScnRsp*>(msg)) {
+        onEvent(EVENT_MOB_SCN_RSP_RECEIVED, msg);
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgBSHORSP*>(msg)) {
@@ -621,9 +633,75 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 {
     switch (e) {
       case EVENT_HANDOVER_START:
-        return STATE_SEND_MSHO_REQ;
+        //return STATE_SEND_MSHO_REQ;
+        return STATE_SEND_MOB_SCN_REQ;
       default:
         CASE_IGNORE(fsm, e);
+    }
+}
+
+// send MOB_SCN-REQ state
+FsmStateType WMaxCtrlSS::onEnterState_SendMobScnReq(Fsm *fsm)
+{
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    WMaxMsgMobScnReq * mobScnReq = new WMaxMsgMobScnReq();
+    mobScnReq->setName("MOB_SCN-REQ");
+    SLog(fsm, Notice) << "Sending MOB_SCN-REQ message." << LogEnd;
+    ss->sendMsg(mobScnReq, "", "macOut", ssinfo->info.basicCid);
+    return fsm->State();
+}
+
+// wait for MOB_SCN-REQ state
+FsmStateType WMaxCtrlSS::onEventState_WaitForMobScnRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
+int actBS, nextBS, nearestBS;
+long int x1, y1, x2, y2;
+double minR;
+cModule *SS, *physim, *BS;
+
+    switch (e) {
+    case EVENT_MOB_SCN_RSP_RECEIVED:
+
+        // fake scan
+        /// @todo improve scanning
+
+        SS = fsm->parentModule();
+        physim = fsm->parentModule()->parentModule();
+        BS = SS->gate( "out" )->toGate()->ownerModule();
+        actBS = BS->index();
+        nearestBS = actBS;
+
+        x1 = atoi((SS->displayString()).getTagArg("p",0));
+        y1 = atoi((SS->displayString()).getTagArg("p",1));
+        x2 = atoi((BS->displayString()).getTagArg("p",0));
+        y2 = atoi((BS->displayString()).getTagArg("p",1));
+
+        minR = sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+
+        for(int i=0; i < (int)physim->par("numBS"); i++) {
+            cModule *targetBS = physim->submodule("BS",i);
+            x2 = atoi((targetBS->displayString()).getTagArg("p",0));
+            y2 = atoi((targetBS->displayString()).getTagArg("p",1));
+            double R = sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+            if(R < minR) {
+                minR = R;
+                nearestBS = targetBS->index();
+            }
+        }
+
+        SLog(fsm, Notice) << "Currently associated with BS: " << actBS << ", the nearest BS :" << nearestBS << LogEnd;
+
+        if(nearestBS == actBS) {
+            return STATE_OPERATIONAL;
+        } else {
+            ss->hoInfo->wmax.nextBS = nearestBS;
+	    return STATE_SEND_MSHO_REQ;
+        }
+
+    default:
+	CASE_IGNORE(fsm, e);
     }
 }
 
@@ -813,14 +891,13 @@ void WMaxCtrlSS::connectNextBS() {
     cModule *physim = parentModule()->parentModule();
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
-    int nextBS = (actBS+1)%(BS->size());
-    Log(Notice) << "Currently associated with BS: " << actBS << ", switching to BS :" << nextBS << LogEnd;
-    cModule *BSnext = physim->submodule("BS", nextBS);
+    Log(Notice) << "Currently associated with BS: " << actBS << ", switching to BS :" << hoInfo->wmax.nextBS << LogEnd;
+    cModule *BSnext = physim->submodule("BS", hoInfo->wmax.nextBS);
     if (!BSnext)
-	opp_error("Unable to find BS:%d\n", nextBS);
+	opp_error("Unable to find BS:%d\n", hoInfo->wmax.nextBS);
 
     disconnect(); // disconnect from current BS
-    connectBS(nextBS); // connect to the next BS
+    connectBS(hoInfo->wmax.nextBS); // connect to the next BS
 
     // after reconnecting to other BS, perform Reentry, not normal entry
     neType = WMAX_CTRL_NETWORK_REENTRY; 
@@ -1018,6 +1095,17 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         rsp->setName("REG-RSP");
         double x = sendMsg(rsp, "DelayReg", "macOut", GetCidFromMsg(msg));
         Log(Notice) << "REG-REQ received, sending REG-RSP in " << x << "secs." << LogEnd;
+        delete msg;
+        return;
+    }
+
+    if (dynamic_cast<WMaxMsgMobScnReq*>(msg)) {
+        getSS( GetCidFromMsg(msg), "MOB_SCN-REQ received");
+
+        WMaxMsgMobScnRsp * mobScnRsp = new WMaxMsgMobScnRsp();
+        mobScnRsp->setName("MOB_SCN-RSP");
+        double x = sendMsg(mobScnRsp, "DelayScn", "macOut", GetCidFromMsg(msg));
+        Log(Notice) << "MOB_SCN-REQ received, sending MOB_SCN-RSP in " << x << "secs." << LogEnd;
         delete msg;
         return;
     }

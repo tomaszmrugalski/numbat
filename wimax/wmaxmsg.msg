@@ -99,6 +99,16 @@ message WMaxMsgRegRsp
 {
 };
 
+message WMaxMsgMobScnReq
+{
+
+};
+
+message WMaxMsgMobScnRsp
+{
+
+};
+
 message WMaxMsgMSHOREQ
 {
 fields:

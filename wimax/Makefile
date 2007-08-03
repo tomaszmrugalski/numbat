@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   fsm.o ipv6node.o logger.o  ssinfo.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o IPv6_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o fsm.o ipv6node.o logger.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -116,6 +116,12 @@ common_n.o: common_n.cc
 
 common_n.cc: common.ned
 	$(NEDC) $(INCLUDE_PATH) common.ned
+
+IPv6_n.o: IPv6_n.cc
+	$(CXX) -c $(NEDCOPTS) IPv6_n.cc
+
+IPv6_n.cc: IPv6.ned
+	$(NEDC) $(INCLUDE_PATH) IPv6.ned
 
 physim_n.o: physim_n.cc
 	$(CXX) -c $(NEDCOPTS) physim_n.cc
@@ -207,8 +213,6 @@ re-makemake-m: makefile-ins
 AirDummy.o: AirDummy.cc \
   AirDummy.h \
   logger.h
-BS_n.o: BS_n.cc
-common_n.o: common_n.cc
 fsm.o: fsm.cc \
   fsm.h \
   logger.h
@@ -216,27 +220,21 @@ ipv6node.o: ipv6node.cc \
   ipv6node.h
 logger.o: logger.cc \
   logger.h
-physim_n.o: physim_n.cc
 ssinfo.o: ssinfo.cc \
   logger.h \
   ssinfo.h
-SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
-  wmaxmsg_m.h \
   logger.h \
   hoinfo.h \
   wmaxradio.h \
   wmaxmac.h \
   ssinfo.h \
-  fsm.h \
-  wmaxmsg.h
+  fsm.h
 wmaxmac.o: wmaxmac.cc \
   wmaxmac.h \
-  wmaxmsg_m.h \
   wmaxctrl.h \
   logger.h \
-  wmaxmsg.h \
   fsm.h \
   hoinfo.h \
   ssinfo.h
@@ -244,17 +242,10 @@ wmaxmaccs.o: wmaxmaccs.cc \
   wmaxmaccs.h \
   ipv6node.h \
   wmaxmac.h \
-  logger.h \
-  wmaxmsg_m.h \
-  wmaxmsg.h
-wmaxmsg_m.o: wmaxmsg_m.cc \
-  wmaxmsg_m.h \
-  wmaxmsg.h
+  logger.h
 wmaxphy.o: wmaxphy.cc \
   wmaxphy.h \
-  wmaxmsg_m.h \
-  logger.h \
-  wmaxmsg.h
+  logger.h
 wmaxradio.o: wmaxradio.cc \
   wmaxradio.h \
   logger.h \

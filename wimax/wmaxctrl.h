@@ -84,6 +84,9 @@ public:
 
 	/// @todo - implement neighbor advertisements support
 
+        // 3. scanning
+        STATE_SEND_MOB_SCN_REQ,
+        STATE_WAIT_MOB_SCN_RSP,
 	/// @todo - implement scanning
 
 	// handover
@@ -109,6 +112,7 @@ public:
 	EVENT_DLMAP,
 	EVENT_UCD,
 	EVENT_CDMA_CODE,
+	EVENT_MOB_SCN_RSP_RECEIVED,
 	EVENT_BSHO_RSP_RECEIVED,
 	EVENT_HO_CDMA_CODE,
 	EVENT_RNG_RSP_RECEIVED,
@@ -176,6 +180,12 @@ protected:
     // operational state
     static FsmStateType onEnterState_Operational(Fsm * fsm);
     static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg);
+
+    // send MOB_SCN-REQ
+    static FsmStateType onEnterState_SendMobScnReq(Fsm *fsm);
+
+    // wait for MOB_SCN-RSP
+    static FsmStateType onEventState_WaitForMobScnRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // send MSHO-REQ state
     static FsmStateType onEnterState_SendMshoReq(Fsm *fsm);

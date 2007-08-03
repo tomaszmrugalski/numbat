@@ -204,6 +204,7 @@ class WMaxMac : public cSimpleModule
 class WMaxMacBS: public WMaxMac
 {
  protected:
+    void setInitialPosition();
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     //void handleUlMessage(cMessage* msg);
@@ -236,12 +237,15 @@ class WMaxMacSS: public WMaxMac
 {
 
  protected:
+    void setInitialPosition();
+    void changePosition();
     virtual void initialize();
     virtual void handleMessage(cMessage* msg);
     virtual void finish();
 
     list<WMaxMacCDMA> CDMAlist; //WMaxMac::cdmaQueue is used instead
     int BEpoint;
+    cMessage * ChangePosition;
 
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);

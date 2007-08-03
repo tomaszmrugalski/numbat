@@ -30,6 +30,8 @@ simple WMaxCtrlBS
         MaxDelayRng: numeric,
         MinDelaySbc: numeric,
         MaxDelaySbc: numeric,
+        MinDelayScn: numeric,
+        MaxDelayScn: numeric,
         MinDelayReg: numeric,
         MaxDelayReg: numeric,
         MinDelayHoRsp: numeric,
@@ -53,9 +55,11 @@ simple WMaxRadio
         out: radioOut[];
         in: radioIn[];
 endsimple
+
 module BS
     parameters:
-
+        x: numeric,
+        y: numeric;
     gates:
         out: out[];
         in: in[];

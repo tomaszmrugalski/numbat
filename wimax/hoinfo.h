@@ -30,6 +30,7 @@
 /* handover related parameters on the WiMAX layer */
 typedef struct {
     int hoOptim; /* see table 367 in 802.16 Corr2 Draft3, pg. 405, section 11.5 */
+    int nextBS;
 } HoWMax_t;
 
 /* handover related parameters on IPv6 layer */
