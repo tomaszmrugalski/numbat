@@ -631,10 +631,14 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 
 FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+  int isMobile = (int)fsm->parentModule()->par("wmaxIsMobile");
+
     switch (e) {
       case EVENT_HANDOVER_START:
-        //return STATE_SEND_MSHO_REQ;
-        return STATE_SEND_MOB_SCN_REQ;
+        if (isMobile==1)
+          return STATE_SEND_MSHO_REQ; // isMobile == 1 -> handover executed after certain timeout
+        else
+          return STATE_SEND_MOB_SCN_REQ; // isMobile == 2 -> SS changes location and handover is based on distance
       default:
         CASE_IGNORE(fsm, e);
     }
@@ -891,10 +895,15 @@ void WMaxCtrlSS::connectNextBS() {
     cModule *physim = parentModule()->parentModule();
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
+    int isMobile = SS->par("wmaxIsMobile");
+
+    if (isMobile == 1) // mobility model 1: time based handover
+      hoInfo->wmax.nextBS = (actBS+1)%(BS->size());
+
     Log(Notice) << "Currently associated with BS: " << actBS << ", switching to BS :" << hoInfo->wmax.nextBS << LogEnd;
     cModule *BSnext = physim->submodule("BS", hoInfo->wmax.nextBS);
     if (!BSnext)
-	opp_error("Unable to find BS:%d\n", hoInfo->wmax.nextBS);
+        opp_error("Unable to find BS:%d\n", hoInfo->wmax.nextBS);
 
     disconnect(); // disconnect from current BS
     connectBS(hoInfo->wmax.nextBS); // connect to the next BS

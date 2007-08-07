@@ -693,12 +693,16 @@ void WMaxMacSS::initialize()
     WATCH_LIST(CDMAlist);
 
     setInitialPosition();
-    if(parentModule()->par("wmaxIsMobile")) {
-        parentModule()->displayString().setTagArg("i",0,"device/laptop_s");
-        ChangePosition = new cMessage("ChangePosition");
-        scheduleAt(0.0, ChangePosition);
-    }
 
+    int isMobile = (int)parentModule()->par("wmaxIsMobile");
+    if (isMobile>0) {
+        parentModule()->displayString().setTagArg("i",0,"device/laptop_s");
+
+        if(isMobile==2) { // 2 = SS movement
+          ChangePosition = new cMessage("ChangePosition");
+          scheduleAt(0.0, ChangePosition);
+        }
+    }
 }
 
 void WMaxMac::addRangingConn()
