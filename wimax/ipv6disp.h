@@ -20,8 +20,11 @@ class IPv6Dispatch : public cSimpleModule
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void handleMihMessage(cMessage *msg);
     void dispatchMessage(cMessage *msg);
+    virtual void updateString();
  private:
+    bool handleTraffic;
 };
 
 

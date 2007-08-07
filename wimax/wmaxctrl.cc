@@ -120,9 +120,13 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_HO_IND_SENT,  "HO-IND transmitted");
     eventVerify();
 
-    TIMER(NetworkEntry, 0.1, "Start Network entry");
-    TIMER(Handover,     0.2, "Start handover");
+    float ne = (double)parentModule()->par("NetworkEntryTime");
+    float ho = (double)parentModule()->par("HandoverTime");
+
+    TIMER(NetworkEntry, ne, "Start Network entry");
+    TIMER(Handover,     ho, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
+    Log(Notice) << "Timers: NetworkEntry=" << ne << ", Handover=" << ho << LogEnd;
 
     stringUpdate();
 }
@@ -332,10 +336,10 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
         return;
     }
 
-    if (dynamic_cast<WMaxEvent_HoIndSent*>(msg)) {
-	onEvent(EVENT_HO_IND_SENT, msg);
-	delete msg;
-	return;
+    if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
+        onEvent(EVENT_HO_IND_SENT, msg);
+        delete msg;
+        return;
     }
 }
 
@@ -615,15 +619,17 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
 
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
-	double x = ss->simTime() - ss->hoReentryTimestamp;
-	SLog(fsm, Warning) << "Network reentry complete: " << x << "secs (" 
-			  << ss->hoReentryTimestamp << "-" << ss->simTime() << ")." << LogEnd;
+      double x = ss->simTime() - ss->hoReentryTimestamp;
+      SLog(fsm, Warning) << "Network reentry complete: " << x << "secs (" 
+                         << ss->hoReentryTimestamp << "-" << ss->simTime() << ")." << LogEnd;
+      ss->mihNotify(MIH_EVENT_REENTRY_END);
     } else {
-	SLog(fsm, Notice) << "Initial network entry complete." << LogEnd;
+      SLog(fsm, Notice) << "Initial network entry complete." << LogEnd;
+      ss->mihNotify(MIH_EVENT_ENTRY_END);
     }
-
+    
     if (ss->hoInfo->isMobile)
-        STATIC_TIMER_START(ss, Handover);
+      STATIC_TIMER_START(ss, Handover);
     
     return fsm->State();
 }
@@ -719,8 +725,51 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
     mshoReq->setName("MSHO-REQ");
     SLog(fsm, Notice) << "Sending MSHO-REQ message." << LogEnd;
     ss->sendMsg(mshoReq, "", "macOut", ssinfo->info.basicCid);
+
+    // notify upper layer
+    ss->mihNotify(MIH_EVENT_HANDOVER_START);
     return fsm->State();
 }
+
+
+void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
+{
+    string str = "";
+    cMessage * x = 0;
+    switch (notifyType) {
+      case MIH_EVENT_ENTRY_START:
+        x = (cMessage*) new MihEvent_EntryStart();
+        str = "Network Entry Start";
+        break;
+      case MIH_EVENT_ENTRY_END:
+        x = (cMessage*) new MihEvent_EntryEnd();
+        str = "Network Entry End";
+        break;
+      case MIH_EVENT_HANDOVER_START:
+        x = (cMessage*) new MihEvent_HandoverStart();
+        str = "Handover Start";
+        break;
+      case MIH_EVENT_HANDOVER_END:
+        x = (cMessage*) new MihEvent_HandoverEnd();
+        str = "Handover End";
+        break;
+      case MIH_EVENT_REENTRY_START:
+        x = (cMessage*) new MihEvent_ReentryStart();
+        str = "Network Reentry Start";
+        break;
+      case MIH_EVENT_REENTRY_END:
+        x = (cMessage*) new MihEvent_ReentryEnd();
+        str = "Network Reentry End";
+        break;
+    }
+
+    Log(Notice) << "Notifying upper layer: " << str << LogEnd;
+    char buf[80];
+    sprintf(buf, "ssIPv6");
+    cModule *ip = parentModule()->submodule(buf);
+    sendDirect(x, 0.0, ip, "eventIn");
+}
+
 
 // wait for BSHO-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
@@ -788,8 +837,13 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
 
     SLog(fsm, Notice) << "Handover (on serving BS) complete: " << ss->hoStartTimestamp << "-" 
 		<< ss->simTime() << LogEnd;
+
+    ss->mihNotify(MIH_EVENT_HANDOVER_END);
+
     ss->connectNextBS();
     ss->hoReentryTimestamp = ss->simTime();
+
+    ss->mihNotify(MIH_EVENT_REENTRY_START);
 
     return fsm->State();
 }
@@ -827,15 +881,17 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
 
     switch (e) {
-    case EVENT_ENTRY_START:
-	ss->neType = WMAX_CTRL_NETWORK_ENTRY_INITIAL;
-	return STATE_WAIT_FOR_DLMAP;
-    case EVENT_REENTRY_START:
-	ss->neType = WMAX_CTRL_NETWORK_REENTRY;
-	ss->hoReentryTimestamp = ss->simTime();
-	return STATE_WAIT_FOR_CDMA;
-    default:
-	CASE_IGNORE(fsm, e);
+      case EVENT_ENTRY_START:
+        ss->neType = WMAX_CTRL_NETWORK_ENTRY_INITIAL;
+        ss->mihNotify(MIH_EVENT_ENTRY_START);
+        return STATE_WAIT_FOR_DLMAP;
+      case EVENT_REENTRY_START:
+        ss->neType = WMAX_CTRL_NETWORK_REENTRY;
+        ss->hoReentryTimestamp = ss->simTime();
+        ss->mihNotify(MIH_EVENT_REENTRY_START);
+        return STATE_WAIT_FOR_CDMA;
+      default:
+        CASE_IGNORE(fsm, e);
     }
 }
 

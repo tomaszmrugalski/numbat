@@ -3,7 +3,7 @@ option updatefreq_fast	{50}
 option updatefreq_express	{10000}
 option stepdelay	{300 ms}
 option use_mainwindow	{1}
-option print_banners	{1}
+option print_banners	{0}
 option animation_enabled	{1}
 option nexteventmarkers	{1}
 option senddirect_arrows	{1}
@@ -22,15 +22,15 @@ config mainwin-geom	{1201x310+79+0}
 config rununtil-event	{}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
-config logwindow-scrollbacklines	{100000}
-config timeline-msgnamepattern	{*}
 config timeline-wantselfmsgs	{1}
+config timeline-msgnamepattern	{*}
+config logwindow-scrollbacklines	{100000}
 config display-timeline	{1}
 config filtobjlist-maxcount	{100000}
 config log-save-filename	{omnetpp.out}
 config editor-findstring	{Unable}
 config timeline-wantnonselfmsgs	{1}
-config rununtil-time	{15}
+config rununtil-time	{30}
 config dontshow	{}
 config editor-regexp	{0}
 config timeline-msgclassnamepattern	{*}
@@ -48,16 +48,21 @@ config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim.BS[0]" "BS" "2" "357x643+0+206"
 inspector "physim.BS[1]" "BS" "2" "357x643+369+204"
-inspector "physim" "Physim" "2" "491x440+682+439"
+inspector "physim.SS[0].ssIPv6" "IPv6Client" "2" "521x372+697+111"
+inspector "physim.SS[0]" "SS" "2" "500x395+101+529"
+inspector "physim" "Physim" "2" "442x376+749+530"
+inspector "physim.SS[2].ssIPv6.IPv6Dispatch" "IPv6Dispatch" "3" "605x258+261+686"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"
+inspector "physim.SS[2].ssIPv6" "IPv6Client" "2" "521x372+260+265"
 inspector "physim.SS.ssCS" "WMaxMacCS" "3" "506x258+373+687"
+inspector "physim.SS[2]" "SS" "2" "500x395+691+114"
 inspector "physim.WMaxCtrlBS" "WMaxCtrlBS" "3" "826x308+29+637"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"
 inspector "physim.BS.WMaxCtrlBS" "WMaxCtrlBS" "3" "598x258+633+674"
 inspector "physim.bsMac" "WMaxMacBS" "3" "1019x258+0+712"
-inspector "physim.SS" "SS" "2" "374x459+905+525"
 inspector "physim" "PhySim" "2" "644x499+624+492"
+inspector "physim.SS" "SS" "2" "374x459+905+525"
 inspector "physim.WMaxCtrlSS" "WMaxCtrlSS" "3" "826x247+29+357"
 

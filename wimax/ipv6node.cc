@@ -11,6 +11,7 @@
 #include <omnetpp.h>
 #include <string>
 #include "ipv6node.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -61,7 +62,7 @@ void IPv6Node::handleMessage(cMessage *msg)
 	return;
     }
     
-    ev << fullName() << ": Message " << msg->fullName() << " received." << endl;
+    Log(Debug) << "Message " << msg->fullName() << " received." << endl;
     RcvdPkts++;
     RcvdBytes += msg->length();
     updateStats();

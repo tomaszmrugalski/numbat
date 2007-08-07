@@ -230,8 +230,39 @@ message WMaxMacTerminateAllConns
 
 };
 
+
+// ********************************************************************************
+// *** Media Independent Handover: messages used to notify other layers ***********
+// ********************************************************************************
+
+message MihEvent_EntryStart
+{
+
+};
+
+message MihEvent_EntryEnd
+{
+
+};
+
+message MihEvent_HandoverStart
+{
+
+};
+
 // used to report by WMaxPhySS to WMaxCtrlSS that HO-IND was actually transmitted
-message WMaxEvent_HoIndSent
+message MihEvent_HandoverEnd
+{
+
+};
+
+message MihEvent_ReentryStart
+{
+
+
+};
+
+message MihEvent_ReentryEnd
 {
 
 };

@@ -124,38 +124,41 @@ void WMaxPhySS::initialize()
 void WMaxPhySS::beginFrame()
 {
     while (!SendQueue.empty()) {
-	cMessage * msg = (cMessage*)SendQueue.pop();
-	send(msg, "rfOut");
+        cMessage * msg = (cMessage*)SendQueue.pop();
+        send(msg, "rfOut");
 
-	if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-	    Log(Notice) << "HO-IND was actually transmitted." << LogEnd;
-	    cModule * ss = parentModule();
-	    char buf[80];
-	    sprintf(buf, "WMaxCtrlSS[%d]", ss->index());
-	    cModule * ctrlSS = ss->submodule(buf);
-	    WMaxEvent_HoIndSent * x = new WMaxEvent_HoIndSent();
-	    sendDirect(x, 0.0, ctrlSS, "eventIn");
-	}
+        if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
+            Log(Notice) << "HO-IND was actually transmitted." << LogEnd;
+            cModule * ss = parentModule();
+            char buf[80];
+            sprintf(buf, "WMaxCtrlSS[%d]", ss->index());
+            cModule * ctrlSS = ss->submodule(buf);
+            MihEvent_HandoverEnd * x = new MihEvent_HandoverEnd();
+            sendDirect(x, 0.0, ctrlSS, "eventIn");
+        }
     }
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
-{   static int licz ; // test
+{   
+    static int licz ; // test
     cGate * gate = msg->arrivalGate();
     // uplink message
-    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" << gate->id() << LogEnd;
+    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
+               << gate->id() << LogEnd;
     if (!strcmp(gate->fullName(),"rfIn")) {
-	// deliver message immediately
-	send(msg, "phyOut");
-    licz=licz+1 ; //test
-	return;
+        // deliver message immediately
+        send(msg, "phyOut");
+        licz=licz+1 ; //test
+        return;
     }
 
     if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
-	beginFrame();
-	delete msg;
-	return;
+        beginFrame();
+        delete msg;
+        return;
     }
-   // downlink message
+    
+    // downlink message
     SendQueue.insert(msg);
 }

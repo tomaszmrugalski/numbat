@@ -1,6 +1,6 @@
 import
     "common";
-import 
+import
     "IPv6";
 
 simple WMaxPhySS
@@ -39,11 +39,12 @@ module SS //
     parameters:
         wmaxHoOptim: numeric,
         wmaxIsMobile: numeric,
-        initialBS: numeric;
+        initialBS: numeric,
+        NetworkEntryTime: numeric,
+        HandoverTime: numeric;
     gates:
         out: out;
         in: in; //
-                //
                 //
     submodules:
         ssPhy: WMaxPhySS;

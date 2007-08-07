@@ -59,4 +59,17 @@ typedef struct HoInfo_s {
 
 } HoInfo_t;
 
+
+// Media Independent Handover communication
+// @TODO: Use 802.21
+
+typedef enum {
+  MIH_EVENT_ENTRY_START,
+  MIH_EVENT_ENTRY_END,
+  MIH_EVENT_HANDOVER_START,
+  MIH_EVENT_HANDOVER_END,
+  MIH_EVENT_REENTRY_START,
+  MIH_EVENT_REENTRY_END
+} MihInfo_t;
+
 #endif
