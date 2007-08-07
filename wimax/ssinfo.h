@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <omnetpp.h>
 #include <string>
+#include "hoinfo.h"
 
 using namespace std;
 
@@ -40,7 +41,8 @@ typedef struct SSInfo_s {
 
 class ssInfo : public cSimpleModule {
 public:
-    SSInfo_s info;
+    SSInfo_t info;
+    HoInfo_t hoInfo;
     void stringUpdate();
 
 protected:

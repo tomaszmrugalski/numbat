@@ -13,6 +13,7 @@
 #include "ipv6disp.h"
 #include "logger.h"
 #include "hoinfo.h"
+#include "ssinfo.h"
 #include "wmaxmsg_m.h"
 
 using namespace std;
@@ -23,7 +24,6 @@ using namespace std;
 
 Define_Module(IPv6Dispatch);
 
-
 void IPv6Dispatch::initialize()
 {
   handleTraffic = false;
@@ -32,14 +32,14 @@ void IPv6Dispatch::initialize()
 
 void IPv6Dispatch::dispatchMessage(cMessage *msg)
 {
-  /// @TODO
-  if (handleTraffic) {
-    send(msg, "genOut", 0); // send to generator directly
-    Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ??? gate." << endl;
-  } else {
-    Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
-
-  }
+    /// @TODO
+    if (handleTraffic) {
+	send(msg, "genOut", 0); // send to generator directly
+	Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ??? gate." << endl;
+    } else {
+	Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	delete msg;
+    }
 }
 
 void IPv6Dispatch::handleMihMessage(cMessage *msg)
@@ -57,6 +57,38 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
     Log(Debug) << "MIH message received: enabling traffic." << LogEnd;
     handleTraffic = true;
   }
+
+  /* TBD */
+  if (dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+      cModule * tmp0 = parentModule()->parentModule();
+      cModule * tmp1 = tmp0->submodule("ssInfo");
+      ssInfo  * tmp2 = dynamic_cast<ssInfo*>(tmp1);
+      HoInfo_t * hoInfo = &tmp2->hoInfo;
+
+      double ipDelay = 1.0; 
+      if (hoInfo->ip.skipDad)
+	  ipDelay = 0;
+
+      double dhcpDelay = 0.010; /* solicit-adv/reply = ~est. 10ms */
+      if (!hoInfo->dhcp.skipInitialDelay)
+	  dhcpDelay += uniform(0, 1.0); /* 0..1 s */
+
+      if (!hoInfo->dhcp.rapidCommit) {
+
+	  if (hoInfo->dhcp.pref255) 
+	      dhcpDelay += 0.010 /* REQUEST/REPLY wait */;
+	  else
+	      dhcpDelay += 1.000 /* ADV wait */;
+      } 
+
+      cMessage * resume = new MihEvent_EntryEnd();
+      scheduleAt(simTime() + dhcpDelay + ipDelay, resume);
+      Log(Notice) << "IPv6 layer delay: ipDelay=" << ipDelay << ", dhcpDelay=" << dhcpDelay << LogEnd;
+
+      handleTraffic = false;
+  }
+  /* TBD */
+
   updateString();
 }
 
@@ -72,7 +104,7 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 {
     cGate * gate = msg->arrivalGate();
 
-    if (!strcmp(gate->fullName(), "eventIn")) {
+    if (!gate || !strcmp(gate->fullName(), "eventIn")) {
         handleMihMessage(msg);
         return;
     }
@@ -85,6 +117,7 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
         Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ipOut gate." << endl;
       } else {
         Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	delete msg;
       }
     }
 }

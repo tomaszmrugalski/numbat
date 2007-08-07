@@ -11,6 +11,10 @@
 #ifndef HOINFO_H
 #define HOINFO_H
 
+/* useful macros */
+#define CLEAR(x) memset(x, 0, sizeof(*x));
+
+
 /* as defined in 802.16 Corr2 Draft3, table 367, section 11.5 */
 #define WMAX_HO_OPTIM_OMIT_SBC_REQ              1   /* bit #0 */
 #define WMAX_HO_OPTIM_SKIP_SA_TEK               6   /* bits #1 and #2 */
@@ -35,12 +39,14 @@ typedef struct {
 
 /* handover related parameters on IPv6 layer */
 typedef struct {
-    int todo;
+    bool skipDad;
 } HoIPv6_t;
 
 /* handover related parameters on DHCPv6 layer */
 typedef struct {
-    int todo;
+    bool skipInitialDelay; /* delay 0..1s */
+    bool pref255; /* set preference to 255 */
+    bool rapidCommit; /* use rapid-commit option */
 } HoDHCPv6_t;
 
 /* handover related parameters on MobileIPv6 layer */
@@ -53,7 +59,7 @@ typedef struct {
 typedef struct HoInfo_s {
     int            isMobile;
     HoWMax_t       wmax;
-    HoIPv6_t       ipv6;
+    HoIPv6_t       ip;
     HoDHCPv6_t     dhcp;
     HoMobileIPv6_t mob;
 

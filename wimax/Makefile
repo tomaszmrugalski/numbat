@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnetpp-3.3/bin/nedtool
+NEDC=/home/thomson/omnet/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -47,12 +47,12 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnetpp-3.3/include
-OMNETPP_LIB_DIR=/home/thomson/omnetpp-3.3/lib
+OMNETPP_INCL_DIR=/home/thomson/omnet/include
+OMNETPP_LIB_DIR=/home/thomson/omnet/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
-XML_LIBS=
+XML_LIBS=-lxml2
 SYS_LIBS=-ldl -lstdc++ 
 SYS_LIBS_PURE=-ldl -lsocket -lnsl -lm $(shell $(CXX) -print-file-name=libstdc++.a)
 
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o IPv6_n.o SS_n.o common_n.o physim_n.o wmaxmsg_m.o AirDummy.o     dhcpv6.o fsm.o ipv6disp.o ipv6node.o logger.o mip6.o  ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o IPv6_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   dhcpv6.o fsm.o ipv6disp.o  ipv6node.o logger.o mip6.o  ra.o ssinfo.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -111,29 +111,29 @@ BS_n.o: BS_n.cc
 BS_n.cc: BS.ned
 	$(NEDC) $(INCLUDE_PATH) BS.ned
 
-IPv6_n.o: IPv6_n.cc
-	$(CXX) -c $(NEDCOPTS) IPv6_n.cc
-
-IPv6_n.cc: IPv6.ned
-	$(NEDC) $(INCLUDE_PATH) IPv6.ned
-
-SS_n.o: SS_n.cc
-	$(CXX) -c $(NEDCOPTS) SS_n.cc
-
-SS_n.cc: SS.ned
-	$(NEDC) $(INCLUDE_PATH) SS.ned
-
 common_n.o: common_n.cc
 	$(CXX) -c $(NEDCOPTS) common_n.cc
 
 common_n.cc: common.ned
 	$(NEDC) $(INCLUDE_PATH) common.ned
 
+IPv6_n.o: IPv6_n.cc
+	$(CXX) -c $(NEDCOPTS) IPv6_n.cc
+
+IPv6_n.cc: IPv6.ned
+	$(NEDC) $(INCLUDE_PATH) IPv6.ned
+
 physim_n.o: physim_n.cc
 	$(CXX) -c $(NEDCOPTS) physim_n.cc
 
 physim_n.cc: physim.ned
 	$(NEDC) $(INCLUDE_PATH) physim.ned
+
+SS_n.o: SS_n.cc
+	$(CXX) -c $(NEDCOPTS) SS_n.cc
+
+SS_n.cc: SS.ned
+	$(NEDC) $(INCLUDE_PATH) SS.ned
 
 wmaxmsg_m.o: wmaxmsg_m.cc
 	$(CXX) -c $(NEDCOPTS) wmaxmsg_m.cc
@@ -222,4 +222,78 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
+AirDummy.o: AirDummy.cc \
+  AirDummy.h \
+  logger.h
+BS_n.o: BS_n.cc
+common_n.o: common_n.cc
+dhcpv6.o: dhcpv6.cc \
+  dhcpv6.h \
+  logger.h \
+  fsm.h
+fsm.o: fsm.cc \
+  fsm.h \
+  logger.h
+ipv6disp.o: ipv6disp.cc \
+  ipv6disp.h \
+  logger.h \
+  hoinfo.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+IPv6_n.o: IPv6_n.cc
+ipv6node.o: ipv6node.cc \
+  ipv6node.h \
+  logger.h
+logger.o: logger.cc \
+  logger.h
+mip6.o: mip6.cc \
+  mip6.h \
+  logger.h \
+  fsm.h
+physim_n.o: physim_n.cc
+ra.o: ra.cc \
+  ra.h \
+  logger.h \
+  fsm.h
+ssinfo.o: ssinfo.cc \
+  logger.h \
+  ssinfo.h
+SS_n.o: SS_n.cc
+wmaxctrl.o: wmaxctrl.cc \
+  wmaxctrl.h \
+  wmaxmsg_m.h \
+  logger.h \
+  hoinfo.h \
+  wmaxradio.h \
+  wmaxmac.h \
+  ssinfo.h \
+  fsm.h \
+  wmaxmsg.h
+wmaxmac.o: wmaxmac.cc \
+  wmaxmac.h \
+  wmaxmsg_m.h \
+  wmaxctrl.h \
+  logger.h \
+  wmaxmsg.h \
+  fsm.h \
+  hoinfo.h \
+  ssinfo.h
+wmaxmaccs.o: wmaxmaccs.cc \
+  wmaxmaccs.h \
+  ipv6node.h \
+  wmaxmac.h \
+  logger.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+wmaxmsg_m.o: wmaxmsg_m.cc \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+wmaxphy.o: wmaxphy.cc \
+  wmaxphy.h \
+  wmaxmsg_m.h \
+  logger.h \
+  wmaxmsg.h
+wmaxradio.o: wmaxradio.cc \
+  wmaxradio.h \
+  logger.h \
+  fsm.h

@@ -41,11 +41,14 @@ module SS //
         wmaxIsMobile: numeric,
         initialBS: numeric,
         NetworkEntryTime: numeric,
-        HandoverTime: numeric;
+        HandoverTime: numeric,
+        ipSkipDad: numeric,
+        dhcpSkipInitialDelay: numeric,
+        dhcpPref255: numeric,
+        dhcpRapidCommit: numeric;
     gates:
         out: out;
-        in: in; //
-                //
+        in: in;
     submodules:
         ssPhy: WMaxPhySS;
             display: "i=abstract/accesspoint,#ce1821;p=80,232;q=SendQueue";

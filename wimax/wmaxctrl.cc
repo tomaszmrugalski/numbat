@@ -11,6 +11,7 @@
 #define FSM_DEBUG
 #include <omnetpp.h>
 #include <vector>
+#include <math.h>
 #include "wmaxctrl.h"
 #include "wmaxmsg_m.h"
 #include "logger.h"
@@ -18,7 +19,6 @@
 #include "wmaxradio.h"
 #include "wmaxmac.h"
 #include "ssinfo.h"
-#include <math.h>
 
 static uint32_t transactionID = 1;
 
@@ -142,14 +142,13 @@ void WMaxCtrlSS::initialize() {
     // start with network entry
     TIMER_START(NetworkEntry);
 
-    cModule * parent = parentModule();
-    int initialBS;
-    if (parent) {
-	hoInfo->isMobile = parent->par("wmaxIsMobile");
-	hoInfo->wmax.hoOptim = parent->par("wmaxHoOptim");
-        initialBS = parent->par("initialBS");
-    }
+    cModule * tmp1 = parentModule()->submodule("ssInfo");
+    ssInfo * tmp2  = dynamic_cast<ssInfo*>(tmp1);
+    hoInfo = &tmp2->hoInfo;
 
+    int initialBS = parentModule()->par("initialBS");
+
+    Log(Notice) << "Attaching to initial BS: " << initialBS << LogEnd;
     connectBS(initialBS);
 
     char buf[80];
@@ -157,24 +156,22 @@ void WMaxCtrlSS::initialize() {
     if (ev.isGUI()) 
         setName(buf);
 
-    Log(Notice) << "hoOptim=" << hoInfo->wmax.hoOptim << ", isMobile=" << hoInfo->isMobile 
-		<< ", initialBS=" << initialBS << LogEnd;
-
     WATCH_PTRLIST(serviceFlows);
 }
 
 double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
 {
-/*    char buf[80];
-    sprintf(buf, "Min%s", paramName);
-    double min = (double)par(buf);
-
-    sprintf(buf, "Max%s", paramName);
-    double max = (double)par(buf);
-
-    double delay = uniform(min, max);*/
-
     double delay = 0;
+    if (strlen(paramName)) {
+	char buf[80];
+	sprintf(buf, "Min%s", paramName);
+	double min = (double)par(buf);
+	
+	sprintf(buf, "Max%s", paramName);
+	double max = (double)par(buf);
+	
+	delay = uniform(min, max);
+    }
 
     Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay 
 	       << "secs (cid=" << cid << ")." << LogEnd;
@@ -425,7 +422,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
         }
     }
 
-    ss->sendMsg(rng, "", "macOut", 0);
+    ss->send(rng, "macOut", 0);
 
     SLog(fsm, Notice) << "Sending " << purpose << " RNG-REQ." << LogEnd;
     return fsm->State();

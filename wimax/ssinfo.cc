@@ -47,8 +47,22 @@ void ssInfo::initialize() {
     info.macAddr = ((uint64_t)0x0018de << 24) + (rand()%(((uint64_t)1 << 24) - 1));
     info.basicCid = 0;
 
+    CLEAR(&hoInfo);
+
+    hoInfo.isMobile = parentModule()->par("wmaxIsMobile");
+    hoInfo.wmax.hoOptim = parentModule()->par("wmaxHoOptim");
+
+
+    hoInfo.ip.skipDad = parentModule()->par("ipSkipDad");
+    hoInfo.dhcp.skipInitialDelay = parentModule()->par("dhcpSkipInitialDelay");
+    hoInfo.dhcp.pref255 = parentModule()->par("dhcpPref255");
+    hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
+
+    int initialBS = parentModule()->par("initialBS");
+
     stringUpdate();
-    Log(Notice) << "Creating new SS: " << info.getMac() << LogEnd;
+    Log(Notice) << "Creating new SS: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
+		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
 }
 
 void ssInfo::stringUpdate() {
