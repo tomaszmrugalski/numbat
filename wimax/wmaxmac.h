@@ -154,6 +154,13 @@ ostream & operator<<(ostream & s, WMaxConn &x);
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
+
+class ssMAC : public cCompoundModule
+{
+public:
+    void updateString();
+};
+
 class WMaxStatsSS 
 {
 public:
@@ -231,6 +238,10 @@ class WMaxMacBS: public WMaxMac
     uint32_t schedUcdCnt;
 
     cMessage * TxStart;
+
+ private:
+    cModule *BS;
+
 };
 
 class WMaxMacSS: public WMaxMac
@@ -250,6 +261,7 @@ class WMaxMacSS: public WMaxMac
  private:
     virtual void schedule(WMaxMsgUlMap* ulmap);
     void         handleRxMessage(cMessage* msg);
+    cModule *SS;
 };
 
 #endif

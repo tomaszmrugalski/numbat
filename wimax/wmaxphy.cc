@@ -132,7 +132,7 @@ void WMaxPhySS::beginFrame()
             cModule * ss = parentModule();
             char buf[80];
             sprintf(buf, "WMaxCtrlSS[%d]", ss->index());
-            cModule * ctrlSS = ss->submodule(buf);
+            cModule * ctrlSS = ss->submodule("ssMac")->submodule(buf);
             MihEvent_HandoverEnd * x = new MihEvent_HandoverEnd();
             sendDirect(x, 0.0, ctrlSS, "eventIn");
         }
@@ -140,7 +140,7 @@ void WMaxPhySS::beginFrame()
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
-{   
+{
     static int licz ; // test
     cGate * gate = msg->arrivalGate();
     // uplink message
@@ -158,7 +158,7 @@ void WMaxPhySS::handleMessage(cMessage *msg)
         delete msg;
         return;
     }
-    
+
     // downlink message
     SendQueue.insert(msg);
 }

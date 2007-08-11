@@ -70,7 +70,7 @@ void ssInfo::stringUpdate() {
     if (ev.isGUI()) {
         stringstream displayIt;
         displayIt << "macAddr=" << info.getMac() << endl;
-        displayIt << "basicCID=" << dec << info.basicCid << endl;
+        displayIt << "basicCID=" << dec << info.basicCid;
 
         displayString().setTagArg("t",0, (displayIt.str()).c_str());
     }

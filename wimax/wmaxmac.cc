@@ -31,6 +31,23 @@ ostream & operator<<(ostream & s, WMaxConn &x) {
     return s;
 }
 
+/********************************************************************************/
+/*** ssMAC compound module ******************************************************/
+/********************************************************************************/
+
+Define_Module(ssMAC);
+
+void ssMAC::updateString() {
+    cModule *SS = parentModule();
+    cModule *macSS = submodule("ssMac");
+    char buf[80];
+    sprintf(buf, "WMaxCtrlSS[%d]", SS->index());
+    cModule *ctrlSS = submodule(buf);
+    char buf1[80];
+    sprintf(buf1, "%s\n%s", (macSS->displayString()).getTagArg("t",0), (ctrlSS->displayString()).getTagArg("t",0));
+    displayString().setTagArg("t",0, buf1);
+}
+
 
 /********************************************************************************/
 /*** WMax Mac (common for BS/SS) ************************************************/
@@ -183,7 +200,6 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 Define_Module(WMaxMacBS);
 
 void WMaxMacBS::setInitialPosition() {
-    cModule *BS = parentModule();
     cDisplayString dispstr = BS->displayString();
     long int x = BS->par("x");
     long int y = BS->par("y");
@@ -198,6 +214,8 @@ void WMaxMacBS::setInitialPosition() {
 
 void WMaxMacBS::initialize()
 {
+    BS = parentModule()->parentModule();
+
     setInitialPosition();
 
     SendQueue.setName("SendQueue");
@@ -223,7 +241,7 @@ void WMaxMacBS::initialize()
     schedUcdCnt          = 0;
 
     char buf[80];
-    sprintf(buf, "MacBS[%d]", parentModule()->index());
+    sprintf(buf, "MacBS[%d]", BS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -652,7 +670,7 @@ void WMaxMac::handleRxMessage(cMessage *msg)
 	   << gateIndex << ")" << LogEnd;
 	send(msg, "macOut", gateIndex);
     } else {
-	Log(Warning) << "Unable to find connection for CID=" << cid << ", message dropped." << LogEnd;
+	Log(Debug) << "Unable to find connection for CID=" << cid << ", message dropped." << LogEnd;
 	STAT_INC(dropInvalidCid);
         delete msg;
     }
@@ -663,8 +681,32 @@ void WMaxMac::handleRxMessage(cMessage *msg)
 /********************************************************************************/
 Define_Module(WMaxMacSS);
 
+void WMaxMacSS::initialize()
+{
+    SS = parentModule()->parentModule();
+    BEpoint = 0;
+    SendQueue.setName("SendQueue");
+    CLEAR(&Stats);
+
+    // Create permanent INITIAL-RANGING connection
+    addRangingConn();
+
+    WATCH_LIST(CDMAlist);
+
+    setInitialPosition();
+
+    int isMobile = (int)SS->par("wmaxIsMobile");
+    if (isMobile>0) {
+        SS->displayString().setTagArg("i",0,"device/laptop_s");
+
+        if(isMobile==2) { // 2 = SS movement
+          ChangePosition = new cMessage("ChangePosition");
+          scheduleAt(0.0, ChangePosition);
+        }
+    }
+}
+
 void WMaxMacSS::setInitialPosition() {
-    cModule *SS = parentModule();
     cModule *physim = SS->parentModule();
     cModule *BS = physim->submodule("BS",SS->par("initialBS"));
 
@@ -678,31 +720,6 @@ void WMaxMacSS::setInitialPosition() {
     char buf[80];
     sprintf(buf, "(%s,%s)", (SS->displayString()).getTagArg("p",0), (SS->displayString()).getTagArg("p",1));
     SS->displayString().setTagArg("t",0, buf);
-}
-
-
-void WMaxMacSS::initialize()
-{
-    BEpoint = 0;
-    SendQueue.setName("SendQueue");
-    CLEAR(&Stats);
-
-    // Create permanent INITIAL-RANGING connection
-    addRangingConn();
-
-    WATCH_LIST(CDMAlist);
-
-    setInitialPosition();
-
-    int isMobile = (int)parentModule()->par("wmaxIsMobile");
-    if (isMobile>0) {
-        parentModule()->displayString().setTagArg("i",0,"device/laptop_s");
-
-        if(isMobile==2) { // 2 = SS movement
-          ChangePosition = new cMessage("ChangePosition");
-          scheduleAt(0.0, ChangePosition);
-        }
-    }
 }
 
 void WMaxMac::addRangingConn()
@@ -742,10 +759,12 @@ void WMaxMac::addManagementConn(uint16_t cid)
 
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
+    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule("ssMac")))
+	mac->updateString();
 
     if (msg==ChangePosition) {
 	changePosition();
-	scheduleAt(simTime()+0.02, ChangePosition);
+	scheduleAt(simTime()+0.1, ChangePosition);
 	return;
     }
 
@@ -932,7 +951,6 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 }
 
 void WMaxMacSS::changePosition() {
-    cModule * SS = parentModule();
     cDisplayString dispstr = SS->displayString();
     long int x = atoi(dispstr.getTagArg("p",0));
     long int y = atoi(dispstr.getTagArg("p",1));

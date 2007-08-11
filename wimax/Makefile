@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnet/bin/nedtool
+NEDC=/usr/local/omnetpp/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -39,7 +39,7 @@ AR=ar cr
 SHLIB_LD=g++ -shared 
 MAKEDEPEND=opp_makedep -Y --objdirtree
 
-CFLAGS=-O2 -DNDEBUG=1 -g   -DWITH_PARSIM -DWITH_NETBUILDER
+CFLAGS=-g -O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
 LDFLAGS= -Wl,--export-dynamic
 EXE_SUFFIX=
@@ -47,8 +47,8 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnet/include
-OMNETPP_LIB_DIR=/home/thomson/omnet/lib
+OMNETPP_INCL_DIR=/usr/local/omnetpp/include
+OMNETPP_LIB_DIR=/usr/local/omnetpp/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o IPv6_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   dhcpv6.o fsm.o ipv6disp.o  ipv6node.o logger.o mip6.o  ra.o ssinfo.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o IPv6_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o AirDummy.o   dhcpv6.o fsm.o ipv6disp.o  ipv6node.o logger.o  mip6.o  ra.o ssinfo.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -122,6 +122,12 @@ IPv6_n.o: IPv6_n.cc
 
 IPv6_n.cc: IPv6.ned
 	$(NEDC) $(INCLUDE_PATH) IPv6.ned
+
+MAC_n.o: MAC_n.cc
+	$(CXX) -c $(NEDCOPTS) MAC_n.cc
+
+MAC_n.cc: MAC.ned
+	$(NEDC) $(INCLUDE_PATH) MAC.ned
 
 physim_n.o: physim_n.cc
 	$(CXX) -c $(NEDCOPTS) physim_n.cc
@@ -238,6 +244,7 @@ ipv6disp.o: ipv6disp.cc \
   ipv6disp.h \
   logger.h \
   hoinfo.h \
+  ssinfo.h \
   wmaxmsg_m.h \
   wmaxmsg.h
 IPv6_n.o: IPv6_n.cc
@@ -246,6 +253,7 @@ ipv6node.o: ipv6node.cc \
   logger.h
 logger.o: logger.cc \
   logger.h
+MAC_n.o: MAC_n.cc
 mip6.o: mip6.cc \
   mip6.h \
   logger.h \
@@ -257,7 +265,8 @@ ra.o: ra.cc \
   fsm.h
 ssinfo.o: ssinfo.cc \
   logger.h \
-  ssinfo.h
+  ssinfo.h \
+  hoinfo.h
 SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
