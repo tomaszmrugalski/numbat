@@ -23,8 +23,16 @@ class IPv6Dispatch : public cSimpleModule
     virtual void handleMihMessage(cMessage *msg);
     void dispatchMessage(cMessage *msg);
     virtual void updateString();
+    virtual void writeStat();
+    virtual void statTimer();
+    long int SentBytesPers;
+    long int RcvdBytesPers;
+    
  private:
     bool handleTraffic;
+    cOutVector SentBytesVector;
+    cOutVector RcvdBytesVector;
+    cMessage * timer;
 };
 
 

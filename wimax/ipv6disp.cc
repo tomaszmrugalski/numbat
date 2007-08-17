@@ -28,6 +28,13 @@ void IPv6Dispatch::initialize()
 {
   handleTraffic = false;
   updateString();
+  SentBytesPers=0;
+  RcvdBytesPers=0;
+  SentBytesVector.setName("Sent B/s");
+  RcvdBytesVector.setName("Received B/s");
+  timer = new cMessage();
+  scheduleAt(0.1, timer);
+
 }
 
 void IPv6Dispatch::dispatchMessage(cMessage *msg)
@@ -103,16 +110,26 @@ void IPv6Dispatch::updateString()
 void IPv6Dispatch::handleMessage(cMessage *msg)
 {
     cGate * gate = msg->arrivalGate();
+    
+    if (msg==timer)
+    {    writeStat();
+         SentBytesPers=0;
+         RcvdBytesPers=0;
+                         return; 
+                }
+     
 
-    if (!gate || !strcmp(gate->fullName(), "eventIn")) {
+    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
         handleMihMessage(msg);
         return;
     }
     
     if (!strcmp(gate->fullName(),"ipIn")) {
+      RcvdBytesPers += msg->length();                                     
       dispatchMessage(msg);
     } else {
       if (handleTraffic) { 
+        SentBytesPers += msg->length();                 
         send(msg, "ipOut", 0);
         Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ipOut gate." << endl;
       } else {
@@ -120,4 +137,22 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	delete msg;
       }
     }
+    
+    
+    
 }
+
+void IPv6Dispatch::statTimer()
+{
+cMessage *timer = new cMessage();
+scheduleAt(simTime()+0.01, timer);
+ }
+
+void IPv6Dispatch::writeStat()
+{   SentBytesPers = SentBytesPers/0.05;
+    RcvdBytesPers = RcvdBytesPers/0.05;
+    SentBytesVector.record(SentBytesPers);
+    RcvdBytesVector.record(RcvdBytesPers);
+        timer = new cMessage();
+        scheduleAt(simTime()+0.05, timer);
+     }

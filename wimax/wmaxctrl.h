@@ -51,9 +51,9 @@ class WMaxCtrlSS : public Fsm
 
 public:
     WMaxCtrlSS();
-    cModule *SS;
 
     void initialize();
+    void finish();
     void handleMessage(cMessage *msg);
     list<WMaxFlowSS*> serviceFlows;
 
@@ -126,15 +126,17 @@ public:
 
     double hoStartTimestamp;   // timestamp of handover start
     double hoReentryTimestamp; // timestamp of the reentry start
-    
+    double hoReentryCompleteTimestamp; // timestamp of the reentry completion
+    double hoActionTime; //time of handover idle
     double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
-
+    cStdDev hoActionTimeData;
 protected:
     void fsmInit();
+  
     void connectNextBS();
     void connectBS(int x); // connect (i.e. make Omnet connections) to BS[x]
     void disconnect();
-
+   
     // wait for DL-MAP state
     static FsmStateType onEventState_WaitForDlmap(Fsm * fsm, FsmEventType e, cMessage *msg);
 
@@ -228,7 +230,6 @@ class WMaxCtrlBS : public Fsm
 {
 public:
     WMaxCtrlBS();
-    cModule *BS;
 private:
     list<Transaction> Transactions;
     list<SSInfo_t> ssList;
