@@ -24,7 +24,6 @@ class IPv6Dispatch : public cSimpleModule
     void dispatchMessage(cMessage *msg);
     virtual void updateString();
     virtual void writeStat();
-    virtual void statTimer();
     long int SentBytesPers;
     long int RcvdBytesPers;
     

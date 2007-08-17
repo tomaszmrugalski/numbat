@@ -37,6 +37,9 @@ void IPv6Dispatch::initialize()
 
 }
 
+
+
+
 void IPv6Dispatch::dispatchMessage(cMessage *msg)
 {
     /// @TODO
@@ -142,11 +145,6 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
     
 }
 
-void IPv6Dispatch::statTimer()
-{
-cMessage *timer = new cMessage();
-scheduleAt(simTime()+0.01, timer);
- }
 
 void IPv6Dispatch::writeStat()
 {   SentBytesPers = SentBytesPers/0.05;

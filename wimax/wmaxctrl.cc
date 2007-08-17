@@ -22,8 +22,6 @@
 
 static uint32_t transactionID = 1;
 
-
-
 // global function shared by all flows from all SSes
 uint32_t GetNextTransactionID() { return transactionID++; }
 
@@ -121,9 +119,9 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_SERVICE_FLOW_COMPLETE, "Service Flow complete");
     eventInit(EVENT_HO_IND_SENT,  "HO-IND transmitted");
     eventVerify();
-
-    float ne = (double)parentModule()->par("NetworkEntryTime");
-    float ho = (double)parentModule()->par("HandoverTime");
+    
+    float ne = (double)SS->par("NetworkEntryTime");
+    float ho = (double)SS->par("HandoverTime");
 
     TIMER(NetworkEntry, ne, "Start Network entry");
     TIMER(Handover,     ho, "Start handover");
@@ -134,9 +132,10 @@ void WMaxCtrlSS::fsmInit() {
 }
 
 void WMaxCtrlSS::initialize() {
+    SS = parentModule()->parentModule();
     hoInfo = new HoInfo_t();
     CLEAR(hoInfo);
-       hoActionTimeData.setName("HO time length");
+    hoActionTimeData.setName("HO time length");
     neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
 
     fsmInit();
@@ -144,17 +143,17 @@ void WMaxCtrlSS::initialize() {
     // start with network entry
     TIMER_START(NetworkEntry);
 
-    cModule * tmp1 = parentModule()->submodule("ssInfo");
+    cModule * tmp1 = SS->submodule("ssInfo");
     ssInfo * tmp2  = dynamic_cast<ssInfo*>(tmp1);
     hoInfo = &tmp2->hoInfo;
 
-    int initialBS = parentModule()->par("initialBS");
+    int initialBS = SS->par("initialBS");
 
     Log(Notice) << "Attaching to initial BS: " << initialBS << LogEnd;
     connectBS(initialBS);
 
     char buf[80];
-    sprintf(buf, "WMaxCtrlSS[%d]", parentModule()->index());
+    sprintf(buf, "WMaxCtrlSS[%d]", SS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -195,6 +194,8 @@ double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
  */
 void WMaxCtrlSS::handleMessage(cMessage *msg) 
 {
+    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule("ssMac")))
+	mac->updateString();
 
     if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
         onEvent(EVENT_DLMAP, msg);
@@ -388,10 +389,10 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
     string purpose = "initial";
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
 
-    cModule *SS = ss->parentModule();
-    cModule *SSInfo = SS->submodule("ssInfo");
+//     cModule *SS = ss->parentModule();
+    cModule *SSInfo = ss->SS->submodule("ssInfo");
     if (!SSInfo)
-        opp_error("Unable to obtain ssInfo submodule in SS[%d]\n", SS->index());
+        opp_error("Unable to obtain ssInfo submodule in SS[%d]\n", ss->SS->index());
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(SSInfo);
 
     WMaxRngReq rngReq;
@@ -434,7 +435,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
 
     switch (e) {
     case EVENT_RNG_RSP_RECEIVED: 
@@ -486,7 +487,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
 
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_SBC_REQ)) {
 	SLog(fsm, Warning) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
@@ -531,7 +532,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekChallange(Fsm * fsm, FsmEventT
 FsmStateType WMaxCtrlSS::onEnterState_SendSaTekReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgPkmReq * pkm = new WMaxMsgPkmReq("PKM-REQ(SA-TEK-REQ)");
     pkm->setCode(WMAX_PKM_SA_TEK_REQ);
     ss->sendMsg(pkm, "", "macOut", ssinfo->info.basicCid);
@@ -554,7 +555,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSaTekRsp(Fsm *fsm, FsmEventType e, 
 FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_REG_REQ)) {
 	SLog(fsm, Warning) << "Reentry: omit-reg-req flag set, skipping REG-REQ." << LogEnd;
         return STATE_SVC_FLOW_CREATION; /* state override: switch to Service flow creation */
@@ -639,7 +640,8 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 
 FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
-  int isMobile = (int)fsm->parentModule()->par("wmaxIsMobile");
+    WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    int isMobile = (int)ss->SS->par("wmaxIsMobile");
 
     switch (e) {
       case EVENT_HANDOVER_START:
@@ -656,7 +658,7 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 FsmStateType WMaxCtrlSS::onEnterState_SendMobScnReq(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgMobScnReq * mobScnReq = new WMaxMsgMobScnReq();
     mobScnReq->setName("MOB_SCN-REQ");
     SLog(fsm, Notice) << "Sending MOB_SCN-REQ message." << LogEnd;
@@ -679,18 +681,18 @@ cModule *SS, *physim, *BS;
         // fake scan
         /// @todo improve scanning
 
-        SS = fsm->parentModule();
-        physim = fsm->parentModule()->parentModule();
-        BS = SS->gate( "out" )->toGate()->ownerModule();
+//         SS = fsm->parentModule();
+        physim = ss->SS->parentModule();
+        BS = ss->SS->gate( "out" )->toGate()->ownerModule();
         actBS = BS->index();
         nearestBS = actBS;
 
-        x1 = atoi((SS->displayString()).getTagArg("p",0));
-        y1 = atoi((SS->displayString()).getTagArg("p",1));
+        x1 = atoi((ss->SS->displayString()).getTagArg("p",0));
+        y1 = atoi((ss->SS->displayString()).getTagArg("p",1));
         x2 = atoi((BS->displayString()).getTagArg("p",0));
         y2 = atoi((BS->displayString()).getTagArg("p",1));
 
-        minR = sqrt(pow((x1-x2),2.0)+ pow((y1-y2),2.0));
+        minR = sqrt(pow(x1-x2,2.0)+pow(y1-y2,2.0));
 
         for(int i=0; i < (int)physim->par("numBS"); i++) {
             cModule *targetBS = physim->submodule("BS",i);
@@ -722,7 +724,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     ss->hoStartTimestamp = fsm->simTime();
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
     mshoReq->setName("MSHO-REQ");
     SLog(fsm, Notice) << "Sending MSHO-REQ message." << LogEnd;
@@ -768,7 +770,7 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
     Log(Notice) << "Notifying upper layer: " << str << LogEnd;
     char buf[80];
     sprintf(buf, "ssIPv6");
-    cModule *ip = parentModule()->submodule(buf);
+    cModule *ip = SS->submodule(buf);
     sendDirect(x, 0.0, ip, "eventIn");
 }
 
@@ -788,7 +790,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, 
 FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
     hoInd->setName("HO-IND");
     ss->sendMsg(hoInd, "", "macOut", ssinfo->info.basicCid);
@@ -901,8 +903,8 @@ FsmStateType WMaxCtrlSS::onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMess
 void WMaxCtrlSS::connectBS(int x) {
     
     /* sanity checks */
-    cModule *SS = parentModule();
-    cModule *physim = parentModule()->parentModule();
+//     cModule *SS = parentModule();
+    cModule *physim = SS->parentModule();
     int maxBS = physim->par("numBS");
     if (x> maxBS) {
 	opp_error("Unable to connect to BS[%d]: there are only %d BS(es)\n",
@@ -929,7 +931,7 @@ void WMaxCtrlSS::connectBS(int x) {
 
 void WMaxCtrlSS::disconnect() {
 
-    cModule *SS = parentModule();
+//     cModule *SS = parentModule();
     if (!SS->gate("out")->isConnected()) {
 	// not connected
 	return;
@@ -950,8 +952,8 @@ void WMaxCtrlSS::disconnect() {
  */
 void WMaxCtrlSS::connectNextBS() {
     
-    cModule *SS = parentModule();
-    cModule *physim = parentModule()->parentModule();
+//     cModule *SS = parentModule();
+    cModule *physim = SS->parentModule();
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
     int isMobile = SS->par("wmaxIsMobile");
@@ -978,7 +980,6 @@ void WMaxCtrlSS::finish()
                           
                      
                      }
-                     
 
 /********************************************************************************/
 /*** WMax Ctrl BS ****************************************************************/
@@ -997,13 +998,14 @@ void WMaxCtrlBS::fsmInit()
 
 void WMaxCtrlBS::initialize()
 {
+    BS = parentModule()->parentModule();
     cid = 1024;
     pkmSupport = true;
     Transactions.clear();
     ssList.clear();
- 
+
     char buf[80];
-    sprintf(buf, "WMaxCtrlBS[%d]", parentModule()->index());
+    sprintf(buf, "WMaxCtrlBS[%d]", BS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -1444,7 +1446,7 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaReq(Fsm * fsm) {
     msg->setQos(0,flow->qos);
 
     WMaxCtrlSS *ctrlSS = dynamic_cast<WMaxCtrlSS*>(flow->parentFsm);
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->SS->submodule("ssInfo"));
     SLog(fsm, Notice) << "Sending DSA-REQ (cid=" << ssinfo->info.basicCid << ", transID=" << msg->getTransactionID() 
               << ")" << LogEnd;
     ctrlSS->sendMsg(msg, "", "macOut", ssinfo->info.basicCid);
@@ -1486,7 +1488,7 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
     msg->setQosArraySize(1);
     msg->setQos(0,flow->qos);
 
-    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->parentModule()->submodule("ssInfo"));
+    ssInfo *ssinfo = dynamic_cast<ssInfo*>(ctrlSS->SS->submodule("ssInfo"));
     SLog(fsm, Notice) << "Received DSA-RSP, sending DSA-ACK (transID=" << msg->getTransactionID() << ")." << LogEnd;
     ctrlSS->sendMsg(msg, "", "macOut", ssinfo->info.basicCid);
 

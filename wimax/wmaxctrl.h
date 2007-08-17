@@ -51,7 +51,7 @@ class WMaxCtrlSS : public Fsm
 
 public:
     WMaxCtrlSS();
-
+    cModule *SS;
     void initialize();
     void finish();
     void handleMessage(cMessage *msg);
@@ -230,6 +230,7 @@ class WMaxCtrlBS : public Fsm
 {
 public:
     WMaxCtrlBS();
+    cModule *BS;
 private:
     list<Transaction> Transactions;
     list<SSInfo_t> ssList;
