@@ -28,7 +28,11 @@ module SS //
         ipSkipDad: numeric,
         dhcpSkipInitialDelay: numeric,
         dhcpPref255: numeric,
-        dhcpRapidCommit: numeric;
+        dhcpRapidCommit: numeric,
+        SStrace_centerx: numeric,
+        SStrace_centery: numeric,
+        SStrace_radius: numeric,
+        SStrace_step: numeric;
     gates:
         out: out;
         in: in;

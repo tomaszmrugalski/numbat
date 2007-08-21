@@ -10,6 +10,7 @@
 
 #include <omnetpp.h>
 #include <sstream>
+#include <math.h>
 #include "wmaxmac.h"
 #include "wmaxmsg_m.h"
 #include "wmaxctrl.h"
@@ -954,7 +955,13 @@ void WMaxMacSS::changePosition() {
     cDisplayString dispstr = SS->displayString();
     long int x = atoi(dispstr.getTagArg("p",0));
     long int y = atoi(dispstr.getTagArg("p",1));
-    x++;
+    float centerx=(double)SS->par("SStrace_centerx");
+    float centery=(double)SS->par("SStrace_centery");
+    float radius=(double)SS->par("SStrace_radius");
+    float radstep=(double)SS->par("SStrace_step");
+    x=(sin(radian)*radius+centerx);
+    y=(cos(radian)*radius+centery);
+    radian=radian+radstep;
 
     dispstr.setTagArg("p",0,x);
     dispstr.setTagArg("p",1,y);

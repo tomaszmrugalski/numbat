@@ -256,6 +256,7 @@ class WMaxMacSS: public WMaxMac
 
     list<WMaxMacCDMA> CDMAlist; //WMaxMac::cdmaQueue is used instead
     int BEpoint;
+    float radian;
     cMessage * ChangePosition;
 
  private:
