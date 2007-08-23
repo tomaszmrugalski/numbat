@@ -1,0 +1,26 @@
+\section{Installation and usage}
+
+Numbat can be used in Windows and Linux systems. Ways of installation are different, but both quite simple.
+
+\subsection{Linux installation}
+
+\subsubsection{Requirements}
+To compile and run Numbat you will need properly installed Omnet++ (tested with version 3.3). Omnet++ packages and installation notes are available on the Omnet Community website: \href{http://omnetpp.org}{http://omnetpp.org}.
+
+\subsubsection{Installation}
+First you need to obtain Numbat sources from {\href{http://klub.com.pl/projects/numbat/}{http://klub.com.pl/projects/numbat/}. You can download latest snapshot or sources directly from svn repository.
+
+Before compilation you must prepare Makefile, execute command:
+\begin{verbatim}
+opp_makemake -f
+\end{verbatim}
+
+To build Numbat, type:
+\begin{verbatim}
+make
+\end{verbatim}
+
+We suppose that there weren't any errors, so you can run and enjoy simulation:
+\begin{verbatim}
+./wimax
+\end{verbatim}

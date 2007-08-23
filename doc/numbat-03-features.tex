@@ -1,0 +1,225 @@
+\section{Features HOWTO}
+This section describes various aspects of the Numbat implementation.
+
+\subsection{Finite State Machine}
+Numbat does not use FSM framework provided by the Omnet++
+environment. Decision to go ahead with own FSM implementation was
+based on several factors: 
+
+\begin{itemize}
+\item Omnet's FSM are does not allow to stay in the same
+  state. Existing workaround to exit and enter the same state is not
+  sufficient.
+\item There are no clearly defined events in Omnet's FSM.
+\item Omnet's FSM must be implemented as object instantiated inside
+  another object, which is derived from cSimpleModule.
+\item There are not useful timer support.
+\end{itemize}
+
+There are several things that must be done in the header (.h) file:
+\begin{itemize}
+\item Declare class (e.g. WMaxCtrlSS) derived from a Fsm class.
+\item Define list of states (as an enum).
+\item For each stationary state define onEventState, which will decide
+  what to do, when FSM is in a particular state.
+\item It is possible to define 2 additional functions: onEnterState
+  and onExitState.
+\item If the state is transitive (i.e. FSM does not end in this state,
+  but rather does some action and then switches to another state
+  immediately), onEnterState and onExitState is mandatory.
+\item Define list of events (also a enum).
+\item (optional) Define timers. Each defined timer can be started,
+  when certain conditions are met (e.g. frame is sent and something
+  must be done after some time). When timeout is reached, self message
+  will be sent. Timers can also be stopped at any time.
+\end{itemize}
+
+Below an example of a simple FSM machine implementation is presented. 
+
+\begin{lstlisting}
+// WMaxCtrlSs.h file
+#include "fsm.h"
+
+class WMaxCtrlSS : public Fsm
+{
+public:
+    WMaxCtrlSS();
+
+    void initialize();
+    void handleMessage(cMessage *msg);
+
+protected:
+    void fsmInit();
+
+    // --- STATES ---
+    typedef enum {
+	STATE_OPERATIONAL,         // normal operation
+	STATE_SEND_MSHO_REQ,       // send MSHO-REQ message
+	STATE_WAIT_BSHO_RSP,       // wait for BSHO-RSP message
+	STATE_SEND_HO_IND,         // send HO-IND message
+	STATE_HANDOVER_COMPLETE,   // handover complete
+	STATE_NUM
+    } State;
+
+    // operational state
+    static FsmStateType onEventState_Operational(Fsm * fsm, FsmEventType s, cMessage *msg);
+
+    // send MSHO-REQ state
+    static FsmStateType onEnterState_SendMshoReq(Fsm *fsm);
+
+    // handover complete state
+    static FsmStateType onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg);
+
+    // --- EVENTS ---
+    typedef enum {
+	EVENT_HANDOVER_START,
+	EVENT_BSHO_RSP_RECEIVED,
+	EVENT_NUM
+    } Event;
+
+    // --- TIMERS ---
+    TIMER_DEF(Handover);
+};
+\end{lstlisting}
+
+When the class declaration is complete, several things must be
+specified in the .cc file:
+
+\begin{itemize}
+\item In the fsmInit() method: \verb+statesEventsInit(X, Y, Z)+ must be
+  called. X denotes maximum number of states, Y number of events and Z
+  is a initial state of the state machine.
+\item Initialize all defined states. There are 2 possible state types:
+  stationary and transitive.
+\item For each stationary state, name and onEventState function must
+  be defined. That function will decide what to do when certain event
+  has been received.
+\item For each transitive state, it is necessary to define name and
+  target state. Also \verb+onEnterState+ and \verb+onExitState+
+  functions must be defined (those function are optional for
+  stationary states).
+\item Timers can also be initialized here.
+\item handleMessage() method contains a ,,dispatcher''. It translates
+  received messages into events, e.g. if received frame is of type
+  \verb+WMaxMsgBSHORSP+, then execute
+  \verb+onEvent(EVENT_BSHO_RSP_RECEIVED)+.
+\item initialize() method should call fsmInit() and also may contain
+  additonal initialization code, e.g. timers can be started here.
+\item For each stationary state, there should be method called
+  onEventState. It defines what exactly should be done when some event
+  has occured. That method returns a newState. If no state change is
+  necessary, it must contain following entry:
+  \verb+return fsm->State();+
+\item In the switch() command in the onEventState method, it seems
+  reasonable to add \verb+default: CASE_IGNORE(e)+ line, which will
+  print appropriate information in case of reception of an event,
+  which is not supported in that state.
+\item It is possible to defined, what actions should be performed when
+  entering (onEnter) or leaving (onExit) particular state.
+\item At any moment, \verb+TIMER_START()+ or \verb+TIMER_STOP()+ can
+  be executed to start or stop timer.
+\end{itemize}
+
+\begin{lstlisting}
+Define_Module(WMaxCtrlSS);
+
+WMaxCtrlSS::WMaxCtrlSS()
+{
+
+}
+
+void WMaxCtrlSS::fsmInit() {
+
+    // initialize number of states, number of elements and set initial state
+    statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_OPERATIONAL);
+
+    // state init
+    stateInit(STATE_OPERATIONAL,      "Operational", onEventState_Operational);
+    stateInit(STATE_SEND_MSHO_REQ,    "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, 
+                                      onEnterState_SendMshoReq, 0);
+    stateInit(STATE_WAIT_BSHO_RSP,    "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
+    stateInit(STATE_SEND_HO_IND,      "Sending HO-IND", STATE_HANDOVER_COMPLETE, 
+                                      onEnterState_SendHoInd, 0);
+    stateInit(STATE_HANDOVER_COMPLETE,"Handover complete", onEventState_HandoverComplete);
+    stateVerify();
+
+    // event init
+    eventInit(EVENT_CDMA_CODE, "CDMA code received");
+    eventInit(EVENT_HANDOVER_START, "Begin handover procedure");
+    eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
+    eventVerify();
+
+    TIMER(Handover, 0.1, "Start handover");
+}
+
+void WMaxCtrlSS::initialize() {
+    // initiate FSM
+    fsmInit();
+
+    // Start handover timer
+    TIMER_START(Handover);
+}
+
+void WMaxCtrlSS::handleMessage(cMessage *msg) 
+{
+    //IF_TIMER(name, EVENT_TIMEOUT);
+    if (msg==TimerHandover) {
+	onEvent(EVENT_HANDOVER_START, msg);
+	return;
+    }
+
+    if (dynamic_cast<WMaxMsgBSHORSP*>(msg)) {
+	onEvent(EVENT_BSHO_RSP_RECEIVED, msg);
+	return;
+    }
+}
+
+
+FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_HANDOVER_START:
+	return STATE_SEND_MSHO_REQ;
+    default:
+	CASE_IGNORE(e);
+    }
+}
+
+// send MSHO-REQ state
+FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
+{
+    WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
+    mshoReq->setName("MSHO-REQ");
+    ev << fsm->fullName() << "Sending MSHO-REQ message." << endl;
+    fsm->send(mshoReq, "macOut");
+    return fsm->State();
+}
+
+// wait for BSHO-RSP state
+FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_BSHO_RSP_RECEIVED:
+	return STATE_SEND_HO_IND;
+    default:
+	CASE_IGNORE(e);
+    }
+    return fsm->State();
+}
+
+// sent HO-IND state
+FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
+{
+    WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
+    hoInd->setName("HO-IND");
+    fsm->send(hoInd, "macOut");
+    return fsm->State();
+}
+    
+// handover complete state
+FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType s, cMessage *msg)
+{
+    return fsm->State();
+}
+
+\end{lstlisting}
