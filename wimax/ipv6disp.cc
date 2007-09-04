@@ -59,13 +59,22 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
       dynamic_cast<MihEvent_ReentryStart*>(msg)) {
     Log(Debug) << "MIH message received: disabling traffic." << LogEnd;
     handleTraffic = false;
+    if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
+        IPv6HoStart = simTime();
+    }
   }
 
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_HandoverStart*>(msg) ||
-      dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+      dynamic_cast<MihEvent_ReentryEnd*>(msg) || 
+      dynamic_cast<MihEvent_Resume*>(msg)) {
     Log(Debug) << "MIH message received: enabling traffic." << LogEnd;
     handleTraffic = true;
+
+    if (dynamic_cast<MihEvent_Resume*>(msg)) {
+        IPv6HoFinish = simTime();
+        IPv6HoTime.collect(IPv6HoFinish - IPv6HoStart);
+    }
   }
 
   /* TBD */
@@ -91,7 +100,7 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
 	      dhcpDelay += 1.000 /* ADV wait */;
       } 
 
-      cMessage * resume = new MihEvent_EntryEnd();
+      cMessage * resume = new MihEvent_Resume();
       scheduleAt(simTime() + dhcpDelay + ipDelay, resume);
       Log(Notice) << "IPv6 layer delay: ipDelay=" << ipDelay << ", dhcpDelay=" << dhcpDelay << LogEnd;
 

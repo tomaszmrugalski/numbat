@@ -712,8 +712,17 @@ void WMaxMacSS::setInitialPosition() {
     cModule *BS = physim->submodule("BS",SS->par("initialBS"));
 
     cDisplayString dispstr = SS->displayString();
-    long int x = atoi(BS->displayString().getTagArg("p", 0)) + rand()%200 - 100;
-    long int y = atoi(BS->displayString().getTagArg("p", 1)) + rand()%200 - 100;
+    long int x,y;
+    if ((long int)SS->par("x")) {
+        x = (long int)SS->par("x");
+    } else {
+        x = atoi(BS->displayString().getTagArg("p", 0)) + rand()%200 - 100;
+    }
+    if ((long int)SS->par("y")) {
+        y = (long int)SS->par("y");
+    } else {
+        y = atoi(BS->displayString().getTagArg("p", 1)) + rand()%200 - 100;
+    }
     dispstr.setTagArg("p", 0, x);
     dispstr.setTagArg("p", 1, y);
     SS->setDisplayString(dispstr);
@@ -955,13 +964,23 @@ void WMaxMacSS::changePosition() {
     cDisplayString dispstr = SS->displayString();
     long int x = atoi(dispstr.getTagArg("p",0));
     long int y = atoi(dispstr.getTagArg("p",1));
-    float centerx=(double)SS->par("SStrace_centerx");
-    float centery=(double)SS->par("SStrace_centery");
-    float radius=(double)SS->par("SStrace_radius");
-    float radstep=(double)SS->par("SStrace_step");
-    x=(sin(radian)*radius+centerx);
-    y=(cos(radian)*radius+centery);
-    radian=radian+radstep;
+
+    float centerx, centery, radius, radstep;
+
+    switch ((int)SS->par("movementType")) {
+    case 0:
+        x++;
+        break;
+    case 1:
+        float centerx=(double)SS->par("SStrace_centerx");
+        float centery=(double)SS->par("SStrace_centery");
+        float radius=(double)SS->par("SStrace_radius");
+        float radstep=(double)SS->par("SStrace_step");
+        x=(sin(radian)*radius+centerx);
+        y=(cos(radian)*radius+centery);
+        radian=radian+radstep;
+        break;
+    }
 
     dispstr.setTagArg("p",0,x);
     dispstr.setTagArg("p",1,y);

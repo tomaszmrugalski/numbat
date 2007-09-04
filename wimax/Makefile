@@ -39,7 +39,7 @@ AR=ar cr
 SHLIB_LD=g++ -shared 
 MAKEDEPEND=opp_makedep -Y --objdirtree
 
-CFLAGS=-g -O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
+CFLAGS=-O2 -DNDEBUG=1   -DWITH_PARSIM -DWITH_NETBUILDER
 NEDCFLAGS=-Wno-unused
 LDFLAGS= -Wl,--export-dynamic
 EXE_SUFFIX=

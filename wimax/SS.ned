@@ -22,6 +22,9 @@ module SS //
     parameters:
         wmaxHoOptim: numeric,
         wmaxIsMobile: numeric,
+        movementType: numeric,
+        x: numeric,
+        y: numeric,
         initialBS: numeric,
         NetworkEntryTime: numeric,
         HandoverTime: numeric,

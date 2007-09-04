@@ -46,7 +46,8 @@ class WMaxCtrlSS : public Fsm
 {
     typedef enum {
 	WMAX_CTRL_NETWORK_ENTRY_INITIAL,
-	WMAX_CTRL_NETWORK_REENTRY
+	WMAX_CTRL_NETWORK_REENTRY,
+	WMAX_CTRL_NERWORK_SCAN
     } WMaxCtrlNetworkEntryType;
 
 public:

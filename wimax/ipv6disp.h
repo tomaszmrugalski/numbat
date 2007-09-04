@@ -26,6 +26,9 @@ class IPv6Dispatch : public cSimpleModule
     virtual void writeStat();
     long int SentBytesPers;
     long int RcvdBytesPers;
+    cStdDev IPv6HoTime;
+    double IPv6HoStart;
+    double IPv6HoFinish;
     
  private:
     bool handleTraffic;

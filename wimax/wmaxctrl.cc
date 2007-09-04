@@ -618,17 +618,24 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
 
-    if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
-      double x = ss->simTime() - ss->hoReentryTimestamp;
+    double x, y;
+
+    switch (ss->neType) {
+    case WMAX_CTRL_NETWORK_REENTRY:
+      x = ss->simTime() - ss->hoReentryTimestamp;
       ss->hoReentryCompleteTimestamp=ss->simTime();
-      double y = ss->hoReentryCompleteTimestamp - ss->hoStartTimestamp;
+      y = ss->hoReentryCompleteTimestamp - ss->hoStartTimestamp;
       ss->hoActionTimeData.collect(y);
       SLog(fsm, Warning) << "Network reentry complete: " << x << "secs (" 
                          << ss->hoReentryTimestamp << "-" << ss->simTime() << ")." << LogEnd;
       ss->mihNotify(MIH_EVENT_REENTRY_END);
-    } else {
+      break;
+    case WMAX_CTRL_NETWORK_ENTRY_INITIAL:
       SLog(fsm, Notice) << "Initial network entry complete." << LogEnd;
       ss->mihNotify(MIH_EVENT_ENTRY_END);
+      break;
+    case WMAX_CTRL_NERWORK_SCAN:
+      ss->neType = WMAX_CTRL_NETWORK_REENTRY;
     }
     
     if (ss->hoInfo->isMobile)
@@ -663,6 +670,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMobScnReq(Fsm *fsm)
     mobScnReq->setName("MOB_SCN-REQ");
     SLog(fsm, Notice) << "Sending MOB_SCN-REQ message." << LogEnd;
     ss->sendMsg(mobScnReq, "", "macOut", ssinfo->info.basicCid);
+    ss->neType = WMAX_CTRL_NERWORK_SCAN;
     return fsm->State();
 }
 
@@ -973,13 +981,10 @@ void WMaxCtrlSS::connectNextBS() {
     neType = WMAX_CTRL_NETWORK_REENTRY; 
 }
 
-void WMaxCtrlSS::finish()               
-{                   
-                     
-                     hoActionTimeData.recordScalar();
-                          
-                     
-                     }
+void WMaxCtrlSS::finish()
+{
+    hoActionTimeData.recordScalar();
+}
 
 /********************************************************************************/
 /*** WMax Ctrl BS ****************************************************************/

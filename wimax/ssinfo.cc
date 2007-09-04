@@ -63,6 +63,9 @@ void ssInfo::initialize() {
     stringUpdate();
     Log(Notice) << "Creating new SS: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
+    Log(Notice) << "New SS: " << info.getMac() << ", skipDad=" << hoInfo.ip.skipDad 
+		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
+		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit << LogEnd;
 }
 
 void ssInfo::stringUpdate() {
