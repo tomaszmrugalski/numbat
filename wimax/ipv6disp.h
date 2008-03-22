@@ -31,10 +31,13 @@ class IPv6Dispatch : public cSimpleModule
     double IPv6HoFinish;
     
  private:
-    bool handleTraffic;
+    bool handleTraffic;     // is the L2 able to handle traffic?o
+    bool routingConfigured; // is routing configured?
     cOutVector SentBytesVector;
     cOutVector RcvdBytesVector;
     cMessage * timer;
+
+    bool BS;
 };
 
 

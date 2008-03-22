@@ -35,14 +35,14 @@ module BS
             display: "i=abstract/accesspoint,#40e221;p=104,280;q=SendQueue";
         bsMac: bsMAC;
             display: "i=block/control,#40e221;p=104,168;q=SendQueue";
-        bsIPv6: IPv6Node;
-            display: "i=block/app,#40e221;p=104,64;tx=Tx,rx";
         radio: WMaxRadio;
             gatesizes:
                 radioIn[sizeof(in)],
                 radioOut[sizeof(in)]; // use in, for consistency
 
             display: "p=216,280;i=device/receiverdish,#40e221,30";
+        bsIPv6: IPv6Server;
+            display: "i=block/app,#40e221;p=104,64";
     connections nocheck:
 
         bsMac.phyOut --> bsPhy.phyIn;

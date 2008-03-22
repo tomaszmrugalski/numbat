@@ -24,6 +24,8 @@ class RaRcv : public Fsm
     virtual void handleMessage(cMessage *msg);
     void fsmInit();
  private:
+    int RaRcvCnt;
+    void updateString();
 };
 
 class RaGen : public cSimpleModule
@@ -33,6 +35,9 @@ class RaGen : public cSimpleModule
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
  private:
+    void sendRA();
+    cMessage * sendTimer;
+    double     RaInterval;
 };
 
 

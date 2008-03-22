@@ -976,8 +976,8 @@ void WMaxMacSS::changePosition() {
         float centery=(double)SS->par("SStrace_centery");
         float radius=(double)SS->par("SStrace_radius");
         float radstep=(double)SS->par("SStrace_step");
-        x=(sin(radian)*radius+centerx);
-        y=(cos(radian)*radius+centery);
+        x=(long int)(sin(radian)*radius+centerx);
+        y=(long int)(cos(radian)*radius+centery);
         radian=radian+radstep;
         break;
     }

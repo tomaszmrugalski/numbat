@@ -104,16 +104,16 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
         return;
     }
 
-     cMessage *wmaxmacmsg = new cMessage("IPv6 Packet");
-     wmaxmacmsg->encapsulate(msg);
-
-     WMaxMacHeader * hdr = new WMaxMacHeader();
-     hdr->cid = it->cid;
-     wmaxmacmsg->setControlInfo(hdr);
-
-     Log(Debug) << "New message. CID=" << it->cid << LogEnd;
-
-     send(wmaxmacmsg, "macOut");
+    cMessage *wmaxmacmsg = new cMessage(msg->fullName());
+    wmaxmacmsg->encapsulate(msg);
+    
+    WMaxMacHeader * hdr = new WMaxMacHeader();
+    hdr->cid = it->cid;
+    wmaxmacmsg->setControlInfo(hdr);
+    
+    Log(Debug) << "New message. CID=" << it->cid << LogEnd;
+    
+    send(wmaxmacmsg, "macOut");
 }
 
 

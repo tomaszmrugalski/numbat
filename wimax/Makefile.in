@@ -115,6 +115,12 @@ wmaxmsg_m.o: wmaxmsg_m.cc
 wmaxmsg_m.cc wmaxmsg_m.h: wmaxmsg.msg
 	$(MSGC) $(MSGCOPTS) wmaxmsg.msg
 
+ipv6msg_m.cc ipv6msg_m.h: ipv6msg.msg
+	$(MSGC) $(MSGCOPTS) ipv6msg.msg
+
+ipv6msg_m.o: wmaxmsg_m.cc ipv6msg_m.h
+	$(CXX) -c $(NEDCOPTS) ipv6msg_m.cc
+
 ipv6node.o: ipv6node.cc
 	$(CXX) -c $(COPTS) ipv6node.cc
 
