@@ -57,7 +57,18 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 
 	return;
     }
-    /// @TODO
+
+    if (dynamic_cast<DHCPv6Solicit*>(msg) ||
+	dynamic_cast<DHCPv6Advertise*>(msg) ||
+	dynamic_cast<DHCPv6Request*>(msg) ||
+	dynamic_cast<DHCPv6Reply*>(msg) ||
+	dynamic_cast<DHCPv6Confirm*>(msg)) {
+	Log(Debug) << "DHCPv6 message " << msg->fullName() << " received." << LogEnd;
+	send(msg, "dhcpOut", 0);
+	return;
+    };
+
+    /// @TODO - MIPv6
 
     if (handleTraffic) {
 	send(msg, "genOut", 0); // send to generator directly
@@ -82,19 +93,18 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
 
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_HandoverStart*>(msg) ||
-      dynamic_cast<MihEvent_ReentryEnd*>(msg) || 
-      dynamic_cast<MihEvent_Resume*>(msg)) {
-    Log(Debug) << "MIH message received: enabling traffic." << LogEnd;
-    handleTraffic = true;
-
-    if (dynamic_cast<MihEvent_Resume*>(msg)) {
-        IPv6HoFinish = simTime();
-        IPv6HoTime.collect(IPv6HoFinish - IPv6HoStart);
-    }
+      dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+      Log(Debug) << "MIH message received: enabling traffic." << LogEnd;
+      handleTraffic = true;
+      
+  }
+  
+  if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
+      dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+      ipv6ReconfigureStart();
   }
 
-  /* TBD */
-  if (dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+#if 0     
       cModule * tmp0 = parentModule()->parentModule();
       cModule * tmp1 = tmp0->submodule("ssInfo");
       if (!tmp1) {
@@ -122,12 +132,40 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
       cMessage * resume = new MihEvent_Resume();
       scheduleAt(simTime() + dhcpDelay + ipDelay, resume);
       Log(Notice) << "IPv6 layer delay: ipDelay=" << ipDelay << ", dhcpDelay=" << dhcpDelay << LogEnd;
+   }
+#endif
 
-      handleTraffic = false;
-  }
-  /* TBD */
+}
 
-  updateString();
+/** 
+ * this method is called after L2 handover is complete
+ * i.e. when IPv6 handover begins
+ * 
+ */
+void IPv6Dispatch::ipv6ReconfigureStart()
+{
+    // TBD: GET_STATS here
+    Log(Notice) << "L2 handover completed, starting IPv6 reconfiguration." << LogEnd;
+    handleTraffic = false;
+    routingConfigured = false;
+    updateString();
+
+    cMessage *dhcpStart = new cMessage("dhcpStart");
+    send(dhcpStart, "dhcpOut", 0);
+}
+
+
+/** 
+ * this method is called when IPv6 handover is complete
+ * 
+ */
+void IPv6Dispatch::ipv6ReconfigureEnd()
+{
+    // TBD: GET_STATS here
+    Log(Notice) << "IPv6 reconfiguration complete." << LogEnd;
+    IPv6HoFinish = simTime();
+    IPv6HoTime.collect(IPv6HoFinish - IPv6HoStart);
+    updateString();
 }
 
 void IPv6Dispatch::updateString()
@@ -157,7 +195,8 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
     }
     
     // relay RAs all the time
-    if (!strcmp(gate->fullName(),"raIn")) {
+    if (!strcmp(gate->fullName(),"raIn") ||
+	!strcmp(gate->fullName(), "dhcpIn")) {
 	send(msg, "ipOut", 0);
 	return;
     }

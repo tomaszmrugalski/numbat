@@ -31,6 +31,9 @@ class IPv6Dispatch : public cSimpleModule
     double IPv6HoFinish;
     
  private:
+    void ipv6ReconfigureStart();
+    void ipv6ReconfigureEnd();
+
     bool handleTraffic;     // is the L2 able to handle traffic?o
     bool routingConfigured; // is routing configured?
     cOutVector SentBytesVector;

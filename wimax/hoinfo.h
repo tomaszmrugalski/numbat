@@ -30,6 +30,12 @@
 #define WMAX_HO_OPTIM_REENTRY_CONFIRM           (1 << 12) /* bit #12 */
 #define WMAX_HO_OPTIM_TRIGGER_HIGHER_LAYER      (1 << 13) /* bit #13 */
 
+typedef enum {
+    DHCP_DAD_TYPE_NORMAL=0,
+    DHCP_DAD_TYPE_NONE=1,
+    DHCP_DAD_TYPE_SERVER_SIDE=2,
+    DHCP_DAD_TYPE_OPTIMISTIC=3
+} DhcpDadType;
 
 /* handover related parameters on the WiMAX layer */
 typedef struct {
@@ -39,7 +45,7 @@ typedef struct {
 
 /* handover related parameters on IPv6 layer */
 typedef struct {
-    bool skipDad;
+    DhcpDadType DadType;
 } HoIPv6_t;
 
 /* handover related parameters on DHCPv6 layer */
@@ -47,6 +53,10 @@ typedef struct {
     bool skipInitialDelay; /* delay 0..1s */
     bool pref255; /* set preference to 255 */
     bool rapidCommit; /* use rapid-commit option */
+    bool sendConfirm; /* use CONFIRM instead of SOLICIT */
+    bool addrParams;  /* should addr-params extension be used? */
+
+    DhcpDadType DadType;
 } HoDHCPv6_t;
 
 /* handover related parameters on MobileIPv6 layer */

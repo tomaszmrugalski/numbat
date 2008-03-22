@@ -53,7 +53,7 @@ void ssInfo::initialize() {
     hoInfo.wmax.hoOptim = parentModule()->par("wmaxHoOptim");
 
 
-    hoInfo.ip.skipDad = parentModule()->par("ipSkipDad");
+    hoInfo.ip.DadType = (DhcpDadType)(int)parentModule()->par("dadType");
     hoInfo.dhcp.skipInitialDelay = parentModule()->par("dhcpSkipInitialDelay");
     hoInfo.dhcp.pref255 = parentModule()->par("dhcpPref255");
     hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
@@ -63,7 +63,7 @@ void ssInfo::initialize() {
     stringUpdate();
     Log(Notice) << "Creating new SS: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
-    Log(Notice) << "New SS: " << info.getMac() << ", skipDad=" << hoInfo.ip.skipDad 
+    Log(Notice) << "New SS: " << info.getMac() << ", dadType=" << hoInfo.ip.DadType 
 		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
 		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit << LogEnd;
 }

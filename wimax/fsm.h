@@ -32,6 +32,8 @@ using namespace std;
     if (Timer##name ->isScheduled())                          \
         cancelEvent(Timer##name);
 
+#define TIMER_SET(name, time) Timer##name##Value = time;
+
 #define TIMER_DEF(name)    \
     double Timer##name##Value; \
     cMessage* Timer##name;

@@ -10,6 +10,12 @@ simple IPv6Node
 endsimple
 
 simple DHCPv6Srv
+    parameters:
+        MinDelayAdvertise: numeric,
+        MaxDelayAdvertise: numeric,
+        MinDelayReply: numeric,
+        MaxDelayReply: numeric,
+        preference: numeric;
     gates:
         out: dhcpOut;
         in: dhcpIn;

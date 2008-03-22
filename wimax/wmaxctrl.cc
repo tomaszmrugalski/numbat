@@ -64,7 +64,6 @@ void WMaxCtrlSS::fsmInit() {
     statesEventsInit(WMaxCtrlSS::STATE_NUM, WMaxCtrlSS::EVENT_NUM, STATE_POWER_DOWN);
 
     // state init
-    std::string x = "Waiting for CDMA opportunity";
     stateInit(STATE_WAIT_FOR_DLMAP,    "Waiting for DL-MAP", onEventState_WaitForDlmap);
     stateInit(STATE_WAIT_FOR_UCD,      "Waiting for UCD", onEventState_WaitforUcd);
     stateInit(STATE_SEND_RNG_REQ,      "Sending RNG-REQ", STATE_WAIT_RNG_RSP, onEnterState_SendRngReq);
@@ -174,8 +173,8 @@ double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
 	delay = uniform(min, max);
     }
 
-    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay 
-	       << "secs (cid=" << cid << ")." << LogEnd;
+    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
+	       << "msecs (cid=" << cid << ")." << LogEnd;
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = cid;

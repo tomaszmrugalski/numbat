@@ -271,9 +271,3 @@ message MihEvent_ReentryEnd
 {
 
 };
-
-// ???
-message MihEvent_Resume
-{
-
-};

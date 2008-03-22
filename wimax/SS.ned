@@ -28,7 +28,7 @@ module SS //
         initialBS: numeric,
         NetworkEntryTime: numeric,
         HandoverTime: numeric,
-        ipSkipDad: numeric,
+        dadType: numeric,
         dhcpSkipInitialDelay: numeric,
         dhcpPref255: numeric,
         dhcpRapidCommit: numeric,
