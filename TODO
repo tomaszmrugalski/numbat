@@ -5,23 +5,19 @@
 
  TODO
 ------
-- Radio channel support, so multiple SSes could be connected to one BS (Andrzej)
-- Switching between BSes (Andrzej)
-- Implement best effort.
-  - Implement CDMA codes support.
-  - Implement Bandwidth Request support. (Maciek)
-- Make connections (in SS as well as BS) configurable.
-- WMaxCtrl: Implement network entry
-- WMaxCtrl: Implement service flow creation (DSA-REQ, DSA-RSP, DSA-ACK)
-- WMaxCtrl: Implement scanning
+- classic MIPv6
+- DHCPv6: Remote autoconf usage. Address lease procedure works properly, but timing is incorrect: 
+  it is executed in a wrong moment.
 
  Implemented/Not tested
 ------------------------
-- WMaxCtrl: Implement handover (thomson)
 - UGS throughput is now defined by MSR (in bits per second).
 
  BUGS
 ------
-- After handover, connections are created using DSA (connection information is 
-  transferred to target BS, so there is no need to recreate connections)
 
+
+ VECTORS
+---------
+- measure time since last received data
+- measure time since last transmitted data
