@@ -107,15 +107,19 @@ string ssInfo::getMsgName(cMessage * msg)
     if (dynamic_cast<MihEvent_EntryStart*>(msg))
 	return "MihEvent EntryStart";
     if (dynamic_cast<MihEvent_EntryEnd*>(msg))
-	return "MihEvent EntryStart";
+	return "MihEvent EntryEnd";
     if (dynamic_cast<MihEvent_HandoverStart*>(msg))
-	return "MihEvent EntryStart";
+	return "MihEvent HandoverStart";
     if (dynamic_cast<MihEvent_HandoverEnd*>(msg))
-	return "MihEvent EntryStart";
+	return "MihEvent HandoverEnd";
     if (dynamic_cast<MihEvent_ReentryStart*>(msg))
-	return "MihEvent EntryStart";
+	return "MihEvent ReentryStart";
     if (dynamic_cast<MihEvent_ReentryEnd*>(msg))
-	return "MihEvent EntryStart";
+	return "MihEvent ReentryEnd";
+    if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg))
+	return "MihEvent L3AddrConfigured";
+    if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg))
+	return "MihEvent_L3RoutingConfigured";
 
     return "unknown event";
 }

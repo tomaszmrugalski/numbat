@@ -43,8 +43,9 @@ void IPv6Dispatch::initialize()
 	BS = true;
 	handleTraffic = true;
 	routingConfigured = true;
+	addrConfigured = true;
+	locationUpdated = true;
     }
-
 
     // register for MIH events
     assert(parentModule());
@@ -64,11 +65,7 @@ void IPv6Dispatch::initialize()
 void IPv6Dispatch::dispatchMessage(cMessage *msg)
 {
     if (dynamic_cast<IPv6Ra*>(msg)) {
-	Log(Debug) << "RA received." << LogEnd;
 	send(msg, "raOut", 0);
-	routingConfigured = true;
-	updateString();
-
 	return;
     }
 
@@ -100,10 +97,6 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
       dynamic_cast<MihEvent_ReentryStart*>(msg)) {
     Log(Info) << "MIH message received: disabling traffic." << LogEnd;
     handleTraffic = false;
-    if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
-        IPv6HoStart = simTime();
-	return;
-    }
   }
 
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
@@ -111,50 +104,41 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
       dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
       Log(Info) << "MIH message received: enabling traffic." << LogEnd;
       handleTraffic = true;
-      return;
+      updateString();
   }
   
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
       Log(Info) << "(Re)entry finished, starting IPv6 reconfiguration." << LogEnd;
-      ipv6ReconfigureStart();
-      return;
+      routingConfigured = false;
+      addrConfigured = false;
+      locationUpdated = false;
+      updateString();
   }
 
-}
+    if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg)) {
+	addrConfigured = true;
+	updateString();
+    }
 
-/** 
- * this method is called after L2 handover is complete
- * i.e. when IPv6 handover begins
- * 
- */
-void IPv6Dispatch::ipv6ReconfigureStart()
-{
-    // TBD: GET_STATS here
-    Log(Notice) << "L2 handover completed, starting IPv6 reconfiguration." << LogEnd;
-    handleTraffic = false;
-    routingConfigured = false;
-    updateString();
-}
+    if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg)) {
+	routingConfigured = true;
+	updateString();
+    }
 
-
-/** 
- * this method is called when IPv6 handover is complete
- * 
- */
-void IPv6Dispatch::ipv6ReconfigureEnd()
-{
-    // TBD: GET_STATS here
-    Log(Notice) << "IPv6 reconfiguration complete." << LogEnd;
-    IPv6HoFinish = simTime();
-    IPv6HoTime.collect(IPv6HoFinish - IPv6HoStart);
-    updateString();
+    if (dynamic_cast<MihEvent_L3LocationUpdated*>(msg)) {
+	locationUpdated = true;
+	updateString();
+    }
 }
 
 void IPv6Dispatch::updateString()
 {
   char buf[80];
-  sprintf(buf, "%s/%s", handleTraffic?"trf":"no trf", routingConfigured?"rt":"no rt");
+  sprintf(buf, "%s\n%s\n%s\n%s", handleTraffic?"trf":"no trf", 
+	  routingConfigured?"rt":"no rt", 
+	  addrConfigured?"addr":"no addr", 
+	  locationUpdated?"loc upd":"no loc upd");
   if (ev.isGUI())
     displayString().setTagArg("t", 0, buf);
 }
@@ -174,6 +158,7 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 
     if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
         handleMihMessage(msg);
+	delete msg;
         return;
     }
     

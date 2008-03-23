@@ -304,15 +304,6 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
             }
             serviceFlows.push_back(flow);
         }
-
-// 	list<WMaxFlowSS*>::iterator it;
-// 	for (it = serviceFlows.begin(); it!=serviceFlows.end(); it++) {
-// 	    if (it->transactionID == dsxrvd->getTransactionID()) {
-// 		it->handleMessage(msg);
-// 		return;
-// 	    }
-//   	}
-
         return;
     }
 
@@ -331,15 +322,6 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
             serviceFlows.push_back(flow);
         }
 
-
-// 	list<WMaxFlowSS*>::iterator it;
-// 	for (it = serviceFlows.begin(); it!=serviceFlows.end(); it++) {
-// 	    if (it->transactionID == dsarsp->getTransactionID()) {
-// 		it->handleMessage(msg);
-// 		return;
-// 	    }
-// 	}
-
         return;
     }
 
@@ -348,6 +330,8 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
         delete msg;
         return;
     }
+
+    delete msg;
 }
 
 // wait for DL-MAP state
@@ -786,12 +770,6 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
     Log(Notice) << "Notifying upper layer: " << str << LogEnd;
     info->sendEvent(x);
 
-#if 0
-    char buf[80];
-    sprintf(buf, "ssIPv6");
-    cModule *ip = SS->submodule(buf);
-    sendDirect(x, 0.0, ip, "eventIn");
-#endif
 }
 
 

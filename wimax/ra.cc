@@ -12,7 +12,9 @@
 #include <string>
 #include "ra.h"
 #include "ipv6msg_m.h"
+#include "mih_m.h"
 #include "logger.h"
+#include "ssinfo.h"
 
 using namespace std;
 
@@ -25,17 +27,31 @@ Define_Module(RaRcv);
 void RaRcv::initialize()
 {
     RaRcvCnt = 0;
+
+    // register for MIH Events
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    if (tmp) {
+	// SS-side
+	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+	info->addEventListener(this);
+    }
+
     updateString();
 }
 
 void RaRcv::handleMessage(cMessage *msg)
 {
-    Log(Notice) << "Message " << msg->fullName() << " received." << endl;
     if (dynamic_cast<IPv6Ra*>(msg)) {
 	RaRcvCnt++;
+	ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->parentModule()->submodule("ssInfo"));
+	Log(Notice) << "Notifying other layers: IPv6 routing configured." << LogEnd;
+	info->sendEvent(new MihEvent_L3RoutingConfigured());
+
 	updateString();
-    } else {
-	opp_error("Message %s is not supposed to be received by RaRcv object.", msg->fullName());
+    } 
+    if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
+	RaRcvCnt = 0;
+	updateString();
     }
     delete msg;
 }
@@ -65,7 +81,7 @@ void RaGen::initialize()
 {
     sendTimer = new cMessage("RA Send Timer");
     RaInterval = (double)par("RaInterval");
-    Log(Notice) << "First RA to be transmitted in " << RaInterval << LogEnd;
+    Log(Notice) << "RA to be transmitted in " << RaInterval << " secs." << LogEnd;
     scheduleAt(RaInterval, sendTimer);
 }
 
@@ -84,6 +100,6 @@ void RaGen::handleMessage(cMessage *msg)
 void RaGen::sendRA() 
 {
     IPv6Ra * msg = new IPv6Ra("");
-    Log(Notice) << "Transmitting RA message." << LogEnd;
+    Log(Debug) << "Transmitting RA message." << LogEnd;
     send (msg, "raOut");
 }

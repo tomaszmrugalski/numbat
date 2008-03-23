@@ -63,6 +63,7 @@ endsimple
 simple RaRcv
     gates:
         in: raIn;
+        in: eventIn;
 endsimple
 module IPv6Server
     gates:
@@ -79,10 +80,6 @@ module IPv6Server
         DHCPv6Srv: DHCPv6Srv;
             display: "i=device/mainframe;p=64,168";
         IPv6Node: IPv6Node;
-            parameters:
-                BurstInterval = 1, // TBD
-                BurstSize = 1, // TBD
-                BurstPacketSize = 1; // TBD
             display: "i=block/rxtx;p=200,56";
     connections nocheck:
         eventIn --> IPv6Dispatch.eventIn;

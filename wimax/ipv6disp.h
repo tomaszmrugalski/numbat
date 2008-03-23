@@ -26,9 +26,6 @@ class IPv6Dispatch : public cSimpleModule
     virtual void writeStat();
     long int SentBytesPers;
     long int RcvdBytesPers;
-    cStdDev IPv6HoTime;
-    double IPv6HoStart;
-    double IPv6HoFinish;
     
  private:
     void ipv6ReconfigureStart();
@@ -36,6 +33,8 @@ class IPv6Dispatch : public cSimpleModule
 
     bool handleTraffic;     // is the L2 able to handle traffic?o
     bool routingConfigured; // is routing configured?
+    bool addrConfigured;    // is the IPv6 address assigned?
+    bool locationUpdated;   // did the node completed location update?
     cOutVector SentBytesVector;
     cOutVector RcvdBytesVector;
     cMessage * timer;

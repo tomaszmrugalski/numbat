@@ -40,9 +40,10 @@ void DHCPv6Cli::initialize()
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
 {
-    if (!strcmp(msg->fullName(),"dhcpStart")) {
+    if (dynamic_cast<MihEvent_ReentryEnd*>(msg) ||
+	dynamic_cast<MihEvent_EntryEnd*>(msg)) {
+	Log(Notice) << "Starting DHCPv6 operation." << LogEnd;
 	onEvent(EVENT_START, msg);
-	delete msg;
 	stringUpdate();
 	return;
     }
@@ -62,13 +63,6 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 	onEvent(EVENT_TIMER, msg);
 	stringUpdate();
 	return;
-    }
-
-    cGate * gate = msg->arrivalGate();
-    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
-	Log(Info) << "MIH Event message received." << LogEnd;
-    } else {
-	opp_error("Unknown message type received %s in DHCPv6Cli", msg->fullName());
     }
 
     delete msg;
@@ -294,7 +288,6 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
     }
 }
 
-
 // state send Confirm
 FsmStateType DHCPv6Cli::onEnterState_SendConfirm(Fsm * fsm)
 {
@@ -306,6 +299,17 @@ FsmStateType DHCPv6Cli::onEnterState_SendConfirm(Fsm * fsm)
 FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 {
     SLog(fsm, Info) << "DHCPv6 configuration complete." << LogEnd;
+
+    ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
+    SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained." << LogEnd;
+    info->sendEvent(new MihEvent_L3AddrConfigured());
+
+    if (info->hoInfo.dhcp.addrParams) {
+	ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
+	SLog(fsm, Notice) << "Notifying other layers: IPv6 routing configured (addrParams used)." << LogEnd;
+	info->sendEvent(new MihEvent_L3RoutingConfigured());
+    }
+
     return fsm->State();
 }
 

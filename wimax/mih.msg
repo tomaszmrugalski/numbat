@@ -38,3 +38,20 @@ message MihEvent_ReentryEnd
 {
 
 };
+
+// used to report that IPv6 address has been obtained
+message MihEvent_L3AddrConfigured
+{
+
+};
+
+message MihEvent_L3RoutingConfigured
+{
+
+};
+
+// support for this is not implemented yet
+message MihEvent_L3LocationUpdated
+{
+
+};
