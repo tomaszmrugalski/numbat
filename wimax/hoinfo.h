@@ -51,10 +51,11 @@ typedef struct {
 /* handover related parameters on DHCPv6 layer */
 typedef struct {
     bool skipInitialDelay; /* delay 0..1s */
-    bool pref255; /* set preference to 255 */
-    bool rapidCommit; /* use rapid-commit option */
-    bool sendConfirm; /* use CONFIRM instead of SOLICIT */
-    bool addrParams;  /* should addr-params extension be used? */
+    bool pref255;          /* set preference to 255 */
+    bool rapidCommit;      /* use rapid-commit option */
+    bool sendConfirm;      /* use CONFIRM instead of SOLICIT */
+    bool addrParams;       /* should addr-params extension be used? */
+    bool remoteAutoconf;   /* should Remote autoconf be used? */
 
     DhcpDadType DadType;
 } HoDHCPv6_t;

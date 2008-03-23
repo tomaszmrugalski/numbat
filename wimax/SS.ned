@@ -32,6 +32,7 @@ module SS //
         dhcpSkipInitialDelay: numeric,
         dhcpPref255: numeric,
         dhcpRapidCommit: numeric,
+	dhcpRemoteAutoconf: numeric,
         SStrace_centerx: numeric,
         SStrace_centery: numeric,
         SStrace_radius: numeric,

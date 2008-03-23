@@ -45,9 +45,15 @@ public:
     HoInfo_t hoInfo;
     void stringUpdate();
 
+    void addEventListener(cModule * module);
+    void delEventListener(cModule * module);
+    void sendEvent(cMessage * msg);
+
 protected:
     virtual void initialize();
 
+private:
+    list<cModule*> EventListenersLst;
 };
 
 ostream & operator<<(ostream & strum, SSInfo_t &ss);

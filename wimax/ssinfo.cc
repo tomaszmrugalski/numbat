@@ -52,20 +52,24 @@ void ssInfo::initialize() {
     hoInfo.isMobile = parentModule()->par("wmaxIsMobile");
     hoInfo.wmax.hoOptim = parentModule()->par("wmaxHoOptim");
 
-
     hoInfo.ip.DadType = (DhcpDadType)(int)parentModule()->par("dadType");
     hoInfo.dhcp.skipInitialDelay = parentModule()->par("dhcpSkipInitialDelay");
     hoInfo.dhcp.pref255 = parentModule()->par("dhcpPref255");
     hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
+    hoInfo.dhcp.remoteAutoconf = parentModule()->par("dhcpRemoteAutoconf");
 
     int initialBS = parentModule()->par("initialBS");
 
     stringUpdate();
-    Log(Notice) << "Creating new SS: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
+    Log(Notice) << "New SS [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
-    Log(Notice) << "New SS: " << info.getMac() << ", dadType=" << hoInfo.ip.DadType 
+    Log(Notice) << "New SS [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.ip.DadType 
 		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
-		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit << LogEnd;
+		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
+		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
+		<< LogEnd;
+
+    EventListenersLst.clear();
 }
 
 void ssInfo::stringUpdate() {
@@ -78,3 +82,36 @@ void ssInfo::stringUpdate() {
         displayString().setTagArg("t",0, (displayIt.str()).c_str());
     }
 }
+
+void ssInfo::addEventListener(cModule * addMe)
+{
+    EventListenersLst.push_back(addMe);
+}
+
+void ssInfo::delEventListener(cModule * deleteMe)
+{
+    list<cModule*>::iterator it;
+
+    for (it=EventListenersLst.begin(); it!=EventListenersLst.end(); it++) {
+	cModule * module = *it;
+	if (module==deleteMe) {
+	    EventListenersLst.erase(it);
+	    return;
+	}
+    }
+
+}
+
+void ssInfo::sendEvent(cMessage * msg)
+{
+    list<cModule*>::iterator it;
+
+    for (it=EventListenersLst.begin(); it!=EventListenersLst.end(); it++) {
+	cModule * module = *it;
+	Log(Info) << "Dispatching event " << msg->fullName() << " to module " << module->fullName() << "." << LogEnd;
+	sendDirect(msg, 0.0, module, "eventIn");
+    }
+
+    delete msg;
+}
+
