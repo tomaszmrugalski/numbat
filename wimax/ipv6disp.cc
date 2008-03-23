@@ -8,13 +8,14 @@
  * Published under GNU GPLv2 or later 
  */
 
+#include <assert.h>
 #include <omnetpp.h>
 #include <string>
 #include "ipv6disp.h"
 #include "logger.h"
 #include "hoinfo.h"
 #include "ssinfo.h"
-#include "wmaxmsg_m.h"
+#include "mih_m.h"
 #include "ipv6msg_m.h"
 
 using namespace std;
@@ -42,6 +43,19 @@ void IPv6Dispatch::initialize()
 	BS = true;
 	handleTraffic = true;
 	routingConfigured = true;
+    }
+
+
+    // register for MIH events
+    assert(parentModule());
+    assert(parentModule()->parentModule());
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    if (tmp) {
+	// SS-side
+	assert(tmp);
+	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+	assert(info);
+	info->addEventListener(this);
     }
 
     updateString();
@@ -84,56 +98,28 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
   if (dynamic_cast<MihEvent_EntryStart*>(msg) ||
       dynamic_cast<MihEvent_HandoverEnd*>(msg) ||
       dynamic_cast<MihEvent_ReentryStart*>(msg)) {
-    Log(Debug) << "MIH message received: disabling traffic." << LogEnd;
+    Log(Info) << "MIH message received: disabling traffic." << LogEnd;
     handleTraffic = false;
     if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
         IPv6HoStart = simTime();
+	return;
     }
   }
 
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_HandoverStart*>(msg) ||
       dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
-      Log(Debug) << "MIH message received: enabling traffic." << LogEnd;
+      Log(Info) << "MIH message received: enabling traffic." << LogEnd;
       handleTraffic = true;
-      
+      return;
   }
   
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+      Log(Info) << "(Re)entry finished, starting IPv6 reconfiguration." << LogEnd;
       ipv6ReconfigureStart();
+      return;
   }
-
-#if 0     
-      cModule * tmp0 = parentModule()->parentModule();
-      cModule * tmp1 = tmp0->submodule("ssInfo");
-      if (!tmp1) {
-	  opp_error("ReentryEnd received on the BS side?");
-      } 
-      ssInfo  * tmp2 = dynamic_cast<ssInfo*>(tmp1);
-      HoInfo_t * hoInfo = &tmp2->hoInfo;
-
-      double ipDelay = 1.0; 
-      if (hoInfo->ip.skipDad)
-	  ipDelay = 0;
-
-      double dhcpDelay = 0.010; /* solicit-adv/reply = ~est. 10ms */
-      if (!hoInfo->dhcp.skipInitialDelay)
-	  dhcpDelay += uniform(0, 1.0); /* 0..1 s */
-
-      if (!hoInfo->dhcp.rapidCommit) {
-
-	  if (hoInfo->dhcp.pref255) 
-	      dhcpDelay += 0.010 /* REQUEST/REPLY wait */;
-	  else
-	      dhcpDelay += 1.000 /* ADV wait */;
-      } 
-
-      cMessage * resume = new MihEvent_Resume();
-      scheduleAt(simTime() + dhcpDelay + ipDelay, resume);
-      Log(Notice) << "IPv6 layer delay: ipDelay=" << ipDelay << ", dhcpDelay=" << dhcpDelay << LogEnd;
-   }
-#endif
 
 }
 
@@ -149,9 +135,6 @@ void IPv6Dispatch::ipv6ReconfigureStart()
     handleTraffic = false;
     routingConfigured = false;
     updateString();
-
-    cMessage *dhcpStart = new cMessage("dhcpStart");
-    send(dhcpStart, "dhcpOut", 0);
 }
 
 

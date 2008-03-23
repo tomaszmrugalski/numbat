@@ -54,6 +54,7 @@ protected:
 
 private:
     list<cModule*> EventListenersLst;
+    string getMsgName(cMessage * msg);
 };
 
 ostream & operator<<(ostream & strum, SSInfo_t &ss);

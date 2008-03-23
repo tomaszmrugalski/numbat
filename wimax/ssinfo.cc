@@ -13,6 +13,7 @@
 #include <math.h>
 #include "logger.h"
 #include "ssinfo.h"
+#include "mih_m.h"
 
 using namespace std;
 
@@ -68,8 +69,6 @@ void ssInfo::initialize() {
 		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
 		<< LogEnd;
-
-    EventListenersLst.clear();
 }
 
 void ssInfo::stringUpdate() {
@@ -85,6 +84,7 @@ void ssInfo::stringUpdate() {
 
 void ssInfo::addEventListener(cModule * addMe)
 {
+    Log(Crit) << "Registering new event listener: " << addMe->fullName() << LogEnd;
     EventListenersLst.push_back(addMe);
 }
 
@@ -102,16 +102,41 @@ void ssInfo::delEventListener(cModule * deleteMe)
 
 }
 
+string ssInfo::getMsgName(cMessage * msg)
+{
+    if (dynamic_cast<MihEvent_EntryStart*>(msg))
+	return "MihEvent EntryStart";
+    if (dynamic_cast<MihEvent_EntryEnd*>(msg))
+	return "MihEvent EntryStart";
+    if (dynamic_cast<MihEvent_HandoverStart*>(msg))
+	return "MihEvent EntryStart";
+    if (dynamic_cast<MihEvent_HandoverEnd*>(msg))
+	return "MihEvent EntryStart";
+    if (dynamic_cast<MihEvent_ReentryStart*>(msg))
+	return "MihEvent EntryStart";
+    if (dynamic_cast<MihEvent_ReentryEnd*>(msg))
+	return "MihEvent EntryStart";
+
+    return "unknown event";
+}
+
 void ssInfo::sendEvent(cMessage * msg)
 {
+    Enter_Method("sendEvent()");
+    take(msg);
     list<cModule*>::iterator it;
+
+
+
+
+    Log(Info) << "Sending event " << getMsgName(msg) << " to " << EventListenersLst.size() << " listeners:";
 
     for (it=EventListenersLst.begin(); it!=EventListenersLst.end(); it++) {
 	cModule * module = *it;
-	Log(Info) << "Dispatching event " << msg->fullName() << " to module " << module->fullName() << "." << LogEnd;
-	sendDirect(msg, 0.0, module, "eventIn");
+	Log(Cont) << module->fullName() << " ";
+	sendDirect((cMessage*)msg->dup(), 0.0, module, "eventIn");
     }
-
+    Log(Cont) << "." << LogEnd;
     delete msg;
 }
 

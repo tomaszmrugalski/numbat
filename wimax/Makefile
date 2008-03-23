@@ -84,10 +84,10 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o IPv6_n.o MAC_n.o SS_n.o common_n.o physim_n.o ipv6msg_m.o wmaxmsg_m.o AirDummy.o dhcpv6.o fsm.o ipv6disp.o ipv6node.o logger.o mip6.o ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o wmaxphy.o wmaxradio.o
+OBJS= BS_n.o IPv6_n.o MAC_n.o SS_n.o common_n.o physim_n.o ipv6msg_m.o mih_m.o wmaxmsg_m.o AirDummy.o      dhcpv6.o fsm.o ipv6disp.o  ipv6node.o logger.o mip6.o  ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
-GENERATEDHEADERS= ipv6msg_m.h wmaxmsg_m.h
+GENERATEDHEADERS= ipv6msg_m.h mih_m.h wmaxmsg_m.h
 
 #------------------------------------------------------------------------------
 
@@ -146,6 +146,12 @@ ipv6msg_m.o: ipv6msg_m.cc
 
 ipv6msg_m.cc ipv6msg_m.h: ipv6msg.msg
 	$(MSGC) $(MSGCOPTS) ipv6msg.msg
+
+mih_m.o: mih_m.cc
+	$(CXX) -c $(NEDCOPTS) mih_m.cc
+
+mih_m.cc mih_m.h: mih.msg
+	$(MSGC) $(MSGCOPTS) mih.msg
 
 wmaxmsg_m.o: wmaxmsg_m.cc
 	$(CXX) -c $(NEDCOPTS) wmaxmsg_m.cc

@@ -11,8 +11,9 @@
 
 #include <omnetpp.h>
 #include "wmaxphy.h"
-#include "wmaxmsg_m.h"
+#include "mih_m.h"
 #include "logger.h"
+#include "ssinfo.h"
 
 /********************************************************************************/
 /*** WMax PHY BS ****************************************************************/
@@ -128,13 +129,10 @@ void WMaxPhySS::beginFrame()
         send(msg, "rfOut");
 
         if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
-            Log(Notice) << "HO-IND was actually transmitted." << LogEnd;
-            cModule * ss = parentModule();
-            char buf[80];
-            sprintf(buf, "WMaxCtrlSS[%d]", ss->index());
-            cModule * ctrlSS = ss->submodule("ssMac")->submodule(buf);
+            Log(Notice) << "MIH event: Notifying other layers: HO-IND was actually transmitted." << LogEnd;
+	    ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->submodule("ssInfo"));
             MihEvent_HandoverEnd * x = new MihEvent_HandoverEnd();
-            sendDirect(x, 0.0, ctrlSS, "eventIn");
+            info->sendEvent(x);
         }
     }
 }

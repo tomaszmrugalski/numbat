@@ -19,6 +19,7 @@
 #include "wmaxradio.h"
 #include "wmaxmac.h"
 #include "ssinfo.h"
+#include "mih_m.h"
 
 static uint32_t transactionID = 1;
 
@@ -155,6 +156,13 @@ void WMaxCtrlSS::initialize() {
     sprintf(buf, "WMaxCtrlSS[%d]", SS->index());
     if (ev.isGUI()) 
         setName(buf);
+
+
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    if (tmp) {
+	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+	info->addEventListener(this);
+    }
 
     WATCH_PTRLIST(serviceFlows);
 }
@@ -774,11 +782,16 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
         break;
     }
 
+    ssInfo * info = dynamic_cast<ssInfo*>(SS->submodule("ssInfo"));
     Log(Notice) << "Notifying upper layer: " << str << LogEnd;
+    info->sendEvent(x);
+
+#if 0
     char buf[80];
     sprintf(buf, "ssIPv6");
     cModule *ip = SS->submodule(buf);
     sendDirect(x, 0.0, ip, "eventIn");
+#endif
 }
 
 

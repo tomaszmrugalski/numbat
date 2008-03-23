@@ -14,6 +14,7 @@
 #include "logger.h"
 #include "ssinfo.h"
 #include "ipv6msg_m.h"
+#include "mih_m.h"
 
 using namespace std;
 
@@ -27,11 +28,18 @@ Define_Module(DHCPv6Cli);
 void DHCPv6Cli::initialize()
 {
     fsmInit();
+    
+    // register for MIH Events
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    if (tmp) {
+	// SS-side
+	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+	info->addEventListener(this);
+    }
 }
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
 {
-    Log(Debug) << "Message " << msg->fullName() << " received." << endl;
     if (!strcmp(msg->fullName(),"dhcpStart")) {
 	onEvent(EVENT_START, msg);
 	delete msg;
@@ -56,7 +64,13 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 	return;
     }
 
-    opp_error("Unknown message type received %s in DHCPv6Cli", msg->fullName());
+    cGate * gate = msg->arrivalGate();
+    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
+	Log(Info) << "MIH Event message received." << LogEnd;
+    } else {
+	opp_error("Unknown message type received %s in DHCPv6Cli", msg->fullName());
+    }
+
     delete msg;
 }
 

@@ -24,6 +24,7 @@ simple DHCPv6Cli
     gates:
         out: dhcpOut;
         in: dhcpIn;
+        in: eventIn;
 endsimple
 //Mobile IPv6 Mobile Node
 simple MobIPv6mn
@@ -101,7 +102,6 @@ module IPv6Client
     gates:
         in: ipIn;
         out: ipOut;
-        in: eventIn;
     submodules:
         IPv6Node: IPv6Node;
             display: "i=block/rxtx;p=184,72";
@@ -115,7 +115,6 @@ module IPv6Client
             parameters:
             display: "i=block/sink;p=424,144";
     connections nocheck:
-        eventIn --> IPv6Dispatch.eventIn;
         mobIPv6mn.mipOut --> IPv6Dispatch.mipIn;
         IPv6Dispatch.mipOut --> mobIPv6mn.mipIn;
         IPv6Dispatch.raOut --> raRcv.raIn;

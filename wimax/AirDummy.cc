@@ -21,6 +21,7 @@ void AirDummy::initialize()
 	opp_error("Invalid LogLevel: %d. Accepted values: 1..8\n", logLevel);
     logger::setLogLevel(logLevel);
     Log(Crit) << "LogLevel has been set to " << logLevel << "." << LogEnd;
+    logger::setEv(&ev);
 }
 
 void AirDummy::handleMessage(cMessage *msg)
