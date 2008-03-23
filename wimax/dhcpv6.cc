@@ -156,13 +156,33 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
     DHCPv6Solicit * sol = new DHCPv6Solicit();
     sol->setAddrParams(info->hoInfo.dhcp.addrParams);
 
+    string x;
+
     if (info->hoInfo.dhcp.rapidCommit) {
-	SLog(fsm, Info) << "Sending SOLICIT (with rapid-commit)." << LogEnd;
+	x = "with rapid-commit,";
 	sol->setRapidCommit(true);
     } else {
-	SLog(fsm, Info) << "Sending SOLICIT (without rapid-commit)." << LogEnd;
+	x= " without rapid-commit,";
 	sol->setRapidCommit(false);
     }
+
+    if (info->hoInfo.dhcp.addrParams) {
+	x += "with addr-params,";
+	sol->setAddrParams(true);
+    } else {
+	x += "without addr-params,";
+	sol->setAddrParams(false);
+    }
+
+    if (info->hoInfo.dhcp.remoteAutoconf) {
+	x += " via relays (remote autoconf)";
+	sol->setRemoteConf(true);
+    } else {
+	x += " (without remote autoconf)";
+	sol->setRemoteConf(false);
+    }
+    
+    SLog(fsm, Info) << "Sending SOLICIT " << x << LogEnd;
 
     fsm->send(sol, "dhcpOut", 0);
     return fsm->State();
@@ -220,7 +240,9 @@ FsmStateType DHCPv6Cli::onEnterState_SendRequest(Fsm * fsm)
 {
     ssInfo * info = ssInfoGet(fsm);
     DHCPv6Request * req = new DHCPv6Request();
+
     req->setAddrParams(info->hoInfo.dhcp.addrParams);
+    req->setRemoteConf(info->hoInfo.dhcp.remoteAutoconf);
 
     SLog(fsm, Info) << "Sending REQUEST." << LogEnd;
     fsm->send(req, "dhcpOut", 0);
@@ -338,7 +360,7 @@ void DHCPv6Srv::initialize()
 {
 }
 
-double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName)
+double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
 {
     double delay = 0;
     if (strlen(paramName)) {
@@ -355,17 +377,26 @@ double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName)
     Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
 	       << "msecs." << LogEnd;
 
-    sendDelayed(msg, delay, "dhcpOut");
+    sendDelayed(msg, delay+extraDelay, "dhcpOut");
 
-    return delay;
+    return delay+extraDelay;
 }
 
-void DHCPv6Srv::sendReply(string x, bool addrParams)
+void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays)
 {
     DHCPv6Reply * reply = new DHCPv6Reply();
     reply->setAddrParams(addrParams);
-    Log(Info) << x << "sending REPLY" << LogEnd;
-    sendMsg(reply, "DelayReply");
+    double extraDelay = 0.0;
+    if (viaRelays) {
+	double min = (double)par("MinDelayRelay");
+	double max = (double)par("MaxDelayRelay");
+	extraDelay = uniform(min, max);
+	Log(Info) << x << " relays will be used (extra " << extraDelay << "secs delay), sending REPLY." << LogEnd;
+    } else {
+	Log(Info) << x << "sending REPLY." << LogEnd;
+    }
+
+    sendMsg(reply, "DelayReply", extraDelay);
 }
 
 void DHCPv6Srv::handleMessage(cMessage *msg)
@@ -373,16 +404,27 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
     if (dynamic_cast<DHCPv6Solicit*>(msg)) {
 	DHCPv6Solicit * sol = dynamic_cast<DHCPv6Solicit*>(msg);
 	if (sol->getRapidCommit()) {
-	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams());
+	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams(), sol->getRemoteConf() );
 	    delete msg;
 	    return;
 	} else {
 	    DHCPv6Advertise * adv = new DHCPv6Advertise();
 	    int pref = par("preference");
+	    double extraDelay = 0.0;
+
 	    adv->setPreference(pref);
 	    adv->setAddrParams(sol->getAddrParams());
-	    Log(Info) << "SOLICIT received, sending ADVERTISE (preference=" << pref << ")." << LogEnd;
-	    sendMsg(adv, "DelayAdvertise");
+	    Log(Info) << "SOLICIT received,";
+	    if (sol->getRemoteConf())
+	    {
+		double min = (double)par("MinDelayRelay");
+		double max = (double)par("MaxDelayRelay");
+		extraDelay = uniform(min, max);
+		Log(Cont) << " relays will be used (extra " << extraDelay << "secs delay),";
+	    }
+	    Log(Cont) << " sending ADVERTISE (preference=" << pref << ")." << LogEnd;
+
+	    sendMsg(adv, "DelayAdvertise", extraDelay);
 	    delete msg;
 	    return;
 	}
@@ -390,14 +432,14 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 
     if (dynamic_cast<DHCPv6Request*>(msg)) {
 	DHCPv6Request * req = dynamic_cast<DHCPv6Request*>(msg);
-	sendReply("REQUEST received,", req->getAddrParams());
+	sendReply("REQUEST received,", req->getAddrParams(), req->getRemoteConf());
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<DHCPv6Confirm*>(msg)) {
 	DHCPv6Confirm * conf = dynamic_cast<DHCPv6Confirm*>(msg);
-	sendReply("CONFIRM received,", conf->getAddrParams());
+	sendReply("CONFIRM received,", conf->getAddrParams(), conf->getRemoteConf());
 	delete msg;
 	return;
     }

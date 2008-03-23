@@ -20,6 +20,8 @@ message DHCPv6Solicit
 fields:
     bool rapidCommit;
     bool addrParams;
+
+    bool remoteConf;
 };
 
 message DHCPv6Advertise
@@ -27,23 +29,31 @@ message DHCPv6Advertise
 fields:
     int preference;
     bool addrParams;
+
+    bool remoteConf;
 };
 
 message DHCPv6Request
 {
 fields:
     bool addrParams;
+
+    bool remoteConf;
 };
 
 message DHCPv6Reply
 {
 fields:
     bool addrParams;
+
+    bool remoteConf;
 };
 
 message DHCPv6Confirm
 {
 fields:
     bool addrParams;
+
+    bool remoteConf;
 };
 

@@ -15,7 +15,9 @@ simple DHCPv6Srv
         MaxDelayAdvertise: numeric,
         MinDelayReply: numeric,
         MaxDelayReply: numeric,
-        preference: numeric;
+        preference: numeric,
+        MinDelayRelay: numeric,
+        MaxDelayRelay: numeric;
     gates:
         out: dhcpOut;
         in: dhcpIn;

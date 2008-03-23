@@ -89,8 +89,8 @@ class DHCPv6Srv : public cSimpleModule
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
  private:
-    double sendMsg(cMessage * msg, char * paramName);
-    void   sendReply(string x, bool addrParams);
+    double sendMsg(cMessage * msg, char * paramName, double extraDelay=0.0);
+    void   sendReply(string x, bool addrParams, bool viaRelays);
 };
 
 

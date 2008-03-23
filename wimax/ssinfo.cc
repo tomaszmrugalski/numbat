@@ -84,7 +84,7 @@ void ssInfo::stringUpdate() {
 
 void ssInfo::addEventListener(cModule * addMe)
 {
-    Log(Crit) << "Registering new event listener: " << addMe->fullName() << LogEnd;
+    Log(Debug) << "Registering new event listener: " << addMe->fullName() << LogEnd;
     EventListenersLst.push_back(addMe);
 }
 
