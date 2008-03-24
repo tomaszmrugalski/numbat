@@ -78,8 +78,18 @@ class DHCPv6Cli : public Fsm
     void stopTimer();
     static ssInfo * ssInfoGet(Fsm * fsm);
 
+    bool PurposeNextLocation; // are we going to obtain address for next location?
+    bool GotAddrForNextLocation; // did we complete remote autoconf already?
+
     TIMER_DEF(Delay);
 
+    // --- STATS ---
+    simtime_t  DhcpStartTime;
+    int        DhcpErrorCnt;
+    int        DhcpCompleteCnt; // number of successful leases (counter)
+    cOutVector DhcpErrors;   // how many errors encountered?
+    cOutVector DhcpComplete; // number of successful address leases (vector)
+    cOutVector DhcpDuration; // configuration time
 };
 
 class DHCPv6Srv : public cSimpleModule

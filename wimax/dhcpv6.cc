@@ -28,25 +28,56 @@ Define_Module(DHCPv6Cli);
 void DHCPv6Cli::initialize()
 {
     fsmInit();
-    
+
+    // name vectors properly
+    cModule * ss = parentModule()->parentModule();
+    string x;
+    x = ss->fullName() + string(" DHCP errors");
+    DhcpErrors.setName(x.c_str());
+
+    x = ss->fullName() + string(" DHCP conf. complete");
+    DhcpComplete.setName(x.c_str());
+
+    x = ss->fullName() + string(" DHCP conf. time");
+    DhcpDuration.setName(x.c_str());
+
     // register for MIH Events
     cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
-    if (tmp) {
-	// SS-side
-	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
-	info->addEventListener(this);
-    }
+    ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+    info->addEventListener(this);
+
+    PurposeNextLocation = false;
 }
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
 {
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+
     if (dynamic_cast<MihEvent_ReentryEnd*>(msg) ||
 	dynamic_cast<MihEvent_EntryEnd*>(msg)) {
 	Log(Notice) << "Starting DHCPv6 operation." << LogEnd;
 	onEvent(EVENT_START, msg);
+	DhcpStartTime = simTime();
 	stringUpdate();
 	return;
     }
+
+    if (dynamic_cast<MihEvent_HandoverStart*>(msg)) 
+    {
+	Log(Debug) << "#### triggering next location DHCP procedure." << LogEnd;
+	if (info->hoInfo.dhcp.remoteAutoconf) {
+	    Log(Debug) << "#### remoteAutoconf is true: State()=" << State() << ", CurrentState=" << this->CurrentState << ", CONIFGURED=" << DHCPv6Cli::STATE_CONFIGURED << LogEnd;
+	    if ( this->CurrentState == DHCPv6Cli::STATE_CONFIGURED) {
+		Log(Notice) << "#### Handover initiated:Starting remote autoconf." << LogEnd;
+		PurposeNextLocation = true;
+
+		DhcpStartTime = simTime();
+		onEvent(EVENT_START, msg);
+	    }
+	}
+    }
+
     if (dynamic_cast<DHCPv6Advertise*>(msg)) {
 	onEvent(EVENT_ADVERTISE_RECEIVED, msg);
 	delete msg;
@@ -152,6 +183,14 @@ FsmStateType DHCPv6Cli::onEventState_Idle(Fsm * fsm, FsmEventType e, cMessage * 
 // state send solicit
 FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
 {
+    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
+
+    if (cli->GotAddrForNextLocation) {
+	SLog(fsm, Notice) << "Already got address for this location (remote autoconf used)." << LogEnd;
+	cli->GotAddrForNextLocation = false;
+	return DHCPv6Cli::STATE_CONFIGURED;
+    }
+
     ssInfo * info = ssInfoGet(fsm);
     DHCPv6Solicit * sol = new DHCPv6Solicit();
     sol->setAddrParams(info->hoInfo.dhcp.addrParams);
@@ -174,7 +213,7 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
 	sol->setAddrParams(false);
     }
 
-    if (info->hoInfo.dhcp.remoteAutoconf) {
+    if (info->hoInfo.dhcp.remoteAutoconf && cli->PurposeNextLocation) {
 	x += " via relays (remote autoconf)";
 	sol->setRemoteConf(true);
     } else {
@@ -185,6 +224,10 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
     SLog(fsm, Info) << "Sending SOLICIT " << x << LogEnd;
 
     fsm->send(sol, "dhcpOut", 0);
+
+    if (info->hoInfo.dhcp.rapidCommit) {
+	return STATE_WAIT_REPLY;
+    }
     return fsm->State();
 }
 
@@ -212,6 +255,14 @@ FsmStateType DHCPv6Cli::onEventState_WaitForAdvertise(Fsm * fsm, FsmEventType e,
 	    SLog(fsm, Warning) << "Timeout reached, but no ADVERTISE received, retransmitting SOLICIT" << LogEnd;
 	    return STATE_SEND_SOLICIT;
 	}
+    }
+    case EVENT_START:
+    {
+	SLog(fsm, Warning) << "Current operation aborted. Restarting operation." << LogEnd;
+	cli->DhcpErrorCnt++;
+	cli->DhcpErrors.record(cli->DhcpErrorCnt);
+	return STATE_SEND_SOLICIT;
+
     }
     case EVENT_ADVERTISE_RECEIVED:
     {
@@ -255,6 +306,14 @@ FsmStateType DHCPv6Cli::onEventState_WaitForReply(Fsm * fsm, FsmEventType e, cMe
 {
 
     switch (e) {
+    case EVENT_START:
+    {
+	DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
+	SLog(fsm, Warning) << "Current operation aborted. Restarting operation." << LogEnd;
+	cli->DhcpErrorCnt++;
+	cli->DhcpErrors.record(cli->DhcpErrorCnt);
+	return STATE_SEND_SOLICIT;
+    }
     case EVENT_REPLY_RECEIVED:
     {
 	return STATE_PERFORMING_DAD;
@@ -301,6 +360,14 @@ FsmStateType DHCPv6Cli::onEnterState_PerformingDad(Fsm * fsm)
 FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cMessage * msg)
 {
     switch (e) {
+    case EVENT_START:
+    {
+	DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
+	SLog(fsm, Warning) << "Current operation aborted. Restarting operation." << LogEnd;
+	cli->DhcpErrorCnt++;
+	cli->DhcpErrors.record(cli->DhcpErrorCnt);
+	return STATE_SEND_SOLICIT;
+    }
     case EVENT_TIMER:
     {
 	SLog(fsm, Info) << "DAD complete." << LogEnd;
@@ -320,7 +387,20 @@ FsmStateType DHCPv6Cli::onEnterState_SendConfirm(Fsm * fsm)
 // state configured
 FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 {
-    SLog(fsm, Info) << "DHCPv6 configuration complete." << LogEnd;
+    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
+
+    simtime_t length = cli->simTime() - cli->DhcpStartTime;
+    cli->DhcpDuration.record(length);
+    cli->DhcpCompleteCnt++;
+    cli->DhcpComplete.record(cli->DhcpCompleteCnt);
+
+    SLog(fsm, Info) << "DHCPv6 configuration complete (configuration took " << length << " secs).";
+
+    if (cli->PurposeNextLocation) {
+	SLog(fsm, Cont) << "(remote autoconf: address will be used after handover)." << LogEnd;
+	cli->GotAddrForNextLocation = true;
+    }
+    SLog(fsm, Cont) << LogEnd;
 
     ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
     SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained." << LogEnd;

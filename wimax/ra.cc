@@ -42,11 +42,13 @@ void RaRcv::initialize()
 void RaRcv::handleMessage(cMessage *msg)
 {
     if (dynamic_cast<IPv6Ra*>(msg)) {
+	if (!RaRcvCnt) {
+	    ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->parentModule()->submodule("ssInfo"));
+	    Log(Notice) << "Notifying other layers: IPv6 routing configured." << LogEnd;
+	    info->sendEvent(new MihEvent_L3RoutingConfigured());
+	}
+	
 	RaRcvCnt++;
-	ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->parentModule()->submodule("ssInfo"));
-	Log(Notice) << "Notifying other layers: IPv6 routing configured." << LogEnd;
-	info->sendEvent(new MihEvent_L3RoutingConfigured());
-
 	updateString();
     } 
     if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {

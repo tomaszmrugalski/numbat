@@ -92,44 +92,57 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 
 void IPv6Dispatch::handleMihMessage(cMessage *msg)
 {
-  if (dynamic_cast<MihEvent_EntryStart*>(msg) ||
-      dynamic_cast<MihEvent_HandoverEnd*>(msg) ||
-      dynamic_cast<MihEvent_ReentryStart*>(msg)) {
-    Log(Info) << "MIH message received: disabling traffic." << LogEnd;
-    handleTraffic = false;
-  }
+    bool changed = false;
+    
+    if (dynamic_cast<MihEvent_EntryStart*>(msg) ||
+	dynamic_cast<MihEvent_HandoverEnd*>(msg) ||
+	dynamic_cast<MihEvent_ReentryStart*>(msg)) {
+	Log(Info) << "MIH L2 message received: disabling traffic." << LogEnd;
+	handleTraffic = false;
+	
+	changed = true;
+    }
+    
+    if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
+	dynamic_cast<MihEvent_HandoverStart*>(msg) ||
+	dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+	Log(Info) << "MIH L2 message received: enabling traffic." << LogEnd;
+	handleTraffic = true;
 
-  if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
-      dynamic_cast<MihEvent_HandoverStart*>(msg) ||
-      dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
-      Log(Info) << "MIH message received: enabling traffic." << LogEnd;
-      handleTraffic = true;
-      updateString();
-  }
+	changed = true;
+    }
   
   if (dynamic_cast<MihEvent_EntryEnd*>(msg) ||
       dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
       Log(Info) << "(Re)entry finished, starting IPv6 reconfiguration." << LogEnd;
       routingConfigured = false;
-      addrConfigured = false;
-      locationUpdated = false;
-      updateString();
+      addrConfigured    = false;
+      locationUpdated   = false;
+
+      changed = true;
   }
 
-    if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg)) {
-	addrConfigured = true;
-	updateString();
-    }
+  if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg)) {
+      addrConfigured = true;
 
-    if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg)) {
-	routingConfigured = true;
-	updateString();
-    }
+      changed = true;
+  }
+  
+  if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg)) {
+      routingConfigured = true;
 
-    if (dynamic_cast<MihEvent_L3LocationUpdated*>(msg)) {
-	locationUpdated = true;
-	updateString();
-    }
+      changed = true;
+  }
+  
+  if (dynamic_cast<MihEvent_L3LocationUpdated*>(msg)) {
+      locationUpdated = true;
+      
+      changed = true;
+  }
+
+  if (changed) {
+      updateString();
+  }
 }
 
 void IPv6Dispatch::updateString()
