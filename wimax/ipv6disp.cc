@@ -154,6 +154,8 @@ void IPv6Dispatch::updateString()
 	  locationUpdated?"loc upd":"no loc upd");
   if (ev.isGUI())
     displayString().setTagArg("t", 0, buf);
+
+  // displayString().setTagArg("i",1,"yellow");
 }
 
 void IPv6Dispatch::handleMessage(cMessage *msg)
