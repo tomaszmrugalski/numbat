@@ -1,15 +1,14 @@
 cplusplus {{
-
-// #include "ipv6msg.h"
-
+#include "ipv6.h"
 }};
 
+struct IPv6Addr;
 
 message IPv6
 {
 fields:
-  int srcIP;
-  int dstIP;
+  IPv6Addr srcIP;
+  IPv6Addr dstIP;
 };
 
 message IPv6Ra

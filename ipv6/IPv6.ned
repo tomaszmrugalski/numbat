@@ -31,8 +31,9 @@ endsimple
 //Mobile IPv6 Mobile Node
 simple MobIPv6mn
     parameters:
-        myIP: numeric,
-        corrIP: numeric;
+        myIP: string,
+        corrIP: string,
+        prefix: string;
     gates:
         out: upperOut;
         in: upperIn;
@@ -132,8 +133,9 @@ module IPv6Client
 endmodule
 simple MobIPv6cn
     parameters:
-        myIP: numeric,
-        corrIP: numeric;
+        myIP: string,
+        corrIP: string,
+        prefix: string;
     gates:
         in: lowerIn;
         out: lowerOut;

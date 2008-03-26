@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o   Internet.o fsm.o ipv6node.o logger.o mip6.o
+OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o   Internet.o fsm.o ipv6.o  ipv6node.o logger.o mip6.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= ipv6msg_m.h
@@ -128,6 +128,9 @@ Internet.o: Internet.cc
 
 fsm.o: fsm.cc
 	$(CXX) -c $(COPTS) fsm.cc
+
+ipv6.o: ipv6.cc
+	$(CXX) -c $(COPTS) ipv6.cc
 
 ipv6node.o: ipv6node.cc
 	$(CXX) -c $(COPTS) ipv6node.cc

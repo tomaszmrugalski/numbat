@@ -13,6 +13,7 @@
 #include "mip6.h"
 #include "logger.h"
 #include "ipv6msg_m.h"
+#include "ipv6.h"
 
 using namespace std;
 
@@ -44,12 +45,19 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 	// downlink (sending data)
 	IPv6 * ip = new IPv6("");
 	ip->encapsulate(msg);
-	ip->setSrcIP( (int)par("myIP") );
-	ip->setDstIP( (int)par("corrIP") );
+
+	IPv6Addr * addr = new IPv6Addr(par("myIP").stringValue(), true);
+	ip->setSrcIP( *addr );
+	delete addr;
+
+	addr = new IPv6Addr(par("corrIP").stringValue(), true);
+	ip->setDstIP( *addr );
+	delete addr;
+
 	outGate = "lowerOut";
 	send(ip, "lowerOut", 0);
     }
-    Log(Crit) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
+    Log(Info) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
 }
 
 void MobIPv6mn::fsmInit() 
@@ -83,12 +91,23 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	// downlink (sending data)
 	IPv6 * ip = new IPv6("");
 	ip->encapsulate(msg);
-	ip->setSrcIP( (int)par("myIP") );
-	ip->setDstIP( (int)par("corrIP") );
+
+	IPv6Addr * addr1 = new IPv6Addr(par("myIP").stringValue(), true);
+	ip->setSrcIP( *addr1 );
+
+	IPv6Addr * addr2 = new IPv6Addr(par("corrIP").stringValue(), true);
+	ip->setDstIP( *addr2 );
+
+	Log(Info) << "Transmitting msg: src=" << addr1->plain() << " -> "
+		  << addr2->plain() << LogEnd;
+
+	delete addr1;
+	delete addr2;
+
 	outGate = "lowerOut";
 	send(ip, "lowerOut", 0);
     }
-    Log(Crit) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
+    Log(Info) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
 }
 
 
