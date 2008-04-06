@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o dhcpv6.o ipv6disp.o ra.o wmaxctrl.o wmaxmac.o wmaxmaccs.o wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o     ra.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -149,12 +149,6 @@ wmaxmsg_m.o: wmaxmsg_m.cc
 wmaxmsg_m.cc wmaxmsg_m.h: wmaxmsg.msg
 	$(MSGC) $(MSGCOPTS) wmaxmsg.msg
 
-dhcpv6.o: dhcpv6.cc
-	$(CXX) -c $(COPTS) dhcpv6.cc
-
-ipv6disp.o: ipv6disp.cc
-	$(CXX) -c $(COPTS) ipv6disp.cc
-
 ra.o: ra.cc
 	$(CXX) -c $(COPTS) ra.cc
 
@@ -212,47 +206,51 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-dhcpv6.o: dhcpv6.cc \
-  dhcpv6.h \
-  ../util/logger.h \
-  ../util/ssinfo.h \
-  ../util/ipv6.h \
-  ../util/fsm.h \
-  ../util/hoinfo.h
-ipv6disp.o: ipv6disp.cc \
-  ipv6disp.h \
-  ../util/logger.h \
-  ../util/hoinfo.h \
-  ../util/ssinfo.h
+BS_n.o: BS_n.cc
+common_n.o: common_n.cc
+MAC_n.o: MAC_n.cc
+physim_n.o: physim_n.cc
 ra.o: ra.cc \
   ra.h \
   ../util/logger.h \
   ../util/ssinfo.h \
   ../util/fsm.h \
   ../util/hoinfo.h
+SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
+  wmaxmsg_m.h \
   ../util/logger.h \
   ../util/hoinfo.h \
   wmaxradio.h \
   wmaxmac.h \
   ../util/ssinfo.h \
-  ../util/fsm.h
+  ../util/fsm.h \
+  wmaxmsg.h
 wmaxmac.o: wmaxmac.cc \
   wmaxmac.h \
+  wmaxmsg_m.h \
   wmaxctrl.h \
   ../util/logger.h \
+  wmaxmsg.h \
   ../util/fsm.h \
   ../util/hoinfo.h \
   ../util/ssinfo.h
 wmaxmaccs.o: wmaxmaccs.cc \
   wmaxmaccs.h \
   wmaxmac.h \
-  ../util/logger.h
+  ../util/logger.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+wmaxmsg_m.o: wmaxmsg_m.cc \
+  wmaxmsg_m.h \
+  wmaxmsg.h
 wmaxphy.o: wmaxphy.cc \
   wmaxphy.h \
   ../util/logger.h \
   ../util/ssinfo.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h \
   ../util/hoinfo.h
 wmaxradio.o: wmaxradio.cc \
   wmaxradio.h \

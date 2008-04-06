@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS=  mih_m.o fsm.o ipv6.o logger.o ssinfo.o
+OBJS=  mih_m.o fsm.o ipv6.o logger.o  ssinfo.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= mih_m.h
@@ -170,7 +170,12 @@ ipv6.o: ipv6.cc \
   ipv6.h
 logger.o: logger.cc \
   logger.h
+mih_m.o: mih_m.cc \
+  mih_m.h \
+  ipv6.h
 ssinfo.o: ssinfo.cc \
   logger.h \
   ssinfo.h \
-  hoinfo.h
+  mih_m.h \
+  hoinfo.h \
+  ipv6.h
