@@ -1,0 +1,19 @@
+#!/bin/bash
+
+### util/ ###
+cd util
+# -n no-linking
+opp_makemake -f -n
+make clean
+cd ..
+
+### ipv6/ ###
+cd ipv6
+opp_makemake -w -f -I../util
+make clean
+cd ..
+
+### wimax/ ###
+cd wimax
+opp_makemake -w -f -I../util -I../ipv6
+cd ..
