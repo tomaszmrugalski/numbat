@@ -45,7 +45,7 @@ typedef struct {
 
 /* handover related parameters on IPv6 layer */
 typedef struct {
-    DhcpDadType DadType;
+    int tbd;
 } HoIPv6_t;
 
 /* handover related parameters on DHCPv6 layer */

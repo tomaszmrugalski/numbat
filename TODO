@@ -5,17 +5,12 @@
 
  TODO
 ------
-- classic MIPv6
-- DHCPv6: Remote autoconf usage. Address lease procedure works properly, but timing is incorrect: 
-  it is executed in a wrong moment.
-
- Implemented/Not tested
-------------------------
-- UGS throughput is now defined by MSR (in bits per second).
+- DHCPv6: Remote autoconf should use core network, not simulated delay.
+- Add delay in CN for processing BindingUpdate
+- Add delay in Internet
 
  BUGS
 ------
-
 
  VECTORS
 ---------

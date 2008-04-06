@@ -9,6 +9,9 @@ message IPv6
 fields:
   IPv6Addr srcIP;
   IPv6Addr dstIP;
+
+  bool BindingUpdate;
+  bool BindingAck;
 };
 
 message IPv6Ra

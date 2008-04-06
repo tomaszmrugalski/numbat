@@ -47,6 +47,7 @@ void DHCPv6Cli::initialize()
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
     info->addEventListener(this);
 
+    GotAddrForNextLocation = false;
     PurposeNextLocation = false;
 }
 

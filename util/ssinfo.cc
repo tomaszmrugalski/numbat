@@ -53,7 +53,7 @@ void ssInfo::initialize() {
     hoInfo.isMobile = parentModule()->par("wmaxIsMobile");
     hoInfo.wmax.hoOptim = parentModule()->par("wmaxHoOptim");
 
-    hoInfo.ip.DadType = (DhcpDadType)(int)parentModule()->par("dadType");
+    hoInfo.dhcp.DadType = (DhcpDadType)(int)parentModule()->par("dadType");
     hoInfo.dhcp.skipInitialDelay = parentModule()->par("dhcpSkipInitialDelay");
     hoInfo.dhcp.pref255 = parentModule()->par("dhcpPref255");
     hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
@@ -64,7 +64,7 @@ void ssInfo::initialize() {
     stringUpdate();
     Log(Notice) << "New SS [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
-    Log(Notice) << "New SS [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.ip.DadType 
+    Log(Notice) << "New SS [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.dhcp.DadType 
 		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
 		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
@@ -120,6 +120,8 @@ string ssInfo::getMsgName(cMessage * msg)
 	return "MihEvent L3AddrConfigured";
     if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg))
 	return "MihEvent_L3RoutingConfigured";
+    if (dynamic_cast<MihEvent_L3LocationUpdated*>(msg))
+	return "MihEvent_L3LocationUpdated";
 
     return "unknown event";
 }
