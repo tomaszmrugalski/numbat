@@ -1,13 +1,6 @@
 import
     "IPv6";
 
-//A single switch, actually
-simple Internet
-    gates:
-        in: ipIn[];
-        out: ipOut[];
-endsimple
-
 module coreNetwork
     parameters:
         LogLevel: numeric;

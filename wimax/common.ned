@@ -3,4 +3,3 @@ simple MacDummy
         out: phyOut;
         in: phyIn;
 endsimple
-
