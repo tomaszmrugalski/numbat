@@ -19,7 +19,7 @@ module Physim
             gatesizes:
                 in[numSS],
                 out[numSS];
-            display: "i=device/antennatower_l";
+            display: "p=100,200,r,100;i=device/antennatower_l";
         SS: SS[numSS];
             display: "p=127,144;i=device/pc_s";
         CN: CorrNode[numSS];
@@ -31,6 +31,11 @@ module Physim
        for i=1..numSS do
           CN[i-1].ipOut --> internet.ipIn++;
           internet.ipOut++ --> CN[i-1].ipIn;
+       endfor;
+
+       for i=0..numBS-1 do
+       	  BS[i].networkOut --> internet.ipIn++;
+	  internet.ipOut++ --> BS[i].networkIn;
        endfor;
 
     display: "b=330,369";

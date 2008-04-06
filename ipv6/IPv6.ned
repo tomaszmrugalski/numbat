@@ -25,7 +25,8 @@ simple DHCPv6Srv
         MaxDelayReply: numeric,
         preference: numeric,
         MinDelayRelay: numeric,
-        MaxDelayRelay: numeric;
+        MaxDelayRelay: numeric,
+        prefix: string;
     gates:
         out: dhcpOut;
         in: dhcpIn;
@@ -47,12 +48,17 @@ simple MobIPv6mn
         in: upperIn;
         out: lowerOut;
         in: lowerIn;
+        in: eventIn;
 endsimple
 //Mobile IPv6 Home Agent
 simple MobIPv6ha
+    parameters:
+        prefix: string;
     gates:
         out: mipOut;
         in: mipIn;
+        out: networkOut;
+        in: networkIn;
 endsimple
 //Module used to dispatch incoming IPv6 packets to appropriate module.
 simple IPv6Dispatch
@@ -61,8 +67,6 @@ simple IPv6Dispatch
         out: ipOut;
         in: dhcpIn;
         out: dhcpOut;
-        in: mipIn;
-        out: mipOut;
         in: raIn;
         out: raOut;
         in: genIn;
@@ -81,34 +85,38 @@ simple RaRcv
         in: raIn;
         in: eventIn;
 endsimple
+
 module IPv6Server
     gates:
         in: ipIn;
         out: ipOut;
         in: eventIn;
+        in: networkIn;
+        out: networkOut;
     submodules:
         IPv6Dispatch: IPv6Dispatch;
             display: "i=abstract/dispatcher;p=264,172";
         raGen: RaGen;
-            display: "i=block/source;p=448,144";
+            display: "i=block/source;p=448,176";
         mobIPv6ha: MobIPv6ha;
-            display: "i=misc/house;p=328,56";
+            display: "i=misc/house;p=328,72";
         DHCPv6Srv: DHCPv6Srv;
-            display: "i=device/mainframe;p=64,168";
-        IPv6Node: IPv6Node;
-            display: "i=block/rxtx;p=200,56";
+            display: "i=device/mainframe;p=80,192";
     connections nocheck:
         eventIn --> IPv6Dispatch.eventIn;
         IPv6Dispatch.ipOut --> ipOut;
         ipIn --> IPv6Dispatch.ipIn;
         raGen.raOut --> IPv6Dispatch.raIn;
 
-        mobIPv6ha.mipOut --> IPv6Dispatch.mipIn;
-        IPv6Dispatch.mipOut --> mobIPv6ha.mipIn;
         DHCPv6Srv.dhcpOut --> IPv6Dispatch.dhcpIn;
         IPv6Dispatch.dhcpOut --> DHCPv6Srv.dhcpIn;
-        IPv6Node.ipOut --> IPv6Dispatch.genIn;
-        IPv6Dispatch.genOut --> IPv6Node.ipIn;
+
+
+        mobIPv6ha.mipOut --> IPv6Dispatch.genIn;
+        IPv6Dispatch.genOut --> mobIPv6ha.mipIn;
+
+        mobIPv6ha.networkOut --> networkOut;
+        networkIn --> mobIPv6ha.networkIn;
     display: "b=515,257";
 endmodule
 module IPv6Client
@@ -128,13 +136,19 @@ module IPv6Client
             parameters:
             display: "i=block/sink;p=424,144";
     connections nocheck:
-        mobIPv6mn.lowerOut --> IPv6Dispatch.mipIn;
-        IPv6Dispatch.mipOut --> mobIPv6mn.lowerIn;
+                         //         IPv6Node.ipOut --> IPv6Dispatch.genIn;
+                         //         IPv6Dispatch.genOut --> IPv6Node.ipIn;
+
+        //         mobIPv6mn.lowerOut --> IPv6Dispatch.mipIn;
+        //         IPv6Dispatch.mipOut --> mobIPv6mn.lowerIn;
+        IPv6Node.ipOut --> mobIPv6mn.upperIn;
+        mobIPv6mn.upperOut --> IPv6Node.ipIn;
+        IPv6Dispatch.genOut --> mobIPv6mn.lowerIn;
+        mobIPv6mn.lowerOut --> IPv6Dispatch.genIn;
+
         IPv6Dispatch.raOut --> raRcv.raIn;
         DHCPv6Cli.dhcpOut --> IPv6Dispatch.dhcpIn;
         IPv6Dispatch.dhcpOut --> DHCPv6Cli.dhcpIn;
-        IPv6Node.ipOut --> IPv6Dispatch.genIn;
-        IPv6Dispatch.genOut --> IPv6Node.ipIn;
         IPv6Dispatch.ipOut --> ipOut;
         ipIn --> IPv6Dispatch.ipIn;
     display: "b=477,273";

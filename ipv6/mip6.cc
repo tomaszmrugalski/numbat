@@ -14,6 +14,8 @@
 #include "logger.h"
 #include "ipv6msg_m.h"
 #include "ipv6.h"
+#include "ssinfo.h"
+#include "mih_m.h"
 
 using namespace std;
 
@@ -26,10 +28,29 @@ Define_Module(MobIPv6mn);
 
 void MobIPv6mn::initialize()
 {
+    // register for MIH Events
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+    info->addEventListener(this);
+}
+
+void MobIPv6mn::handleMihMessage(cMessage *msg)
+{
+    if (dynamic_cast<MihEvent_L3AddrConfigured *>(msg)) {
+	MihEvent_L3AddrConfigured * conf = dynamic_cast<MihEvent_L3AddrConfigured *>(msg);
+	par("myIP") = conf->getAddr().plain().c_str();
+	Log(Notice) << "Setting my IP to "<< conf->getAddr().plain() << LogEnd;
+    }
 }
 
 void MobIPv6mn::handleMessage(cMessage *msg)
 {
+    cGate * gate = msg->arrivalGate();
+    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
+        handleMihMessage(msg);
+	delete msg;
+        return;
+    }
 
     // add addressing
     cGate * inGate = msg->arrivalGate();
@@ -129,6 +150,14 @@ void MobIPv6ha::initialize()
 
 void MobIPv6ha::handleMessage(cMessage *msg)
 {
-    Log(Debug) << "Message " << msg->fullName() << " received." << LogEnd;
-    delete msg;
+    cGate *inGate = msg->arrivalGate();
+    string outGate ="";
+    if (!strcmp(inGate->fullName(), "mipIn")) {
+	outGate = "networkOut";
+    } else {
+	outGate = "mipOut";
+    }
+    Log(Debug) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " 
+	       << outGate << LogEnd;
+    send(msg, outGate.c_str(), 0);
 }

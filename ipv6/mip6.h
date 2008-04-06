@@ -22,6 +22,7 @@ class MobIPv6mn : public Fsm
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void handleMihMessage(cMessage *msg);
     void fsmInit();
  private:
 };

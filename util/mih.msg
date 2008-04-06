@@ -1,3 +1,9 @@
+cplusplus {{
+#include "ipv6.h"
+}};
+
+struct IPv6Addr;
+
 // ********************************************************************************
 // *** Media Independent Handover: messages used to notify other layers ***********
 // ********************************************************************************
@@ -42,7 +48,8 @@ message MihEvent_ReentryEnd
 // used to report that IPv6 address has been obtained
 message MihEvent_L3AddrConfigured
 {
-
+fields:
+  IPv6Addr Addr;
 };
 
 message MihEvent_L3RoutingConfigured

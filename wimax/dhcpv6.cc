@@ -15,6 +15,7 @@
 #include "ssinfo.h"
 #include "ipv6msg_m.h"
 #include "mih_m.h"
+#include "ipv6.h"
 
 using namespace std;
 
@@ -304,11 +305,11 @@ FsmStateType DHCPv6Cli::onEnterState_SendRequest(Fsm * fsm)
 // state wait for Reply
 FsmStateType DHCPv6Cli::onEventState_WaitForReply(Fsm * fsm, FsmEventType e, cMessage * msg)
 {
+    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
 
     switch (e) {
     case EVENT_START:
     {
-	DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
 	SLog(fsm, Warning) << "Current operation aborted. Restarting operation." << LogEnd;
 	cli->DhcpErrorCnt++;
 	cli->DhcpErrors.record(cli->DhcpErrorCnt);
@@ -316,6 +317,9 @@ FsmStateType DHCPv6Cli::onEventState_WaitForReply(Fsm * fsm, FsmEventType e, cMe
     }
     case EVENT_REPLY_RECEIVED:
     {
+	DHCPv6Reply * reply = dynamic_cast<DHCPv6Reply*>(msg);
+	cli->Addr = reply->getAddr();
+
 	return STATE_PERFORMING_DAD;
     }
     default:
@@ -351,7 +355,7 @@ FsmStateType DHCPv6Cli::onEnterState_PerformingDad(Fsm * fsm)
     
     cli->startTimer(del);
 
-    SLog(fsm, Info) << "REPLY received, completing " << type << " DAD in " << del << LogEnd;
+    SLog(fsm, Info) << "REPLY received, completing " << type << " DAD in " << del << ", addr=" << cli->Addr.plain() << LogEnd;
 
     return fsm->State();
 }
@@ -359,6 +363,7 @@ FsmStateType DHCPv6Cli::onEnterState_PerformingDad(Fsm * fsm)
 // state Wait for Advertise
 FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cMessage * msg)
 {
+    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
     switch (e) {
     case EVENT_START:
     {
@@ -370,7 +375,11 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
     }
     case EVENT_TIMER:
     {
-	SLog(fsm, Info) << "DAD complete." << LogEnd;
+	if (!cli->PurposeNextLocation) {
+	    SLog(fsm, Info) << "DAD complete, addr " << cli->Addr.plain() << " is ready to use in this location." << LogEnd;
+	} else {
+	    SLog(fsm, Info) << "DAD complete, addr " << cli->Addr.plain() << " will be ready for use in next location." << LogEnd;
+	}
 	return STATE_CONFIGURED;
     }
     CASE_IGNORE(fsm, e);
@@ -404,7 +413,10 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 
     ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
     SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained." << LogEnd;
-    info->sendEvent(new MihEvent_L3AddrConfigured());
+
+    MihEvent_L3AddrConfigured * confOK = new MihEvent_L3AddrConfigured();
+    confOK->setAddr(cli->Addr);
+    info->sendEvent(confOK);
 
     if (info->hoInfo.dhcp.addrParams) {
 	ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
@@ -438,6 +450,7 @@ Define_Module(DHCPv6Srv);
 
 void DHCPv6Srv::initialize()
 {
+    nextAddr=1;
 }
 
 double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
@@ -465,15 +478,22 @@ double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
 void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays)
 {
     DHCPv6Reply * reply = new DHCPv6Reply();
+    string addr = par("prefix").stringValue();
+    char buf[32];
+    sprintf(buf, "%x", ++nextAddr);
+    addr = addr + string(buf);
+    reply->setAddr(IPv6Addr(addr.c_str(), true));
+
     reply->setAddrParams(addrParams);
     double extraDelay = 0.0;
     if (viaRelays) {
 	double min = (double)par("MinDelayRelay");
 	double max = (double)par("MaxDelayRelay");
 	extraDelay = uniform(min, max);
-	Log(Info) << x << " relays will be used (extra " << extraDelay << "secs delay), sending REPLY." << LogEnd;
+	Log(Info) << x << " relays will be used (extra " << extraDelay << "secs delay), sending REPLY (addr="
+		  << addr << ")" << LogEnd;
     } else {
-	Log(Info) << x << "sending REPLY." << LogEnd;
+	Log(Info) << x << "sending REPLY (addr=" << addr << ")." << LogEnd;
     }
 
     sendMsg(reply, "DelayReply", extraDelay);

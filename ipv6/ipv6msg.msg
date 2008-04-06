@@ -51,8 +51,8 @@ fields:
 message DHCPv6Reply
 {
 fields:
+    IPv6Addr addr;
     bool addrParams;
-
     bool remoteConf;
 };
 

@@ -84,10 +84,10 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS=   fsm.o logger.o
+OBJS=  mih_m.o fsm.o ipv6.o logger.o ssinfo.o
 
 # header files generated (from msg files)
-GENERATEDHEADERS= 
+GENERATEDHEADERS= mih_m.h
 
 #------------------------------------------------------------------------------
 
@@ -107,11 +107,23 @@ purify: $(OBJS) $(EXTRA_OBJS) $(EXT_DIR_TSTAMPS) Makefile
 
 subdirs: $(SUBDIRS)
 
+mih_m.o: mih_m.cc
+	$(CXX) -c $(NEDCOPTS) mih_m.cc
+
+mih_m.cc mih_m.h: mih.msg
+	$(MSGC) $(MSGCOPTS) mih.msg
+
 fsm.o: fsm.cc
 	$(CXX) -c $(COPTS) fsm.cc
 
+ipv6.o: ipv6.cc
+	$(CXX) -c $(COPTS) ipv6.cc
+
 logger.o: logger.cc
 	$(CXX) -c $(COPTS) logger.cc
+
+ssinfo.o: ssinfo.cc
+	$(CXX) -c $(COPTS) ssinfo.cc
 
 
 #doc: neddoc doxy
@@ -151,4 +163,14 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
+fsm.o: fsm.cc \
+  fsm.h \
+  logger.h
+ipv6.o: ipv6.cc \
+  ipv6.h
+logger.o: logger.cc \
+  logger.h
+ssinfo.o: ssinfo.cc \
+  logger.h \
+  ssinfo.h \
+  hoinfo.h

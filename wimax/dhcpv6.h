@@ -15,6 +15,7 @@
 #include <omnetpp.h>
 #include "fsm.h"
 #include "ssinfo.h"
+#include "ipv6.h"
 
 class DHCPv6Cli : public Fsm
 {
@@ -81,6 +82,8 @@ class DHCPv6Cli : public Fsm
     bool PurposeNextLocation; // are we going to obtain address for next location?
     bool GotAddrForNextLocation; // did we complete remote autoconf already?
 
+    IPv6Addr Addr;
+
     TIMER_DEF(Delay);
 
     // --- STATS ---
@@ -101,6 +104,8 @@ class DHCPv6Srv : public cSimpleModule
  private:
     double sendMsg(cMessage * msg, char * paramName, double extraDelay=0.0);
     void   sendReply(string x, bool addrParams, bool viaRelays);
+
+    int nextAddr; // next host address (prefix + nextAddr) to be assigned
 };
 
 

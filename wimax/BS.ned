@@ -30,6 +30,8 @@ module BS
     gates:
         out: out[];
         in: in[];
+        in: networkIn;
+        out: networkOut;
     submodules:
         bsPhy: WMaxPhyBS;
             display: "i=abstract/accesspoint,#40e221;p=104,280;q=SendQueue";
@@ -52,8 +54,10 @@ module BS
         bsIPv6.ipOut --> bsMac.ipIn;
 
         radio.phyOut --> bsPhy.rfIn;
-        bsPhy.rfOut --> radio.phyIn; //
-                                     //
+        bsPhy.rfOut --> radio.phyIn;
+
+        bsIPv6.networkOut --> networkOut;
+        networkIn --> bsIPv6.networkIn;
     display: "b=264,328";
 endmodule
 

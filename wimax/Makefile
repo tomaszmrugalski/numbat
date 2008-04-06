@@ -84,10 +84,10 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o MAC_n.o SS_n.o common_n.o physim_n.o mih_m.o wmaxmsg_m.o     dhcpv6.o ipv6disp.o   ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o   dhcpv6.o ipv6disp.o   ra.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
-GENERATEDHEADERS= mih_m.h wmaxmsg_m.h
+GENERATEDHEADERS= wmaxmsg_m.h
 
 #------------------------------------------------------------------------------
 
@@ -119,23 +119,17 @@ BS_n.o: BS_n.cc
 BS_n.cc: BS.ned
 	$(NEDC) $(INCLUDE_PATH) BS.ned
 
-MAC_n.o: MAC_n.cc
-	$(CXX) -c $(NEDCOPTS) MAC_n.cc
-
-MAC_n.cc: MAC.ned
-	$(NEDC) $(INCLUDE_PATH) MAC.ned
-
-SS_n.o: SS_n.cc
-	$(CXX) -c $(NEDCOPTS) SS_n.cc
-
-SS_n.cc: SS.ned
-	$(NEDC) $(INCLUDE_PATH) SS.ned
-
 common_n.o: common_n.cc
 	$(CXX) -c $(NEDCOPTS) common_n.cc
 
 common_n.cc: common.ned
 	$(NEDC) $(INCLUDE_PATH) common.ned
+
+MAC_n.o: MAC_n.cc
+	$(CXX) -c $(NEDCOPTS) MAC_n.cc
+
+MAC_n.cc: MAC.ned
+	$(NEDC) $(INCLUDE_PATH) MAC.ned
 
 physim_n.o: physim_n.cc
 	$(CXX) -c $(NEDCOPTS) physim_n.cc
@@ -143,11 +137,11 @@ physim_n.o: physim_n.cc
 physim_n.cc: physim.ned
 	$(NEDC) $(INCLUDE_PATH) physim.ned
 
-mih_m.o: mih_m.cc
-	$(CXX) -c $(NEDCOPTS) mih_m.cc
+SS_n.o: SS_n.cc
+	$(CXX) -c $(NEDCOPTS) SS_n.cc
 
-mih_m.cc mih_m.h: mih.msg
-	$(MSGC) $(MSGCOPTS) mih.msg
+SS_n.cc: SS.ned
+	$(NEDC) $(INCLUDE_PATH) SS.ned
 
 wmaxmsg_m.o: wmaxmsg_m.cc
 	$(CXX) -c $(NEDCOPTS) wmaxmsg_m.cc
@@ -163,9 +157,6 @@ ipv6disp.o: ipv6disp.cc
 
 ra.o: ra.cc
 	$(CXX) -c $(COPTS) ra.cc
-
-ssinfo.o: ssinfo.cc
-	$(CXX) -c $(COPTS) ssinfo.cc
 
 wmaxctrl.o: wmaxctrl.cc
 	$(CXX) -c $(COPTS) wmaxctrl.cc
@@ -221,4 +212,65 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
+BS_n.o: BS_n.cc
+common_n.o: common_n.cc
+dhcpv6.o: dhcpv6.cc \
+  dhcpv6.h \
+  ../util/logger.h \
+  ../util/ssinfo.h \
+  ../util/ipv6.h \
+  ../util/fsm.h \
+  ../util/hoinfo.h
+ipv6disp.o: ipv6disp.cc \
+  ipv6disp.h \
+  ../util/logger.h \
+  ../util/hoinfo.h \
+  ../util/ssinfo.h
+MAC_n.o: MAC_n.cc
+physim_n.o: physim_n.cc
+ra.o: ra.cc \
+  ra.h \
+  ../util/logger.h \
+  ../util/ssinfo.h \
+  ../util/fsm.h \
+  ../util/hoinfo.h
+SS_n.o: SS_n.cc
+wmaxctrl.o: wmaxctrl.cc \
+  wmaxctrl.h \
+  wmaxmsg_m.h \
+  ../util/logger.h \
+  ../util/hoinfo.h \
+  wmaxradio.h \
+  wmaxmac.h \
+  ../util/ssinfo.h \
+  ../util/fsm.h \
+  wmaxmsg.h
+wmaxmac.o: wmaxmac.cc \
+  wmaxmac.h \
+  wmaxmsg_m.h \
+  wmaxctrl.h \
+  ../util/logger.h \
+  wmaxmsg.h \
+  ../util/fsm.h \
+  ../util/hoinfo.h \
+  ../util/ssinfo.h
+wmaxmaccs.o: wmaxmaccs.cc \
+  wmaxmaccs.h \
+  wmaxmac.h \
+  ../util/logger.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+wmaxmsg_m.o: wmaxmsg_m.cc \
+  wmaxmsg_m.h \
+  wmaxmsg.h
+wmaxphy.o: wmaxphy.cc \
+  wmaxphy.h \
+  ../util/logger.h \
+  ../util/ssinfo.h \
+  wmaxmsg_m.h \
+  wmaxmsg.h \
+  ../util/hoinfo.h
+wmaxradio.o: wmaxradio.cc \
+  wmaxradio.h \
+  ../util/logger.h \
+  ../util/fsm.h
