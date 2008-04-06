@@ -15,4 +15,8 @@
 
  [test: SVN over SSL]
 
- 
+ ------
+ To rebuild makefiles, use following 
+
+
+opp_makemake -w -f -I../util

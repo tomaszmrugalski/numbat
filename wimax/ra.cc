@@ -95,7 +95,7 @@ void RaGen::handleMessage(cMessage *msg)
 	return;
     }
 
-    Log(Debug) << "Message " << msg->fullName() << " received." << endl;
+    Log(Debug) << "Message " << msg->fullName() << " received." << LogEnd;
     delete msg;
 }
 

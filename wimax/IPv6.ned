@@ -30,9 +30,15 @@ simple DHCPv6Cli
 endsimple
 //Mobile IPv6 Mobile Node
 simple MobIPv6mn
+    parameters:
+        myIP: string,
+        corrIP: string,
+        prefix: string;
     gates:
-        out: mipOut;
-        in: mipIn;
+        out: upperOut;
+        in: upperIn;
+        out: lowerOut;
+        in: lowerIn;
 endsimple
 //Mobile IPv6 Home Agent
 simple MobIPv6ha
@@ -114,8 +120,8 @@ module IPv6Client
             parameters:
             display: "i=block/sink;p=424,144";
     connections nocheck:
-        mobIPv6mn.mipOut --> IPv6Dispatch.mipIn;
-        IPv6Dispatch.mipOut --> mobIPv6mn.mipIn;
+        mobIPv6mn.lowerOut --> IPv6Dispatch.mipIn;
+        IPv6Dispatch.mipOut --> mobIPv6mn.lowerIn;
         IPv6Dispatch.raOut --> raRcv.raIn;
         DHCPv6Cli.dhcpOut --> IPv6Dispatch.dhcpIn;
         IPv6Dispatch.dhcpOut --> DHCPv6Cli.dhcpIn;
@@ -125,4 +131,15 @@ module IPv6Client
         ipIn --> IPv6Dispatch.ipIn;
     display: "b=477,273";
 endmodule
+simple MobIPv6cn
+    parameters:
+        myIP: string,
+        corrIP: string,
+        prefix: string;
+    gates:
+        in: lowerIn;
+        out: lowerOut;
+        in: upperIn;
+        out: upperOut;
+endsimple
 
