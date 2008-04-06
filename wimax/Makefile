@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o MAC_n.o SS_n.o common_n.o physim_n.o mih_m.o wmaxmsg_m.o AirDummy.o     dhcpv6.o ipv6disp.o   ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o MAC_n.o SS_n.o common_n.o physim_n.o mih_m.o wmaxmsg_m.o     dhcpv6.o ipv6disp.o   ra.o ssinfo.o wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= mih_m.h wmaxmsg_m.h
@@ -154,9 +154,6 @@ wmaxmsg_m.o: wmaxmsg_m.cc
 
 wmaxmsg_m.cc wmaxmsg_m.h: wmaxmsg.msg
 	$(MSGC) $(MSGCOPTS) wmaxmsg.msg
-
-AirDummy.o: AirDummy.cc
-	$(CXX) -c $(COPTS) AirDummy.cc
 
 dhcpv6.o: dhcpv6.cc
 	$(CXX) -c $(COPTS) dhcpv6.cc

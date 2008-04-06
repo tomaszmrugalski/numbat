@@ -11,7 +11,13 @@ snapshot: clean
 	cd ..; tar czvf numbat-svn.tar.gz --exclude=.svn --exclude=*~ $(DIR)
 	mv ../numbat-svn.tar.gz numbat-`date +%Y%m%d`-svn.tar.gz
 
+wimax: ipv6
+	$(MAKE) -C wimax
+
+ipv6:
+	$(MAKE) -C ipv6
+
 clean:
 	cd wimax; $(MAKE) clean
 
-.PHONY: tags wimax clean
+.PHONY: tags wimax clean ipv6

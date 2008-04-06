@@ -150,24 +150,16 @@ simple MobIPv6cn
         in: upperIn;
         out: upperOut;
 endsimple
-module CN
+module CorrNode
     gates:
         in: ipIn;
         out: ipOut;
     submodules:
         IPv6Node: IPv6Node;
-            parameters:
-                BurstInterval = 1, // TBD
-                BurstSize = 1, // TBD
-                BurstPacketSize = 1; // TBD
             display: "i=block/rxtx;p=240,320";
         mobIPv6cn: MobIPv6cn;
-            parameters:
-                myIP = "", // TBD
-                corrIP = "", // TBD
-                prefix = ""; // TBD
             display: "i=block/user;p=240,184";
-    connections:
+    connections nocheck:
         IPv6Node.ipOut --> mobIPv6cn.upperIn;
         mobIPv6cn.upperOut --> IPv6Node.ipIn;
         mobIPv6cn.lowerOut --> ipOut;
