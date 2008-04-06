@@ -11,7 +11,7 @@
 #include <omnetpp.h>
 #include <string>
 #include "wmaxmaccs.h"
-#include "ipv6node.h"
+//#include "ipv6node.h"
 #include "wmaxmac.h"
 #include "logger.h"
 

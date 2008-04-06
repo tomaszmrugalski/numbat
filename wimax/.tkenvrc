@@ -46,12 +46,12 @@ config timeline-maxnumevents	{1000}
 config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
+inspector "physim.BS[0]" "BS" "2" "357x427+1026+543"
+inspector "physim.SS[0].ssMac" "ssMAC" "2" "406x397+10+398"
 inspector "physim.SS[0].ssIPv6" "IPv6Client" "2" "521x372+20+0"
+inspector "physim.SS[0]" "SS" "2" "396x395+88+575"
 inspector "physim.BS[0].bsIPv6" "IPv6Server" "2" "559x356+831+390"
 inspector "physim" "Physim" "2" "383x387+518+581"
-inspector "physim.SS[0]" "SS" "2" "396x395+88+575"
-inspector "physim.SS[0].ssMac" "ssMAC" "2" "406x397+10+398"
-inspector "physim.BS[0]" "BS" "2" "357x427+1026+543"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"
