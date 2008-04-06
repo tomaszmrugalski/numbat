@@ -41,6 +41,9 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 	if (!pkt)
 	    opp_error("Unable to decapsulate message");
 	send(pkt, "upperOut", 0);
+
+	delete msg;
+	return;
     } else {
 	// downlink (sending data)
 	IPv6 * ip = new IPv6("");
@@ -87,6 +90,8 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	if (!pkt)
 	    opp_error("Unable to decapsulate message");
 	send(pkt, "upperOut", 0);
+	delete msg;
+	return;
     } else {
 	// downlink (sending data)
 	IPv6 * ip = new IPv6("");
