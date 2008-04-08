@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <omnetpp.h>
+#include "ipv6msg_m.h"
 #include "ipv6.h"
 
 typedef struct {
@@ -17,7 +18,7 @@ class Internet: public cSimpleModule
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
  private:
-
+    double calculateDelay(IPv6 *msg);
     list<RouteEntry> RoutingTable;
 };
 

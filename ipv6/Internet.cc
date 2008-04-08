@@ -50,23 +50,35 @@ void Internet::initialize()
     WATCH_LIST(RoutingTable);
 }
 
+double Internet::calculateDelay(IPv6 *msg)
+{
+    double min = (double)par("MinDelay");
+    double max = (double)par("MaxDelay");
+
+    double delay = uniform(min, max);
+
+    return delay;
+}
+
 void Internet::handleMessage(cMessage *msg)
 {
     // message received. Let's route that.
     IPv6 * ip = check_and_cast<IPv6*>(msg);
     IPv6Addr dst = ip->getDstIP();
     
+    double delay = calculateDelay(ip);
+
     list<RouteEntry>::iterator it;
     for (it=RoutingTable.begin(); it!=RoutingTable.end(); it++) 
     {
 	if (!memcmp(dst.addr, it->prefix.addr, 8)) {
 	    Log(Debug) << "Route for dst addr=" << dst << " found: " << *it << LogEnd;
-	    send(msg, "ipOut", it->gateIndex);
+	    sendDelayed(msg, delay, "ipOut", it->gateIndex);
 	    return;
 	}
     }
     
-    Log(Error) << "Received message, but failed to find route for it." << LogEnd;
+    Log(Error) << "Received message, but failed to find route for it (dstIP=" << dst << ")." << LogEnd;
 }
 
 ostream & operator << (ostream &s, RouteEntry e)

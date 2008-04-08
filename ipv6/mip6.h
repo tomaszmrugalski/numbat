@@ -24,6 +24,7 @@ class MobIPv6mn : public Fsm
     virtual void handleMessage(cMessage *msg);
     virtual void handleMihMessage(cMessage *msg);
     virtual void handleBindingAck(cMessage *msg);
+    void updateString();
     void fsmInit();
  private:
 };
@@ -41,6 +42,7 @@ class MobIPv6cn: public cSimpleModule
 {
  public:
  protected:
+    void updateString();
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void handleBindingUpdate(cMessage * msg);

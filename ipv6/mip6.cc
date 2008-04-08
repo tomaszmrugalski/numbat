@@ -33,6 +33,8 @@ void MobIPv6mn::initialize()
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
     if (info)
 	info->addEventListener(this);
+
+    updateString();
 }
 
 void MobIPv6mn::handleMihMessage(cMessage *msg)
@@ -57,6 +59,8 @@ void MobIPv6mn::handleMihMessage(cMessage *msg)
 
 	delete src;
 	delete dst;
+
+	updateString();
     }
 }
 
@@ -129,6 +133,17 @@ void MobIPv6mn::fsmInit()
   
 }
 
+void MobIPv6mn::updateString()
+{
+    char buf[512];
+    const char * myIP = par("myIP").stringValue();
+    const char  * corrIP = par("corrIP").stringValue();
+    sprintf(buf, "myIP=%s\ncorrIP=%s", myIP, corrIP);
+    if (ev.isGUI())
+	displayString().setTagArg("t",0,buf);
+}
+
+
 /********************************************************************************/
 /*** Mobile IPv6 Corresponding Node *********************************************/
 /********************************************************************************/
@@ -137,6 +152,7 @@ Define_Module(MobIPv6cn);
 
 void MobIPv6cn::initialize()
 {
+    updateString();
 }
 
 void MobIPv6cn::handleBindingUpdate(cMessage *msg)
@@ -151,6 +167,8 @@ void MobIPv6cn::handleBindingUpdate(cMessage *msg)
     ip->setBindingAck(true);
 
     send(ip, "lowerOut", 0);
+
+    updateString();
 }
 
 void MobIPv6cn::handleMessage(cMessage *msg)
@@ -196,6 +214,14 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	send(ip, "lowerOut", 0);
     }
     Log(Debug) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
+}
+
+void MobIPv6cn::updateString()
+{
+    char buf[128];
+    sprintf(buf, "myIP=%s\ncorrIP=%s", par("myIP").stringValue(), par("corrIP").stringValue());
+    if (ev.isGUI())
+	displayString().setTagArg("t",0,buf);
 }
 
 

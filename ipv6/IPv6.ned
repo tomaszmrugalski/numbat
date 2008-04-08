@@ -1,5 +1,8 @@
 //A single switch, actually
 simple Internet
+    parameters:
+        MinDelay: numeric,
+        MaxDelay: numeric;
     gates:
         in: ipIn[];
         out: ipOut[];

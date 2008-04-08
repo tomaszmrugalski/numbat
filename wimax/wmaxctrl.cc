@@ -721,21 +721,31 @@ cModule *SS, *physim, *BS;
 // send MSHO-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 {
+    WMaxCtrlSS * ctrlSS = dynamic_cast<WMaxCtrlSS*>(fsm);
+
+    cModule *physim = ctrlSS->SS->parentModule();
+    cModule *BS =ctrlSS->SS->gate( "out" )->toGate()->ownerModule();
+    int actBS = BS->index();
+    int isMobile = ctrlSS->SS->par("wmaxIsMobile");
+
+    if (isMobile == 1) // mobility model 1: time based handover
+      ctrlSS->hoInfo->wmax.nextBS = (actBS+1)%(BS->size());
+
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     ss->hoStartTimestamp = fsm->simTime();
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgMSHOREQ * mshoReq = new WMaxMsgMSHOREQ("MSHO-REQ");
     mshoReq->setName("MSHO-REQ");
-    SLog(fsm, Notice) << "Sending MSHO-REQ message." << LogEnd;
+    SLog(fsm, Notice) << "Staring handover to BS[" << ctrlSS->hoInfo->wmax.nextBS << "], sending MSHO-REQ message." << LogEnd;
     ss->sendMsg(mshoReq, "", "macOut", ssinfo->info.basicCid);
 
     // notify upper layer
-    ss->mihNotify(MIH_EVENT_HANDOVER_START);
+    ss->mihNotify(MIH_EVENT_HANDOVER_START, ctrlSS->hoInfo->wmax.nextBS);
     return fsm->State();
 }
 
 
-void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
+void WMaxCtrlSS::mihNotify(MihInfo_t notifyType, int data)
 {
     string str = "";
     cMessage * x = 0;
@@ -749,9 +759,15 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType)
         str = "Network Entry End";
         break;
       case MIH_EVENT_HANDOVER_START:
-        x = (cMessage*) new MihEvent_HandoverStart();
-        str = "Handover Start";
+      {
+	  MihEvent_HandoverStart * hoStart = new MihEvent_HandoverStart();
+	hoStart->setTargetBS(data);
+        x = (cMessage*) hoStart;
+	char buf[16];
+	sprintf(buf, "%d", data);
+        str = "Handover Start (target BS[" + string(buf) + "]";
         break;
+      }
       case MIH_EVENT_HANDOVER_END:
         x = (cMessage*) new MihEvent_HandoverEnd();
         str = "Handover End";
@@ -945,21 +961,16 @@ void WMaxCtrlSS::disconnect() {
 }
 
 /** 
- * thie method reconnects (creates Omnet module-module connections) to the next BS
+ * this method reconnects (creates Omnet module-module connections) to the next BS
  * 
  */
 void WMaxCtrlSS::connectNextBS() {
-    
-//     cModule *SS = parentModule();
+
     cModule *physim = SS->parentModule();
     cModule *BS =SS->gate( "out" )->toGate()->ownerModule();
     int actBS = BS->index();
-    int isMobile = SS->par("wmaxIsMobile");
 
-    if (isMobile == 1) // mobility model 1: time based handover
-      hoInfo->wmax.nextBS = (actBS+1)%(BS->size());
-
-    Log(Notice) << "Currently associated with BS: " << actBS << ", switching to BS :" << hoInfo->wmax.nextBS << LogEnd;
+    Log(Notice) << "Currently associated with BS[" << actBS << "], switching to BS[" << hoInfo->wmax.nextBS << "]." << LogEnd;
     cModule *BSnext = physim->submodule("BS", hoInfo->wmax.nextBS);
     if (!BSnext)
         opp_error("Unable to find BS:%d\n", hoInfo->wmax.nextBS);

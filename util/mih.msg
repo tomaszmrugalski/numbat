@@ -23,7 +23,8 @@ message MihEvent_EntryEnd
 // used to report that L2 handover started
 message MihEvent_HandoverStart
 {
-
+ fields:
+  int targetBS;
 };
 
 // used to report by WMaxPhySS to WMaxCtrlSS that HO-IND was actually transmitted

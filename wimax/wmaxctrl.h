@@ -222,7 +222,7 @@ protected:
 
 private:
     int sfCnt; // number of service flows
-    void mihNotify(MihInfo_t notifyType);
+    void mihNotify(MihInfo_t notifyType, int data = 0);
 
     WMaxEvent_FlowCreationStart * createNewFlowEvent();
 };

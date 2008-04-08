@@ -401,8 +401,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	if (msg->length() > symbols*bytesPerPS) {
 	    // message won't fit in this frame. What should we do in such case?
 
-	    Log(Info) << "Tried to schedule message (len=" << msg->length() << ", but there are only "
-		      << symbols*bytesPerPS << " bytes left." << LogEnd;
+	    Log(Debug) << "Tried to schedule message (len=" << msg->length() << "), but there are only "
+		       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	    if (ieCnt) // something has been scheduled - ok, end scheduling
 		break;
@@ -1025,7 +1025,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 	                 if (msg->length() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
-	                     Log(Info) << "Tried to schedule message (len=" << msg->length() << ", but there are only " 
+	                     Log(Debug) << "Tried to schedule message (len=" << msg->length() << "), but there are only " 
 				       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
