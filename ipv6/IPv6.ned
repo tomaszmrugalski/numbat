@@ -13,7 +13,8 @@ simple IPv6Node
     parameters:
         BurstInterval: numeric,
         BurstSize: numeric,
-        BurstPacketSize: numeric;
+        BurstPacketSize: numeric,
+        InitialDelay: numeric;
     gates:
         out: ipOut;
         in: ipIn;

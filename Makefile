@@ -1,21 +1,23 @@
 DIR=`basename $(PWD)`
 
+all: util ipv6 wimax
+
 tags:
 	etags `find . -name '*.cc' -or -name '*.h' | xargs`
-
-wimax:
-	cd wimax; $(MAKE)
 
 snapshot: clean
 	rm -f numbat-*-svn.tar.gz
 	cd ..; tar czvf numbat-svn.tar.gz --exclude=.svn --exclude=*~ $(DIR)
 	mv ../numbat-svn.tar.gz numbat-`date +%Y%m%d`-svn.tar.gz
 
-wimax: ipv6
+wimax: util ipv6
 	$(MAKE) -C wimax
 
-ipv6:
+ipv6: util
 	$(MAKE) -C ipv6
+
+util:
+	$(MAKE) -C util
 
 clean:
 	cd wimax; $(MAKE) clean

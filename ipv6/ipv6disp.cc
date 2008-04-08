@@ -65,8 +65,14 @@ void IPv6Dispatch::initialize()
 void IPv6Dispatch::dispatchMessage(cMessage *msg)
 {
     if (dynamic_cast<IPv6Ra*>(msg)) {
-	send(msg, "raOut", 0);
-	return;
+	if (handleTraffic) {
+	    send(msg, "raOut", 0);
+	    return;
+	} else {
+	    Log(Warning) << "RA received, but traffic is not supported right now. Message dropped." << LogEnd;
+	    delete msg;
+	    return;
+	}
     }
 
     if (dynamic_cast<DHCPv6Solicit*>(msg) ||

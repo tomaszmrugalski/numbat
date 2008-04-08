@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnetpp-3.3/bin/nedtool
+NEDC=/home/thomson/omnet/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -47,12 +47,12 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnetpp-3.3/include
-OMNETPP_LIB_DIR=/home/thomson/omnetpp-3.3/lib
+OMNETPP_INCL_DIR=/home/thomson/omnet/include
+OMNETPP_LIB_DIR=/home/thomson/omnet/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
-XML_LIBS=
+XML_LIBS=-lxml2
 SYS_LIBS=-ldl -lstdc++ 
 SYS_LIBS_PURE=-ldl -lsocket -lnsl -lm $(shell $(CXX) -print-file-name=libstdc++.a)
 
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= BS_n.o common_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o     ra.o  wmaxctrl.o wmaxmac.o wmaxmaccs.o  wmaxphy.o wmaxradio.o
+OBJS= BS_n.o common_n.o MAC_n.o physim_n.o SS_n.o wmaxmsg_m.o ra.o wmaxctrl.o wmaxmac.o wmaxmaccs.o wmaxphy.o wmaxradio.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= wmaxmsg_m.h
@@ -206,51 +206,35 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-BS_n.o: BS_n.cc
-common_n.o: common_n.cc
-MAC_n.o: MAC_n.cc
-physim_n.o: physim_n.cc
 ra.o: ra.cc \
   ra.h \
   ../util/logger.h \
   ../util/ssinfo.h \
   ../util/fsm.h \
   ../util/hoinfo.h
-SS_n.o: SS_n.cc
 wmaxctrl.o: wmaxctrl.cc \
   wmaxctrl.h \
-  wmaxmsg_m.h \
   ../util/logger.h \
   ../util/hoinfo.h \
   wmaxradio.h \
   wmaxmac.h \
   ../util/ssinfo.h \
-  ../util/fsm.h \
-  wmaxmsg.h
+  ../util/fsm.h
 wmaxmac.o: wmaxmac.cc \
   wmaxmac.h \
-  wmaxmsg_m.h \
   wmaxctrl.h \
   ../util/logger.h \
-  wmaxmsg.h \
   ../util/fsm.h \
   ../util/hoinfo.h \
   ../util/ssinfo.h
 wmaxmaccs.o: wmaxmaccs.cc \
   wmaxmaccs.h \
   wmaxmac.h \
-  ../util/logger.h \
-  wmaxmsg_m.h \
-  wmaxmsg.h
-wmaxmsg_m.o: wmaxmsg_m.cc \
-  wmaxmsg_m.h \
-  wmaxmsg.h
+  ../util/logger.h
 wmaxphy.o: wmaxphy.cc \
   wmaxphy.h \
   ../util/logger.h \
   ../util/ssinfo.h \
-  wmaxmsg_m.h \
-  wmaxmsg.h \
   ../util/hoinfo.h
 wmaxradio.o: wmaxradio.cc \
   wmaxradio.h \

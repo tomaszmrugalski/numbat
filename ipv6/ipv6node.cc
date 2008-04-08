@@ -34,8 +34,10 @@ void IPv6Node::initialize()
     this->BurstSize       = (int)par("BurstSize");
     this->BurstPacketSize = (int)par("BurstPacketSize");
 
+    double initialDelay = (double)par("InitialDelay");
+
     sendTimer = new cMessage("IPv6 send");
-    scheduleAt(BurstInterval, sendTimer);
+    scheduleAt(initialDelay, sendTimer);
     
     std::string x;
     x = fullName();
