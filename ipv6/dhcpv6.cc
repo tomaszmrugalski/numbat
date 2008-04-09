@@ -61,6 +61,7 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
     if (dynamic_cast<MihEvent_ReentryEnd*>(msg) ||
 	dynamic_cast<MihEvent_EntryEnd*>(msg)) {
 	Log(Notice) << "Starting DHCPv6 operation." << LogEnd;
+	PurposeNextLocation = false;
 	onEvent(EVENT_START, msg);
 	DhcpStartTime = simTime();
 	stringUpdate();
@@ -192,7 +193,8 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
     DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
 
     if (cli->GotAddrForNextLocation) {
-	SLog(fsm, Notice) << "Already got address for this location (remote autoconf used)." << LogEnd;
+	SLog(fsm, Notice) << "Already got address " << cli->AddrForNextLocation << " for this location (remote autoconf used)." << LogEnd;
+	cli->Addr = cli->AddrForNextLocation;
 	cli->GotAddrForNextLocation = false;
 	return DHCPv6Cli::STATE_CONFIGURED;
     }
@@ -418,6 +420,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 
     if (cli->PurposeNextLocation) {
 	SLog(fsm, Cont) << "(remote autoconf: address will be used after handover)." << LogEnd;
+	cli->AddrForNextLocation = cli->Addr;
 	cli->GotAddrForNextLocation = true;
     }
     SLog(fsm, Cont) << LogEnd;
