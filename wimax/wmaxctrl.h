@@ -94,6 +94,9 @@ public:
 	STATE_WAIT_BSHO_RSP,              // wait for BSHO-RSP
 	STATE_SEND_HO_IND,                // send HO-IND
 	STATE_HANDOVER_COMPLETE,          // handover complete
+
+	// extra state between WAIT_BSHO_RSP and SEND_HO_IND
+	STATE_WAIT_L3_DETACH_READY, // wait for Layer3 become ready to detach
 	
 	// network reentry
 	STATE_WAIT_FOR_CDMA,              // wait for CDMA opportunity
@@ -121,6 +124,7 @@ public:
 	EVENT_SA_TEK_RSP,
 	EVENT_REG_RSP_RECEIVED,
 	EVENT_SERVICE_FLOW_COMPLETE, // service flow created
+	EVENT_L3_DETACH_READY, // L3 is ready to detach
 	EVENT_HO_IND_SENT,
 	EVENT_NUM
     } Event;
@@ -194,6 +198,9 @@ protected:
 
     // wait for BSHO-RSP state
     static FsmStateType onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
+
+    // wait for L3 detach readiness
+    static FsmStateType onEventState_WaitForL3Detach(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     // sent HO-IND state
     static FsmStateType onEventState_SendHoInd(Fsm * fsm, FsmEventType e, cMessage *msg);

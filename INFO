@@ -3,7 +3,8 @@
  ------------------------------------------------------
  
  Authors: Tomasz Mrugalski <thomson(at)klub(dot)com(dot)pl>
-
+          Maciej Jureko
+          Andrzej Bojarski
  
  Published under GNU GPL v2 (or later) licence.
 
@@ -20,3 +21,8 @@
 
 
 opp_makemake -w -f -I../util
+
+ ---
+
+ 1. no dhcp optims
+ 2. remote autoconf

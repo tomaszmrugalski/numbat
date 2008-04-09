@@ -89,6 +89,7 @@ void WMaxCtrlSS::fsmInit() {
 
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
+    stateInit(STATE_WAIT_L3_DETACH_READY,"Waiting for L3 detach", onEventState_WaitForL3Detach);
     stateInit(STATE_SEND_HO_IND,       "Sending HO-IND", onEventState_SendHoInd, onEnterState_SendHoInd, onExitState_SendHoInd);
     stateInit(STATE_HANDOVER_COMPLETE, "Handover complete", STATE_WAIT_FOR_CDMA, onEnterState_HandoverComplete);
 
@@ -117,6 +118,7 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
     eventInit(EVENT_SERVICE_FLOW_COMPLETE, "Service Flow complete");
+    eventInit(EVENT_L3_DETACH_READY, "L3 is ready to detach");
     eventInit(EVENT_HO_IND_SENT,  "HO-IND transmitted");
     eventVerify();
     
@@ -229,6 +231,12 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
 	    }
 	}
 
+	delete msg;
+	return;
+    }
+
+    if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg)) {
+	onEvent(EVENT_L3_DETACH_READY, msg);
 	delete msg;
 	return;
     }
@@ -792,12 +800,36 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType, int data)
 // wait for BSHO-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForBshoRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
+    WMaxCtrlSS * ctrlSS = dynamic_cast<WMaxCtrlSS*>(fsm);
     switch (e) {
     case EVENT_BSHO_RSP_RECEIVED:
+    {
+	if (ctrlSS->hoInfo->dhcp.remoteAutoconf) {
+	    SLog(fsm, Info) << "BSHO-RSP received, waiting for L3 before sending HO-IND." << LogEnd;
+	    return STATE_WAIT_L3_DETACH_READY;
+	} else {
+	    SLog(fsm, Info) << "BSHO-RSP received, (not waiting for L3), sending HO-IND." << LogEnd;
+	    return STATE_SEND_HO_IND;
+	}
+    }
+    default:
+	CASE_IGNORE(fsm, e);
+    }
+}
+
+// wait for L3 detach readiness
+FsmStateType WMaxCtrlSS::onEventState_WaitForL3Detach(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    switch (e) {
+    case EVENT_L3_DETACH_READY:
+	SLog(fsm, Info) << "L3 is ready to detach. Proceeding with handover." << LogEnd;
 	return STATE_SEND_HO_IND;
     default:
 	CASE_IGNORE(fsm, e);
     }
+    
+
+
 }
 
 // sent HO-IND state

@@ -73,7 +73,8 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 	    MihEvent_HandoverStart *hoStart = dynamic_cast<MihEvent_HandoverStart*>(msg);
 	    NextLocationBS = hoStart->getTargetBS();
 
-	    Log(Notice) << "Triggering remote DHCP procedure. RemoteAutoconf is true: State()=" << State() << ", targetBS=" << NextLocationBS << LogEnd;
+	    Log(Notice) << "Triggering remote DHCP procedure. RemoteAutoconf is true: State()=" << State() 
+			<< ", targetBS=" << NextLocationBS << LogEnd;
 	    if ( this->CurrentState == DHCPv6Cli::STATE_CONFIGURED) {
 		PurposeNextLocation = true;
 
