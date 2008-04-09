@@ -51,6 +51,7 @@ message MihEvent_L3AddrConfigured
 {
 fields:
   IPv6Addr Addr;
+  bool RemoteAutoconf;
 };
 
 message MihEvent_L3RoutingConfigured

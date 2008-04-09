@@ -33,6 +33,7 @@ module SS //
         dhcpPref255: numeric,
         dhcpRapidCommit: numeric,
 	dhcpRemoteAutoconf: numeric,
+        mipRemoteLocUpdate: numeric,
         SStrace_centerx: numeric,
         SStrace_centery: numeric,
         SStrace_radius: numeric,

@@ -133,7 +133,7 @@ public:
     double hoReentryTimestamp; // timestamp of the reentry start
     double hoReentryCompleteTimestamp; // timestamp of the reentry completion
     double hoActionTime; //time of handover idle
-    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
+    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid, double extraDelay = 0.0f);
     cStdDev hoActionTimeData;
 protected:
     void fsmInit();

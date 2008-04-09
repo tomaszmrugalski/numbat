@@ -1,13 +1,12 @@
 
 
  This file contains list of tasks, which must be done.
- $Id$
 
  TODO
 ------
-- DHCPv6: Remote autoconf should use core network, not simulated delay.
-- Add delay in CN for processing BindingUpdate
-- Add delay in Internet
+- LocUpdate is now currently transmitted during remoteAutoconf. There
+   is a pramenter called mipRemoteLocUpdate, but it does not work
+   properly yet.
 
  BUGS
 ------

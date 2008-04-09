@@ -426,10 +426,16 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
     SLog(fsm, Cont) << LogEnd;
 
     ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
-    SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained." << LogEnd;
 
     MihEvent_L3AddrConfigured * confOK = new MihEvent_L3AddrConfigured();
     confOK->setAddr(cli->Addr);
+    if (info->hoInfo.dhcp.addrParams && cli->PurposeNextLocation) {
+	confOK->setRemoteAutoconf(true);
+	SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained (remote autoconf)." << LogEnd;
+    } else {
+	confOK->setRemoteAutoconf(false);
+	SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained (local, no remote autoconf)." << LogEnd;
+    }
     info->sendEvent(confOK);
 
     if (info->hoInfo.dhcp.addrParams) {

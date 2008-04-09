@@ -59,6 +59,8 @@ void ssInfo::initialize() {
     hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
     hoInfo.dhcp.remoteAutoconf = parentModule()->par("dhcpRemoteAutoconf");
 
+    hoInfo.mip.remoteLocUpdate = parentModule()->par("mipRemoteLocUpdate");
+    
     int initialBS = parentModule()->par("initialBS");
 
     stringUpdate();
@@ -68,6 +70,7 @@ void ssInfo::initialize() {
 		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
 		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
+		<< ", mipRemoteLocUpdate=" << hoInfo.mip.remoteLocUpdate
 		<< LogEnd;
 }
 

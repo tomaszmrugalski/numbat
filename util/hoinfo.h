@@ -62,7 +62,7 @@ typedef struct {
 
 /* handover related parameters on MobileIPv6 layer */
 typedef struct {
-    int todo;
+    bool remoteLocUpdate;
 } HoMobileIPv6_t;
 
 
@@ -72,7 +72,7 @@ typedef struct HoInfo_s {
     HoWMax_t       wmax;
     HoIPv6_t       ip;
     HoDHCPv6_t     dhcp;
-    HoMobileIPv6_t mob;
+    HoMobileIPv6_t mip;
 
 } HoInfo_t;
 

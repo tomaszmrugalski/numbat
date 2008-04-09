@@ -169,7 +169,7 @@ void WMaxCtrlSS::initialize() {
     WATCH_PTRLIST(serviceFlows);
 }
 
-double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
+double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid, double extraDelay)
 {
     double delay = 0;
     if (strlen(paramName)) {
@@ -182,6 +182,7 @@ double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
 	
 	delay = uniform(min, max);
     }
+    delay += extraDelay;
 
     Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
 	       << "msecs (cid=" << cid << ")." << LogEnd;
@@ -839,7 +840,9 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     WMaxMsgHOIND * hoInd = new WMaxMsgHOIND();
     hoInd->setName("HO-IND");
-    ss->sendMsg(hoInd, "", "macOut", ssinfo->info.basicCid);
+    ss->sendMsg(hoInd, "", "macOut", ssinfo->info.basicCid, 0.005); 
+    /* HO-IND is delayed by 5ms. It is required to make sure that HO-IND is sent after
+       Location update (in case if dhcp.remoteAutoconf=1 and mip.remoteLocationUpdate = 1) */
     ssinfo->info.basicCid = 0;
     ssinfo->stringUpdate();
     SLog(fsm, Notice) << "Sending HO-IND message." << LogEnd;

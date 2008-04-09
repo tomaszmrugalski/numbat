@@ -39,10 +39,21 @@ void MobIPv6mn::initialize()
 
 void MobIPv6mn::handleMihMessage(cMessage *msg)
 {
+
     if (dynamic_cast<MihEvent_L3AddrConfigured *>(msg)) {
 	MihEvent_L3AddrConfigured * conf = dynamic_cast<MihEvent_L3AddrConfigured *>(msg);
+
+	cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+	
+	if (conf->getRemoteAutoconf() && !info->hoInfo.mip.remoteLocUpdate) {
+	    Log(Notice) << "New addr " << conf->getAddr() << " obtained, but it is a remote autoconf and support "
+			<< " for remote location update is disabled. Doing nothing." << LogEnd;
+	    return;
+	}
+
 	par("myIP") = conf->getAddr().plain().c_str();
-	Log(Notice) << "Setting my IP to "<< conf->getAddr().plain() << LogEnd;
+	Log(Notice) << "Setting my IP to "<< conf->getAddr().plain() << ", remoteAutoconf=" << (conf->getRemoteAutoconf()?"yes":"no") << LogEnd;
 
 	IPv6 * locUpdate = new IPv6("BindingUpdate");
 
@@ -51,11 +62,16 @@ void MobIPv6mn::handleMihMessage(cMessage *msg)
 
 	IPv6Addr * dst = new IPv6Addr(par("corrIP").stringValue(), true);
 	locUpdate->setDstIP( *dst );
+
+	if (conf->getRemoteAutoconf() == true) {
+	    Log(Notice) << "MIPv6: This is a remote LocUpdate." << LogEnd;
+	}
 	
 	locUpdate->setBindingUpdate(true);
 
 	send(locUpdate, "lowerOut", 0);
 	Log(Notice) << "MIPv6: Sending Location update (myIP=" << src->plain() << ", corrIP=" << dst->plain() << ")." << LogEnd;
+
 
 	delete src;
 	delete dst;
