@@ -81,8 +81,10 @@ class DHCPv6Cli : public Fsm
 
     bool PurposeNextLocation; // are we going to obtain address for next location?
     bool GotAddrForNextLocation; // did we complete remote autoconf already?
+    int  NextLocationBS;
 
     IPv6Addr Addr;
+    IPv6Addr AddrForNextLocation;
 
     TIMER_DEF(Delay);
 
@@ -103,7 +105,14 @@ class DHCPv6Srv : public cSimpleModule
     virtual void handleMessage(cMessage *msg);
  private:
     double sendMsg(cMessage * msg, char * paramName, double extraDelay=0.0);
+    void   sendRelay(cMessage * msg, int dstBS);
+    void   handleRelay(cMessage * msg);
     void   sendReply(string x, bool addrParams, bool viaRelays);
+    IPv6Addr getIPofBS(int bs);
+
+    bool HandlingRelay;
+    IPv6Addr SrcIP;
+    IPv6Addr DstIP;
 
     int nextAddr; // next host address (prefix + nextAddr) to be assigned
 };

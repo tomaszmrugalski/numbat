@@ -12,6 +12,7 @@ fields:
 
   bool BindingUpdate;
   bool BindingAck;
+  bool Dhcpv6Relay;
 };
 
 message IPv6Ra
@@ -32,6 +33,7 @@ fields:
     bool addrParams;
 
     bool remoteConf;
+    int  remoteBS;
 };
 
 message DHCPv6Advertise
@@ -49,6 +51,7 @@ fields:
     bool addrParams;
 
     bool remoteConf;
+    int  remoteBS;
 };
 
 message DHCPv6Reply
@@ -65,5 +68,5 @@ fields:
     bool addrParams;
 
     bool remoteConf;
+    int  remoteBS;
 };
-

@@ -19,7 +19,7 @@ option animation_speed	{1}
 option bkpts_enabled	{1}
 option expressmode_autoupdate	{1}
 config mainwin-geom	{831x397+559+0}
-config rununtil-event	{}
+config rununtil-event	{5581}
 config last-nedfile	{}
 config filtobjlist-category	{mqsgvo}
 config logwindow-scrollbacklines	{100000}
@@ -30,7 +30,7 @@ config filtobjlist-maxcount	{100000}
 config log-save-filename	{omnetpp.out}
 config editor-findstring	{mih}
 config timeline-wantnonselfmsgs	{1}
-config rununtil-time	{1.5}
+config rununtil-time	{}
 config dontshow	{}
 config editor-regexp	{0}
 config timeline-msgclassnamepattern	{*}
@@ -47,16 +47,17 @@ config editor-case-sensitive	{0}
 config editor-whole-words	{0}
 config filtobjlist-order	{Class}
 inspector "physim.SS[0].ssMac" "ssMAC" "2" "406x397+0+590"
-inspector "physim.BS[0].bsIPv6" "IPv6Server" "2" "559x356+709+625"
-inspector "physim" "Physim" "2" "536x457+418+532"
+inspector "physim.BS[0]" "BS" "2" "357x427+0+26"
 inspector "physim.SS[0].ssIPv6" "IPv6Client" "2" "521x372+0+511"
-inspector "physim.SS[0].ssIPv6.DHCPv6Cli" "DHCPv6Cli" "3" "740x258+0+406"
-inspector "physim.BS[0].bsIPv6.DHCPv6Srv" "DHCPv6Srv" "3" "506x258+762+532"
+inspector "physim.SS[0].ssIPv6.DHCPv6Cli" "DHCPv6Cli" "3" "740x258+0+299"
+inspector "physim.BS[2]" "BS" "2" "357x427+0+26"
+inspector "physim.BS[0].bsIPv6" "IPv6Server" "2" "559x356+709+626"
+inspector "physim" "Physim" "2" "536x457+418+532"
 inspector "physim.ssPhy" "WMaxPhySS" "1" "460x315+0+24"
 inspector "physim.BS" "BS" "2" "357x411+105+528"
 inspector "physim.ssMac" "WMaxMacSS" "3" "1022x258+0+425"
-inspector "physim.SS[1]" "SS" "2" "396x395+26+331"
 inspector "physim.SS.ssCS" "WMaxMacCS" "3" "506x258+373+687"
+inspector "physim.SS[1]" "SS" "2" "396x395+26+331"
 inspector "physim.SS[3]" "SS" "2" "500x395+892+581"
 inspector "physim.WMaxCtrlBS" "WMaxCtrlBS" "3" "826x308+29+637"
 inspector "physim.MacDummy2" "WMaxMacBS" "1" "460x315+71+556"

@@ -182,6 +182,23 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	delete msg;
         return;
     }
+
+    if (!strcmp(gate->fullName(), "dhcpIn") && dynamic_cast<IPv6*>(msg)) {
+	Log(Info) << "Forwarding outgoing DHCPv6 relay message." << LogEnd;
+	// handle outgoing DHCPv6 relay
+	send (msg, "genOut", 0);
+	return;
+    }
+
+    if (strcmp(gate->fullName(), "dhcpIn") && dynamic_cast<IPv6*>(msg)) {
+	// handle incoming DHCPv6 relay
+	IPv6 * ip = dynamic_cast<IPv6*>(msg);
+	if (ip->getDhcpv6Relay()) {
+	    Log(Info) << "Forwarding incoming DHCPv6 relay message." << LogEnd;
+	    send(msg, "dhcpOut", 0);
+	    return;
+	}
+    }
     
     // relay RAs all the time
     if (!strcmp(gate->fullName(),"raIn") ||

@@ -25,6 +25,7 @@ using namespace std;
 
 Define_Module(DHCPv6Cli);
 
+//#define DEBUG_FORCE_REMOTECONF
 
 void DHCPv6Cli::initialize()
 {
@@ -49,6 +50,7 @@ void DHCPv6Cli::initialize()
 
     GotAddrForNextLocation = false;
     PurposeNextLocation = false;
+    NextLocationBS = 2;
 }
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
@@ -67,11 +69,12 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 
     if (dynamic_cast<MihEvent_HandoverStart*>(msg)) 
     {
-	Log(Debug) << "#### triggering next location DHCP procedure." << LogEnd;
 	if (info->hoInfo.dhcp.remoteAutoconf) {
-	    Log(Debug) << "#### remoteAutoconf is true: State()=" << State() << ", CurrentState=" << this->CurrentState << ", CONIFGURED=" << DHCPv6Cli::STATE_CONFIGURED << LogEnd;
+	    MihEvent_HandoverStart *hoStart = dynamic_cast<MihEvent_HandoverStart*>(msg);
+	    NextLocationBS = hoStart->getTargetBS();
+
+	    Log(Notice) << "Triggering remote DHCP procedure. RemoteAutoconf is true: State()=" << State() << ", targetBS=" << NextLocationBS << LogEnd;
 	    if ( this->CurrentState == DHCPv6Cli::STATE_CONFIGURED) {
-		Log(Notice) << "#### Handover initiated:Starting remote autoconf." << LogEnd;
 		PurposeNextLocation = true;
 
 		DhcpStartTime = simTime();
@@ -215,9 +218,15 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
 	sol->setAddrParams(false);
     }
 
-    if (info->hoInfo.dhcp.remoteAutoconf && cli->PurposeNextLocation) {
+    if (info->hoInfo.dhcp.remoteAutoconf
+// TEMPORARY
+#ifndef DEBUG_REMOTECONF
+ && cli->PurposeNextLocation
+#endif
+) {
 	x += " via relays (remote autoconf)";
 	sol->setRemoteConf(true);
+	sol->setRemoteBS(cli->NextLocationBS);
     } else {
 	x += " (without remote autoconf)";
 	sol->setRemoteConf(false);
@@ -471,6 +480,16 @@ double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
     Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
 	       << "msecs." << LogEnd;
 
+    if (HandlingRelay) {
+	IPv6 * ip = new IPv6("DHCPv6 Relay");
+	ip->encapsulate(msg);
+	ip->setSrcIP(SrcIP);
+	ip->setDstIP(DstIP);
+	ip->setDhcpv6Relay(true);
+
+	msg = ip;
+    }
+
     sendDelayed(msg, delay+extraDelay, "dhcpOut");
 
     return delay+extraDelay;
@@ -502,10 +521,22 @@ void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays)
 
 void DHCPv6Srv::handleMessage(cMessage *msg)
 {
+    if (dynamic_cast<IPv6*>(msg)) {
+	handleRelay(msg);
+	delete msg;
+	return;
+    }
+
     if (dynamic_cast<DHCPv6Solicit*>(msg)) {
 	DHCPv6Solicit * sol = dynamic_cast<DHCPv6Solicit*>(msg);
+	if (sol->getRemoteConf() && !HandlingRelay)
+	{
+	    sendRelay(msg, sol->getRemoteBS());
+	    return;
+	}
+
 	if (sol->getRapidCommit()) {
-	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams(), sol->getRemoteConf() );
+	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams(), sol->getRemoteConf() && !HandlingRelay );
 	    delete msg;
 	    return;
 	} else {
@@ -516,15 +547,8 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	    adv->setPreference(pref);
 	    adv->setAddrParams(sol->getAddrParams());
 	    Log(Info) << "SOLICIT received,";
-	    if (sol->getRemoteConf())
-	    {
-		double min = (double)par("MinDelayRelay");
-		double max = (double)par("MaxDelayRelay");
-		extraDelay = uniform(min, max);
-		Log(Cont) << " relays will be used (extra " << extraDelay << "secs delay),";
-	    }
-	    Log(Cont) << " sending ADVERTISE (preference=" << pref << ")." << LogEnd;
 
+	    Log(Cont) << " sending ADVERTISE (preference=" << pref << ")." << LogEnd;
 	    sendMsg(adv, "DelayAdvertise", extraDelay);
 	    delete msg;
 	    return;
@@ -533,17 +557,82 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 
     if (dynamic_cast<DHCPv6Request*>(msg)) {
 	DHCPv6Request * req = dynamic_cast<DHCPv6Request*>(msg);
-	sendReply("REQUEST received,", req->getAddrParams(), req->getRemoteConf());
+	if (req->getRemoteConf() && !HandlingRelay)
+	{
+	    sendRelay(msg, req->getRemoteBS());
+	    return;
+	}
+
+	sendReply("REQUEST received,", req->getAddrParams(), req->getRemoteConf() && !HandlingRelay);
 	delete msg;
 	return;
     }
 
     if (dynamic_cast<DHCPv6Confirm*>(msg)) {
 	DHCPv6Confirm * conf = dynamic_cast<DHCPv6Confirm*>(msg);
-	sendReply("CONFIRM received,", conf->getAddrParams(), conf->getRemoteConf());
+	if (conf->getRemoteConf() && !HandlingRelay)
+	{
+	    sendRelay(msg, conf->getRemoteBS());
+	    return;
+	}
+
+	sendReply("CONFIRM received,", conf->getAddrParams(), conf->getRemoteConf() && !HandlingRelay);
 	delete msg;
 	return;
     }
 
     opp_error("Invalid message %s received in DHCPv6Srv.", msg->fullName());
+}
+
+void DHCPv6Srv::sendRelay(cMessage * msg, int remoteBS)
+{
+    int thisBS = parentModule()->parentModule()->index();
+    
+    Log(Notice) << "Relays will be used (this BS[" << thisBS << "], target: BS[" << remoteBS << "])." << LogEnd;
+    IPv6 * ip = new IPv6("DHCPv6 relay");
+    ip->setSrcIP( getIPofBS(thisBS) );
+    ip->setDstIP( getIPofBS(remoteBS) );
+    ip->encapsulate(msg);
+    ip->setDhcpv6Relay(true);
+
+    Log(Notice) << "Transmitting RELAY-FORW: srcIP=" << ip->getSrcIP() << ", dstIP=" << ip->getDstIP() << LogEnd;
+
+    sendMsg(ip, "", 0.0);
+		  
+}
+
+void DHCPv6Srv::handleRelay(cMessage * msg)
+{
+    IPv6 * ip = dynamic_cast<IPv6*>(msg);
+    cMessage * dhcp = msg->decapsulate();
+
+    if (dynamic_cast<DHCPv6Advertise*>(dhcp) ||
+	dynamic_cast<DHCPv6Reply*>(dhcp)) {
+
+	Log(Info) << "Decapsulating relay message." << LogEnd;
+	sendMsg(dhcp, "", 0.0);
+	return;
+    }
+
+    HandlingRelay = true;
+    SrcIP = ip->getDstIP();
+    DstIP = ip->getSrcIP();
+
+    Log(Info) << "Handling relayed message." << LogEnd;
+
+    handleMessage(dhcp);
+    HandlingRelay = false;
+    
+    return;
+}
+
+IPv6Addr DHCPv6Srv::getIPofBS(int bs)
+{
+    char buf[512];
+    sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha", bs);
+    cModule * m = parentModule()->parentModule()->parentModule(); // whole network
+    m = m->moduleByRelativePath(buf);
+    string x = m->par("prefix").stringValue();
+
+    return IPv6Addr(x.c_str(), true);
 }

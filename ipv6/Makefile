@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o dhcpv6.o Internet.o ipv6disp.o ipv6node.o mip6.o
+OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o  dhcpv6.o Internet.o ipv6disp.o   ipv6node.o mip6.o ra.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= ipv6msg_m.h
@@ -146,6 +146,9 @@ ipv6node.o: ipv6node.cc
 mip6.o: mip6.cc
 	$(CXX) -c $(COPTS) mip6.cc
 
+ra.o: ra.cc
+	$(CXX) -c $(COPTS) ra.cc
+
 
 #doc: neddoc doxy
 
@@ -185,29 +188,47 @@ re-makemake-m: makefile-ins
 
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+CoreNetwork_n.o: CoreNetwork_n.cc
 dhcpv6.o: dhcpv6.cc \
   dhcpv6.h \
   ../util/logger.h \
   ../util/ssinfo.h \
+  ipv6msg_m.h \
   ../util/ipv6.h \
   ../util/fsm.h \
   ../util/hoinfo.h
 Internet.o: Internet.cc \
   Internet.h \
   ../util/logger.h \
+  ipv6msg_m.h \
   ../util/ipv6.h
 ipv6disp.o: ipv6disp.cc \
   ipv6disp.h \
   ../util/logger.h \
   ../util/hoinfo.h \
-  ../util/ssinfo.h
+  ../util/ssinfo.h \
+  ipv6msg_m.h \
+  ../util/ipv6.h
+ipv6msg_m.o: ipv6msg_m.cc \
+  ipv6msg_m.h \
+  ../util/ipv6.h
+IPv6_n.o: IPv6_n.cc
 ipv6node.o: ipv6node.cc \
   ipv6node.h \
   ../util/logger.h
 mip6.o: mip6.cc \
   mip6.h \
   ../util/logger.h \
+  ipv6msg_m.h \
   ../util/ipv6.h \
   ../util/ssinfo.h \
   ../util/fsm.h \
+  ../util/hoinfo.h
+ra.o: ra.cc \
+  ra.h \
+  ipv6msg_m.h \
+  ../util/logger.h \
+  ../util/ssinfo.h \
+  ../util/fsm.h \
+  ../util/ipv6.h \
   ../util/hoinfo.h

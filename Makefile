@@ -22,4 +22,4 @@ util:
 clean:
 	cd wimax; $(MAKE) clean
 
-.PHONY: tags wimax clean ipv6
+.PHONY: tags wimax clean ipv6 util
