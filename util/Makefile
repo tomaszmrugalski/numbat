@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnet/bin/nedtool
+NEDC=/home/thomson/omnetpp-3.3/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -47,12 +47,12 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnet/include
-OMNETPP_LIB_DIR=/home/thomson/omnet/lib
+OMNETPP_INCL_DIR=/home/thomson/omnetpp-3.3/include
+OMNETPP_LIB_DIR=/home/thomson/omnetpp-3.3/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
-XML_LIBS=-lxml2
+XML_LIBS=
 SYS_LIBS=-ldl -lstdc++ 
 SYS_LIBS_PURE=-ldl -lsocket -lnsl -lm $(shell $(CXX) -print-file-name=libstdc++.a)
 

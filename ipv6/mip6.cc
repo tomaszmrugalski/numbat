@@ -45,33 +45,34 @@ void MobIPv6mn::handleMihMessage(cMessage *msg)
 
 	cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
 	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
-	
-	if (conf->getRemoteAutoconf() && !info->hoInfo.mip.remoteLocUpdate) {
-	    Log(Notice) << "New addr " << conf->getAddr() << " obtained, but it is a remote autoconf and support "
-			<< " for remote location update is disabled. Doing nothing." << LogEnd;
-	    return;
-	}
-
-	par("myIP") = conf->getAddr().plain().c_str();
-	Log(Notice) << "Setting my IP to "<< conf->getAddr().plain() << ", remoteAutoconf=" << (conf->getRemoteAutoconf()?"yes":"no") << LogEnd;
-
-	IPv6 * locUpdate = new IPv6("BindingUpdate");
-
-	IPv6Addr * src = new IPv6Addr(par("myIP").stringValue(), true);
-	locUpdate->setSrcIP( *src );
-
-	IPv6Addr * dst = new IPv6Addr(par("corrIP").stringValue(), true);
-	locUpdate->setDstIP( *dst );
 
 	if (conf->getRemoteAutoconf() == true) {
 	    Log(Notice) << "MIPv6: This is a remote LocUpdate." << LogEnd;
 	}
 	
+	if ( (conf->getRemoteAutoconf() == true) && (!info->hoInfo.mip.remoteLocUpdate) ) {
+	    Log(Notice) << "New addr " << conf->getAddr() << " obtained, but it is a remote autoconf and support "
+			<< " for remote location update is disabled. Doing nothing." << LogEnd;
+	    return;
+	}
+
+	string myIP = conf->getAddr().plain();
+
+	if (!conf->getRemoteAutoconf()) {
+	    Log(Notice) << "Setting my IP to " << myIP << LogEnd;
+	    par("myIP") = myIP.c_str();
+	}
+
+	IPv6 * locUpdate = new IPv6("BindingUpdate");
+
+	IPv6Addr * src = new IPv6Addr(myIP.c_str(), true);
+	locUpdate->setSrcIP( *src );
+	IPv6Addr * dst = new IPv6Addr(par("corrIP").stringValue(), true);
+	locUpdate->setDstIP( *dst );
 	locUpdate->setBindingUpdate(true);
 
 	send(locUpdate, "lowerOut", 0);
 	Log(Notice) << "MIPv6: Sending Location update (myIP=" << src->plain() << ", corrIP=" << dst->plain() << ")." << LogEnd;
-
 
 	delete src;
 	delete dst;

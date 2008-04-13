@@ -429,7 +429,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 
     MihEvent_L3AddrConfigured * confOK = new MihEvent_L3AddrConfigured();
     confOK->setAddr(cli->Addr);
-    if (info->hoInfo.dhcp.addrParams && cli->PurposeNextLocation) {
+    if ( cli->PurposeNextLocation ) {
 	confOK->setRemoteAutoconf(true);
 	SLog(fsm, Notice) << "Notifying other layers: IPv6 address obtained (remote autoconf)." << LogEnd;
     } else {
@@ -471,6 +471,7 @@ Define_Module(DHCPv6Srv);
 void DHCPv6Srv::initialize()
 {
     nextAddr=1;
+    HandlingRelay = false;
 }
 
 double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)

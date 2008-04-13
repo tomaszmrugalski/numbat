@@ -90,10 +90,14 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
     if (handleTraffic) {
 	send(msg, "genOut", 0); // send to generator directly
 	Log(Debug) << "Message " << msg->fullName() << " received and sent to upper layer." << endl;
+	return;
     } else {
 	Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
 	delete msg;
+	return;
     }
+
+    opp_error("Message not handled by IPv6dispatch: %s", msg->fullName());
 }
 
 void IPv6Dispatch::handleMihMessage(cMessage *msg)
@@ -213,6 +217,13 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	dispatchMessage(msg);
 	return;
     } else {
+	IPv6* ip = dynamic_cast<IPv6*>(msg);
+	if (ip && ip->getBindingUpdate()) {
+	    send(msg, "ipOut", 0);
+	    return;
+	}
+	
+
 	if (handleTraffic) { 
 	    if (routingConfigured) {
 		SentBytesPers += msg->length();                 

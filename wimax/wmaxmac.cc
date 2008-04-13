@@ -783,14 +783,23 @@ void WMaxMacSS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
         Log(Notice) << "All connections terminated." << LogEnd;
 
+	int droppedCnt = 0;
         list<WMaxConn>::iterator it;
         for (it = Conns.begin(); it!=Conns.end(); it++) {
+	    if (it->queue->fullName()) {
+		Log(Warning) << it->queue->length() << " msg(s) dropped in queue " << it->queue->fullName() << " during handover." << LogEnd;
+		droppedCnt += it->queue->length();
+	    }
             it->queue->clear();
             delete it->queue;
         }
+	queuedMsgsCnt -= droppedCnt;
         Conns.clear();
         CDMAlist.clear();
         send(msg, "macOut", 0);
+
+	stringUpdate();
+
         //initialize();
         addRangingConn();
         return;
