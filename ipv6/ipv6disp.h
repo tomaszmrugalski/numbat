@@ -26,6 +26,7 @@ class IPv6Dispatch : public cSimpleModule
     virtual void writeStat();
     long int SentBytesPers;
     long int RcvdBytesPers;
+    long int DroppedMsgs;
     
  private:
     void ipv6ReconfigureStart();
@@ -37,6 +38,7 @@ class IPv6Dispatch : public cSimpleModule
     bool locationUpdated;   // did the node completed location update?
     cOutVector SentBytesVector;
     cOutVector RcvdBytesVector;
+    cOutVector DroppedMsgsVector;
     cMessage * timer;
 
     bool BS;

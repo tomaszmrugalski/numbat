@@ -72,6 +72,11 @@ void ssInfo::initialize() {
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
 		<< ", mipRemoteLocUpdate=" << hoInfo.mip.remoteLocUpdate
 		<< LogEnd;
+
+    hoPrepVector.setName("HO Preparation time");
+    hoReentryVector.setName("HO Reentry time");
+    hoReconfVector.setName("HO IP reconfigure time");
+    hoLackOfCommVector.setName("HO Lack of comm. capab. time");
 }
 
 void ssInfo::stringUpdate() {
@@ -135,8 +140,7 @@ void ssInfo::sendEvent(cMessage * msg)
     take(msg);
     list<cModule*>::iterator it;
 
-
-
+    updateStats(msg);
 
     Log(Info) << "Sending event " << getMsgName(msg) << " to " << EventListenersLst.size() << " listeners:";
 
@@ -149,3 +153,38 @@ void ssInfo::sendEvent(cMessage * msg)
     delete msg;
 }
 
+void ssInfo::updateStats(cMessage * msg)
+{
+    if (dynamic_cast<MihEvent_HandoverStart*>(msg)) {
+	hoPrep = simTime();
+	return;
+    }
+
+    if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
+	hoPrepVector.record(simTime() - hoPrep);
+	hoLackOfComm = simTime();
+	return;
+    }
+
+    if (dynamic_cast<MihEvent_ReentryStart*>(msg)) {
+	hoReentry = simTime();
+	return;
+    }
+
+    if (dynamic_cast<MihEvent_ReentryEnd*>(msg)) {
+	hoReentryVector.record(simTime() - hoReentry);
+	hoReconf = simTime();
+	return;
+    }
+
+
+    /*
+    if (dynamic_cast<MihEvent_L3AddrConfigured*>(msg)) 
+    if (dynamic_cast<MihEvent_L3RoutingConfigured*>(msg)) */
+
+    if (dynamic_cast<MihEvent_L3LocationUpdated*>(msg)) {
+	hoReconfVector.record(simTime() - hoReconf);
+	hoLackOfCommVector.record(simTime() - hoLackOfComm);
+	return;
+    }
+}

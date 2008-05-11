@@ -32,8 +32,10 @@ void IPv6Dispatch::initialize()
     routingConfigured = false; // IPv6 routing is not configured
     SentBytesPers=0;
     RcvdBytesPers=0;
+    DroppedMsgs = 0;
     SentBytesVector.setName("Sent B/s");
     RcvdBytesVector.setName("Received B/s");
+    DroppedMsgsVector.setName("Dropped msgs");
     timer = new cMessage();
     scheduleAt(0.1, timer);
     BS = false;
@@ -70,6 +72,7 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 	    return;
 	} else {
 	    Log(Warning) << "RA received, but traffic is not supported right now. Message dropped." << LogEnd;
+	    DroppedMsgs++;
 	    delete msg;
 	    return;
 	}
@@ -93,6 +96,7 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 	return;
     } else {
 	Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	DroppedMsgs++;
 	delete msg;
 	return;
     }
@@ -231,10 +235,12 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 		Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ipOut gate." << LogEnd;
 	    } else {
 		Log(Notice) << "Message " << msg->fullName() << " dropped: no routing configured." << LogEnd;
+		DroppedMsgs++;
 		delete msg;
 	    }
 	} else {
 	    Log(Notice) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	    DroppedMsgs++;
 	    delete msg;
 	}
     }
@@ -245,6 +251,7 @@ void IPv6Dispatch::writeStat()
     RcvdBytesPers = (long int)(RcvdBytesPers/0.05);
     SentBytesVector.record(SentBytesPers);
     RcvdBytesVector.record(RcvdBytesPers);
+    DroppedMsgsVector.record(DroppedMsgs);
 
     timer = new cMessage();
     scheduleAt(simTime()+0.05, timer);

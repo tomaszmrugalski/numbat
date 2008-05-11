@@ -20,6 +20,12 @@ class Internet: public cSimpleModule
  private:
     double calculateDelay(IPv6 *msg);
     list<RouteEntry> RoutingTable;
+
+    long int MsgsTransmittedCnt;
+    long int DroppedMsgsCnt;
+    cOutVector MsgsTransmittedVector;
+    cOutVector DroppedMsgsVector;
+    cOutVector DelayVector;
 };
 
 ostream & operator << (ostream &s, RouteEntry e);

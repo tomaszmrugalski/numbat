@@ -31,7 +31,7 @@ LIBS=
 
 # Generic definitions. To avoid redundancies across Makefiles, you can
 # import them from a common file -- see opp_makemake -c flag.
-NEDC=/home/thomson/omnetpp-3.3/bin/nedtool
+NEDC=/home/thomson/omnet/bin/nedtool
 MSGC=opp_msgc
 CXX=g++
 CC=gcc
@@ -47,12 +47,12 @@ EXE_SUFFIX=
 WITH_PARSIM=yes
 WITH_NETBUILDER=yes
 
-OMNETPP_INCL_DIR=/home/thomson/omnetpp-3.3/include
-OMNETPP_LIB_DIR=/home/thomson/omnetpp-3.3/lib
+OMNETPP_INCL_DIR=/home/thomson/omnet/include
+OMNETPP_LIB_DIR=/home/thomson/omnet/lib
 
 TK_LIBS= -ltk8.4 -ltcl8.4
 MPI_LIBS=
-XML_LIBS=
+XML_LIBS=-lxml2
 SYS_LIBS=-ldl -lstdc++ 
 SYS_LIBS_PURE=-ldl -lsocket -lnsl -lm $(shell $(CXX) -print-file-name=libstdc++.a)
 
@@ -84,7 +84,7 @@ MSGCOPTS= $(INCLUDE_PATH)
 SUBDIRS= 
 
 # object files in this directory
-OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o  dhcpv6.o Internet.o ipv6disp.o   ipv6node.o mip6.o
+OBJS= CoreNetwork_n.o IPv6_n.o ipv6msg_m.o  dhcpv6.o Internet.o ipv6disp.o   ipv6node.o mip6.o ra.o
 
 # header files generated (from msg files)
 GENERATEDHEADERS= ipv6msg_m.h
@@ -145,6 +145,9 @@ ipv6node.o: ipv6node.cc
 
 mip6.o: mip6.cc
 	$(CXX) -c $(COPTS) mip6.cc
+
+ra.o: ra.cc
+	$(CXX) -c $(COPTS) ra.cc
 
 
 #doc: neddoc doxy
@@ -220,4 +223,12 @@ mip6.o: mip6.cc \
   ../util/ipv6.h \
   ../util/ssinfo.h \
   ../util/fsm.h \
+  ../util/hoinfo.h
+ra.o: ra.cc \
+  ra.h \
+  ipv6msg_m.h \
+  ../util/logger.h \
+  ../util/ssinfo.h \
+  ../util/fsm.h \
+  ../util/ipv6.h \
   ../util/hoinfo.h

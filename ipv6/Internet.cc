@@ -46,6 +46,9 @@ void Internet::initialize()
 	RoutingTable.push_back(*entry);
     }
 
+    MsgsTransmittedVector.setName("TotalMsgsTransmitted");
+    DroppedMsgsVector.setName("DroppedMsgs");
+    DelayVector.setName("AvgDelayVector");
 
     WATCH_LIST(RoutingTable);
 }
@@ -55,7 +58,18 @@ double Internet::calculateDelay(IPv6 *msg)
     double min = (double)par("MinDelay");
     double max = (double)par("MaxDelay");
 
+    IPv6Addr src = msg->getSrcIP();
+    IPv6Addr dst = msg->getDstIP();
+
+    if (src.addr[0] == dst.addr[0]) {
+	/* routing from similar location */
+    } else  {
+	/* routing between remote location */
+    }
+
     double delay = uniform(min, max);
+
+    DelayVector.record(delay);
 
     return delay;
 }
@@ -74,11 +88,15 @@ void Internet::handleMessage(cMessage *msg)
 	if (!memcmp(dst.addr, it->prefix.addr, 8)) {
 	    Log(Debug) << "Route for dst addr=" << dst << " found: " << *it << LogEnd;
 	    sendDelayed(msg, delay, "ipOut", it->gateIndex);
+	    MsgsTransmittedCnt++;
+	    MsgsTransmittedVector.record(MsgsTransmittedCnt);
 	    return;
 	}
     }
     
     Log(Error) << "Received message, but failed to find route for it (dstIP=" << dst << ")." << LogEnd;
+    DroppedMsgsCnt++;
+    DroppedMsgsVector.record(DroppedMsgsCnt);
 }
 
 ostream & operator << (ostream &s, RouteEntry e)

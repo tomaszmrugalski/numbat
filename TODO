@@ -4,14 +4,40 @@
 
  TODO
 ------
-- LocUpdate is now currently transmitted during remoteAutoconf. There
-   is a pramenter called mipRemoteLocUpdate, but it does not work
-   properly yet.
+- ipv6/Internet.cc::calculateDelay()
+  add different delays in routing for close (bs-bs) or
+  remote (ss-cn) packets
 
  BUGS
 ------
 
- VECTORS
----------
+ VECTORS IMPLEMENTED
+---------------------
+SS/IPv6Disp:
+- SentBytes per second
+- RcvdBytes per second
+- DroppedMsgs
+
+DD/DHCPv6Cli:
+- conf. complete (number of completed configurations)
+- conf. time
+
+IPv6Node:
+- sent bytes
+- sent packets
+- received bytes
+- received packets
+
+Internet
+- Transmitted msgs
+- Average delay
+- Dropped messages
+
+
+ VECTORS TO BE IMPLEMENTED
+---------------------------
 - measure time since last received data
 - measure time since last transmitted data
+- measure number of dropped packets due to: 
+  - no routing configured
+  - no address configured

@@ -55,6 +55,18 @@ protected:
 private:
     list<cModule*> EventListenersLst;
     string getMsgName(cMessage * msg);
+
+    /* stats */
+    void updateStats(cMessage * msg);
+    simtime_t  hoPrep;
+    simtime_t  hoReentry;
+    simtime_t  hoReconf;
+    simtime_t  hoLackOfComm;
+
+    cOutVector hoPrepVector;    /* HO (preparation phase) time */
+    cOutVector hoReentryVector; /* HO (reentry L2 phase) time */
+    cOutVector hoReconfVector;  /* HO (L3 reconfiguration) time */
+    cOutVector hoLackOfCommVector; /* HO (lack of communication caps) time */
 };
 
 ostream & operator<<(ostream & strum, SSInfo_t &ss);
