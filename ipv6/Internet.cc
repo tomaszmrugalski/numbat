@@ -97,6 +97,8 @@ void Internet::handleMessage(cMessage *msg)
     Log(Error) << "Received message, but failed to find route for it (dstIP=" << dst << ")." << LogEnd;
     DroppedMsgsCnt++;
     DroppedMsgsVector.record(DroppedMsgsCnt);
+
+    delete msg;
 }
 
 ostream & operator << (ostream &s, RouteEntry e)

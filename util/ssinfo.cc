@@ -79,6 +79,11 @@ void ssInfo::initialize() {
     hoReentryVector.setName("HO Reentry time");
     hoReconfVector.setName("HO IP reconfigure time");
     hoLackOfCommVector.setName("HO Lack of comm. capab. time");
+
+    hoPrep = 0;
+    hoReentry = 0;
+    hoReconf = 0;
+    hoLackOfComm = 0;
 }
 
 void ssInfo::stringUpdate() {

@@ -15,5 +15,6 @@ cd ..
 
 ### wimax/ ###
 cd wimax
+#opp_makemake -w -f -I../util -I../ipv6 -u Cmdenv
 opp_makemake -w -f -I../util -I../ipv6
 cd ..

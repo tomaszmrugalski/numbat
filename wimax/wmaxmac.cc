@@ -39,6 +39,9 @@ ostream & operator<<(ostream & s, WMaxConn &x) {
 Define_Module(ssMAC);
 
 void ssMAC::updateString() {
+
+    if (!ev.isGUI()) 
+	return;
     cModule *SS = parentModule();
     cModule *macSS = submodule("ssMac");
     char buf[80];
