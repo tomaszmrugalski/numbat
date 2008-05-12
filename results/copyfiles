@@ -1,0 +1,37 @@
+#!/usr/bin/perl -w
+
+if ($#ARGV != 1) {
+    print "usage: copyfiles filename-with-list-of-files\n";
+    exit;
+}
+
+my $fname  = $ARGV[0];
+my $dstdir = $ARGV[1];
+
+open FILE, $fname or die "Unable to open $fname file.\n";
+
+my @lines = <FILE>;
+
+close FILE;
+
+print "Creating director $dstdir.\n";
+system("mkdir $dstdir"); 
+print "Removing *.vec from $dstdir.\n.";
+system("rm $dstdir/*.vec");
+
+foreach $line (@lines) {
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+
+    my $dir = $line;
+    $dir =~ s/\/.*//;
+
+    $out = $line;
+    $out =~ s/$dir\///;
+    $out = $dstdir."/".$out;
+    
+    $cmd = "cp -f $line $out";
+
+    print "[$cmd]\n";
+    system($cmd);
+}

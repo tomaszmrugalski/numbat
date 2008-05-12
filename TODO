@@ -7,9 +7,26 @@
 - ipv6/Internet.cc::calculateDelay()
   add different delays in routing for close (bs-bs) or
   remote (ss-cn) packets
+- Internet: dropped packets should be recorded periodically, not
+   during drops
+- diagram3 has cosmic values in runs 3, 5-10
+
+ SCENARIOS
+-----------
+Run 1: No optimization
+Run 2: WiMAX optim
+Run 3: Skip initial DHCPv6 delay
+Run 4: DHCPv6 Preference 255
+Run 5: DHCPv6 Rapid commit
+Run 6: IPv6 Skip DAD
+Run 7: IPv6 Server side DAD
+Run 8: Remote autoconf
+Run 9: Address params
+Run A: Remote Mobile IPv6
 
  BUGS
 ------
+Lots of them.
 
  VECTORS IMPLEMENTED
 ---------------------
