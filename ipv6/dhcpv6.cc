@@ -82,7 +82,15 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 		DhcpStartTime = simTime();
 		onEvent(EVENT_START, msg);
 	    }
+	} else {
+	    onEvent(EVENT_ABORT, msg);
 	}
+	return;
+    }
+    if (  (dynamic_cast<MihEvent_ReentryStart*>(msg)) ||
+	  (dynamic_cast<MihEvent_EntryStart*>(msg)) ) {
+	onEvent(EVENT_ABORT, msg);
+	return;
     }
 
     if (dynamic_cast<DHCPv6Advertise*>(msg)) {
@@ -126,6 +134,7 @@ void DHCPv6Cli::fsmInit()
     eventInit(EVENT_ADVERTISE_RECEIVED, "Advertise received");
     eventInit(EVENT_REPLY_RECEIVED, "Reply received");
     eventInit(EVENT_TIMER, "Timer"); // used for delaying SOLICIT and DAD
+    eventInit(EVENT_ABORT, "Operation aborted.");
     eventVerify();
     
     TIMER(Delay, 1.0, "Delay"); // used for delaying SOLICIT and DAD
@@ -278,6 +287,12 @@ FsmStateType DHCPv6Cli::onEventState_WaitForAdvertise(Fsm * fsm, FsmEventType e,
 	return STATE_SEND_SOLICIT;
 
     }
+    case EVENT_ABORT:
+    {
+	SLog(fsm, Notice) << "Current operation aborted." << LogEnd;
+	cli->stopTimer();
+	return STATE_IDLE;
+    }
     case EVENT_ADVERTISE_RECEIVED:
     {
 	DHCPv6Advertise * adv = dynamic_cast<DHCPv6Advertise *>(msg);
@@ -327,6 +342,12 @@ FsmStateType DHCPv6Cli::onEventState_WaitForReply(Fsm * fsm, FsmEventType e, cMe
 	cli->DhcpErrorCnt++;
 	cli->DhcpErrors.record(cli->DhcpErrorCnt);
 	return STATE_SEND_SOLICIT;
+    }
+    case EVENT_ABORT:
+    {
+	SLog(fsm, Notice) << "Current operation aborted." << LogEnd;
+	cli->stopTimer();
+	return STATE_IDLE;
     }
     case EVENT_REPLY_RECEIVED:
     {
@@ -385,6 +406,12 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
 	cli->DhcpErrorCnt++;
 	cli->DhcpErrors.record(cli->DhcpErrorCnt);
 	return STATE_SEND_SOLICIT;
+    }
+    case EVENT_ABORT:
+    {
+	SLog(fsm, Notice) << "Current operation aborted." << LogEnd;
+	cli->stopTimer();
+	return STATE_IDLE;
     }
     case EVENT_TIMER:
     {

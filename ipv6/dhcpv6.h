@@ -40,6 +40,7 @@ class DHCPv6Cli : public Fsm
 	EVENT_TIMER, // used for initial delay, also in PERFORMING_DAD
 	EVENT_ADVERTISE_RECEIVED,
 	EVENT_REPLY_RECEIVED,
+	EVENT_ABORT, // abort current operation (e.g. because of handover)
 	EVENT_NUM // last dummy event
     } Event;
 
