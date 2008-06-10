@@ -23,9 +23,9 @@ module Physim
         SS: SS[numSS];
             display: "p=127,144;i=device/pc_s";
         CN: CorrNode[numSS];
-            display: "i=device/pc2;p=160,336,r,70";
+            display: "i=device/pc2;p=50,355,r,90";
         internet: Internet;
-            display: "p=160,280;i=misc/cloud";
+            display: "p=180,280;i=misc/cloud";
     connections nocheck:
 
         for i=1..numSS do
@@ -38,7 +38,7 @@ module Physim
             internet.ipOut++ --> BS[i].networkIn;
         endfor;
 
-    display: "b=450,377";
+    display: "b=470,390";
 endmodule
 
 network physim : Physim
