@@ -14,15 +14,7 @@
 
  Please use meaningful commit comments. 
 
- [test: SVN over SSL]
-
  ------
  To rebuild makefiles, use following 
+ opp_makemake -w -f -I../util
 
-
-opp_makemake -w -f -I../util
-
- ---
-
- 1. no dhcp optims
- 2. remote autoconf
