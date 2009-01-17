@@ -27,15 +27,7 @@ ostream & operator<<(ostream & str, SSInfo_t &ss) {
 }
 
 std::string SSInfo_t::getMac() {
-    char buf[30];
-    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", 
-	    (unsigned char)((macAddr >> 40) & 0xff),
-	    (unsigned char)((macAddr >> 32) & 0xff),
-	    (unsigned char)((macAddr >> 24) & 0xff),
-	    (unsigned char)((macAddr >> 16) & 0xff),
-	    (unsigned char)((macAddr >>  8) & 0xff),
-	    (unsigned char)((macAddr )      & 0xff));
-    return string(buf);
+    return MacToString(macAddr);
 }
 
 /********************************************************************************/
@@ -194,4 +186,17 @@ void ssInfo::updateStats(cMessage * msg)
 	hoLackOfCommVector.record(simTime() - hoLackOfComm);
 	return;
     }
+}
+
+string MacToString(uint64_t macAddr)
+{
+    char buf[30];
+    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", 
+	    (unsigned char)((macAddr >> 40) & 0xff),
+	    (unsigned char)((macAddr >> 32) & 0xff),
+	    (unsigned char)((macAddr >> 24) & 0xff),
+	    (unsigned char)((macAddr >> 16) & 0xff),
+	    (unsigned char)((macAddr >>  8) & 0xff),
+	    (unsigned char)((macAddr )      & 0xff));
+    return string(buf);
 }
