@@ -1,5 +1,6 @@
 cplusplus {{
 #include "wmaxmsg.h"
+#include "ipv6.h"
 }};
 
 struct WMaxUlMapIE;
@@ -8,6 +9,8 @@ struct WMaxBSFull;
 struct WMaxQos;
 struct WMaxRngReq;
 struct WMaxRngRsp;
+struct IPv6Addr;
+struct uint64_t;
 
 // ********************************************************************************
 // *** real WiMAX MAC messages ****************************************************
@@ -201,6 +204,8 @@ fields:
     int gateIndex;
     int cid;
     WMaxQos qos[];
+    IPv6Addr dstAddr;
+    uint64_t macAddr;
 }
 
 message WMaxMacAddMngmntConn
