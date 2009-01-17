@@ -1,0 +1,55 @@
+
+ Numbat Changelog
+------------------
+
+2009-01-18
+- DHCPv6, RA messages are now derived from IPv6 messages
+- Convergence Sublayer in WiMax written for real
+
+2009-01-15
+- start updating changelog again :)
+- Here's the status as of today:
+- WiMax
+    * based on IEEE 802.16-2005 (aka 802.16e)
+    * Simple radio/PHY layer - unicast (SS to BS) and multicast (BS to SS) transmissions
+    * OFDMA transmission (including CDMA codes, radio frame slots/symbols)
+    * Bandwidth management: BWR, CDMA codes for ranging and BWR transmission)
+    * Supported traffic classes: Best Effort (BE) and Unsolicited Grant Service (UGS)
+    * Control plane: Network entry(RNG-REQ, RNG-RSP, SBC-REQ, SBC-RSP, PKM-REQ, PKM-RSP, REG-REQ, REG-RSP messages)
+    * Control plane: Service flow creation/mgmt (DSA-REQ, DSA-RSP, DSA-ACK)
+    * Control plane: Scanning (SCN-REQ, SCN-RSP)
+    * Control plane: Handover (BSHO-REQ, MSHO-RSP, HO-IND)
+    * Several traffic models: fixed, handover after timeout, distance based handover
+    * Simple event signalling, so you don't have to understand whole stack operation to 
+      get some notification (similar to MIH 802.21-style events, but easier)
+    * Several optimization allowed by 802.16-2005 standard are configurable
+    * multiple SSes support (optimizations can be enabled on a per SS basis)
+    * Connection management and queuing
+    * multiple BSes support
+    * Handover between BSes
+- IPv6
+    * IPv6Node: traffic source/sink, with statistics and various traffic generation models
+    * RAGen/RArcv: Router Advertisement generator and receiver, used to configure IPv6 nodes in stateless mode
+    * DHCPv6 client: several proposed enhancements supported
+    * DHCPv6 server: Supports relays and several extra enhancements
+    * MobileIPv6 Mobile Node: Simple implementation of the MN
+    * MobileIPv6 Home Agent
+    * IPv6 dispatcher, that inteligently redirects packets to specific modules. It is also mobility aware.
+
+2006-12-28
+- it is possible to connect multiple nodes to one SS or BS
+- connections are createad automatically (one connection
+  for each module connected to WMaxMacBS/SS.
+- Skeleton WMax Control Plane added (WMaxCtrlSS/BS).
+
+2006-12-27
+- IPv6 nodes traffic model is now configurable
+- partial support for multiple connections (ssPHY, bsPHY)
+- control info (WMaxMacHeader) added to messages
+
+2006-12-11
+- uplink and downlink is now operational!
+
+some-time-ago
+- added ipv6node module and 2 instances: ssIPv6 and bsIPv6.
+- fixed problem with frames all starting at 0.005 ms.
