@@ -42,6 +42,8 @@ void MobIPv6mn::initialize()
     if (ev.isGUI()) 
         setName(buf);
 
+    connected = false;
+
     updateString();
 }
 
@@ -137,19 +139,25 @@ void MobIPv6mn::handleMessage(cMessage *msg)
     } else {
 	IPv6Addr dstAddr = IPv6Addr(par("corrIP").stringValue(), true);
 	IPv6Addr srcAddr = IPv6Addr(par("myIP").stringValue(), true);
-	IPv6Addr notSet  = IPv6Addr("::", true);
 
-	if (dstAddr == notSet)
+	if (!connected)
 	{
-	    Log(Warning) << "Corresponding node's address not known, not sending anything." << LogEnd;
-	    delete msg;
-	    return;
-	}
-	if (srcAddr == notSet)
-	{
-	    Log(Warning) << "My own IP address is not set yet, not sending anything." << LogEnd;
-	    delete msg;
-	    return;
+	    IPv6Addr notSet  = IPv6Addr("::", true);
+	    
+	    if (dstAddr == notSet)
+	    {
+		Log(Debug) << "Corresponding node's address not known, not sending anything." << LogEnd;
+		delete msg;
+		return;
+	    }
+	    if (srcAddr == notSet)
+	    {
+		Log(Debug) << "My own IP address is not set yet, not sending anything." << LogEnd;
+		delete msg;
+		return;
+	    }
+	    Log(Notice) << "Starting message transmission." << LogEnd;
+	    connected = true;
 	}
 
 	// downlink (sending data)
@@ -194,6 +202,8 @@ void MobIPv6cn::initialize()
     sprintf(buf, "%s[%d]", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
+
+    connected = false;
 
     updateString();
 }
@@ -241,20 +251,26 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	// downlink (sending data)
 	IPv6Addr srcAddr = IPv6Addr(par("myIP").stringValue(), true);
 	IPv6Addr dstAddr = IPv6Addr(par("corrIP").stringValue(), true);
-	IPv6Addr notSet= IPv6Addr("::", true);
-	if (dstAddr == notSet)
-	{
-	    Log(Warning) << "Corresponding node's address not known, not sending anything." << LogEnd;
-	    delete msg;
-	    return;
-	}
-	if (srcAddr == notSet)
-	{
-	    Log(Warning) << "My own IP address is not set yet, not sending anything." << LogEnd;
-	    delete msg;
-	    return;
-	}
 
+	if (!connected)
+	{
+	    IPv6Addr notSet= IPv6Addr("::", true);
+	    if (dstAddr == notSet)
+	    {
+		Log(Debug) << "Corresponding node's address not known, not sending anything." << LogEnd;
+		delete msg;
+		return;
+	    }
+	    if (srcAddr == notSet)
+	    {
+		Log(Debug) << "My own IP address is not set yet, not sending anything." << LogEnd;
+		delete msg;
+		return;
+	    }
+	    Log(Notice) << "Starting message trasmissions." << LogEnd;
+	    connected = true;
+	}
+	
 	IPv6 * ip = new IPv6("data from CN");
 	ip->encapsulate(msg);
 	ip->setSrcIP(srcAddr);
