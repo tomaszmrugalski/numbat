@@ -206,7 +206,7 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	    return;
 	} 
 	// this is normal message, route it to SS/BS via radio
-	Log(Info) << "Forwarding outgoing DHCPv6 message." << LogEnd;
+	Log(Debug) << "Forwarding outgoing DHCPv6 message." << LogEnd;
 	send(msg, "ipOut",0);
 	return;
     }
