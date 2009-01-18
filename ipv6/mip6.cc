@@ -127,17 +127,25 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 	delete msg;
 	return;
     } else {
+	IPv6Addr * dstAddr = new IPv6Addr(par("corrIP").stringValue(), true);
+	if (*dstAddr == IPv6Addr("::", true))
+	{
+	    Log(Warning) << "Corresponding node's address not known, not sending anything." << LogEnd;
+	    delete msg;
+	    return;
+	}
+
+	IPv6Addr * srcAddr = new IPv6Addr(par("myIP").stringValue(), true);
+
 	// downlink (sending data)
-	IPv6 * ip = new IPv6("");
+	IPv6 * ip = new IPv6("user data");
 	ip->encapsulate(msg);
 
-	IPv6Addr * addr = new IPv6Addr(par("myIP").stringValue(), true);
-	ip->setSrcIP( *addr );
-	delete addr;
+	ip->setSrcIP( *srcAddr );
+	delete srcAddr;
 
-	addr = new IPv6Addr(par("corrIP").stringValue(), true);
-	ip->setDstIP( *addr );
-	delete addr;
+	ip->setDstIP( *dstAddr );
+	delete dstAddr;
 
 	outGate = "lowerOut";
 	send(ip, "lowerOut", 0);
