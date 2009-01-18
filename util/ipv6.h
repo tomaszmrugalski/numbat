@@ -13,6 +13,7 @@ public:
     IPv6Addr(unsigned int a, unsigned int b, unsigned int c, unsigned int d);
     uint64_t MacAddrFromLinkLocal();
     void LinkLocalFromMAC(uint64_t mac);
+    bool isMulticast();
     unsigned char addr[16];
     
     string plain();

@@ -70,6 +70,11 @@ uint64_t IPv6Addr::MacAddrFromLinkLocal()
     return m;
 }
 
+bool IPv6Addr::isMulticast()
+{
+    return (addr[0]==0xff);
+}
+
 ostream & operator <<(ostream & s, IPv6Addr a) 
 {
     char buf[80];
