@@ -38,6 +38,13 @@ void RaRcv::initialize()
 	info->addEventListener(this);
     }
 
+    // add number prefix to the module name
+    cModule * ss = parentModule()->parentModule();
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
+
     updateString();
 }
 
@@ -87,6 +94,13 @@ void RaGen::initialize()
     RaInterval = (double)par("RaInterval");
     Log(Notice) << "RA to be transmitted in " << RaInterval << " secs." << LogEnd;
     scheduleAt(RaInterval, sendTimer);
+
+    // add number prefix to the module name
+    cModule * ss = parentModule()->parentModule();
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 void RaGen::handleMessage(cMessage *msg)
