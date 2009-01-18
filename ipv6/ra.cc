@@ -101,7 +101,7 @@ void RaGen::handleMessage(cMessage *msg)
 
 void RaGen::sendRA() 
 {
-    IPv6Ra * msg = new IPv6Ra("");
+    IPv6Ra * msg = new IPv6Ra("RA");
     Log(Debug) << "Transmitting RA message." << LogEnd;
     send (msg, "raOut");
 }

@@ -15,7 +15,7 @@ fields:
   bool Dhcpv6Relay;
 };
 
-message IPv6Ra
+message IPv6Ra extends IPv6
 {
 
 
@@ -26,7 +26,7 @@ message IPv6Ra
 // *** DHCPv6 messages ************************************************************
 // ********************************************************************************
 
-message DHCPv6Solicit
+message DHCPv6Solicit extends IPv6
 {
 fields:
     bool rapidCommit;
@@ -36,7 +36,7 @@ fields:
     int  remoteBS;
 };
 
-message DHCPv6Advertise
+message DHCPv6Advertise extends IPv6
 {
 fields:
     int preference;
@@ -45,7 +45,7 @@ fields:
     bool remoteConf;
 };
 
-message DHCPv6Request
+message DHCPv6Request extends IPv6
 {
 fields:
     bool addrParams;
@@ -54,7 +54,7 @@ fields:
     int  remoteBS;
 };
 
-message DHCPv6Reply
+message DHCPv6Reply extends IPv6
 {
 fields:
     IPv6Addr addr;
@@ -62,7 +62,7 @@ fields:
     bool remoteConf;
 };
 
-message DHCPv6Confirm
+message DHCPv6Confirm extends IPv6
 {
 fields:
     bool addrParams;

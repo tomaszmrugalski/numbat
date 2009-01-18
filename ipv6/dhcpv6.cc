@@ -19,6 +19,8 @@
 
 using namespace std;
 
+const IPv6Addr dhcpv6Multicast = IPv6Addr("ff02::1:2", true);
+
 /********************************************************************************/
 /*** DHCPv6 Client **************************************************************/
 /********************************************************************************/
@@ -55,6 +57,8 @@ void DHCPv6Cli::initialize()
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
 {
+    getMyAddr();
+
     cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
 
@@ -162,6 +166,18 @@ void DHCPv6Cli::stopTimer()
     TIMER_STOP(Delay);
 }
 
+IPv6Addr DHCPv6Cli::getMyAddr()
+{
+    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    ssInfo * info = dynamic_cast<ssInfo*>(tmp);
+  
+    IPv6Addr addr;
+    addr.LinkLocalFromMAC(info->info.macAddr);
+    uint64_t macAddr = addr.MacAddrFromLinkLocal();
+
+    return addr;
+}
+
 // state idle
 FsmStateType DHCPv6Cli::onEventState_Idle(Fsm * fsm, FsmEventType e, cMessage * msg)
 {
@@ -172,6 +188,7 @@ FsmStateType DHCPv6Cli::onEventState_Idle(Fsm * fsm, FsmEventType e, cMessage * 
 
     case EVENT_START:
     {
+
 	double del;
 	if (info->hoInfo.dhcp.skipInitialDelay)
 	    del = 0.0f;
@@ -209,8 +226,10 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
     }
 
     ssInfo * info = ssInfoGet(fsm);
-    DHCPv6Solicit * sol = new DHCPv6Solicit();
+    DHCPv6Solicit * sol = new DHCPv6Solicit("DHCPv6 Solicit");
     sol->setAddrParams(info->hoInfo.dhcp.addrParams);
+    sol->setSrcIP(cli->getMyAddr());
+    sol->setDstIP(dhcpv6Multicast);
 
     string x;
 
@@ -318,11 +337,13 @@ FsmStateType DHCPv6Cli::onExitState_WaitForAdvertise(Fsm * fsm)
 // state send Request
 FsmStateType DHCPv6Cli::onEnterState_SendRequest(Fsm * fsm)
 {
+    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
     ssInfo * info = ssInfoGet(fsm);
-    DHCPv6Request * req = new DHCPv6Request();
+    DHCPv6Request * req = new DHCPv6Request("DHCPv6 Request");
 
     req->setAddrParams(info->hoInfo.dhcp.addrParams);
     req->setRemoteConf(info->hoInfo.dhcp.remoteAutoconf);
+    req->setSrcIP(cli->getMyAddr());
 
     SLog(fsm, Info) << "Sending REQUEST." << LogEnd;
     fsm->send(req, "dhcpOut", 0);
@@ -422,7 +443,8 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
 	}
 	return STATE_CONFIGURED;
     }
-    CASE_IGNORE(fsm, e);
+    default:
+      CASE_IGNORE(fsm, e);
     }
 }
 
@@ -501,7 +523,7 @@ void DHCPv6Srv::initialize()
     HandlingRelay = false;
 }
 
-double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
+double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDelay)
 {
     double delay = 0;
     if (strlen(paramName)) {
@@ -533,15 +555,17 @@ double DHCPv6Srv::sendMsg(cMessage * msg, char * paramName, double extraDelay)
     return delay+extraDelay;
 }
 
-void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays)
+void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays, IPv6Addr cliAddr)
 {
-    DHCPv6Reply * reply = new DHCPv6Reply();
+    DHCPv6Reply * reply = new DHCPv6Reply("DHCPv6 REPLY");
     string addr = par("prefix").stringValue();
+
+    // assiging address to this client
     char buf[32];
     sprintf(buf, "%x", ++nextAddr);
     addr = addr + string(buf);
     reply->setAddr(IPv6Addr(addr.c_str(), true));
-
+    reply->setDstIP(cliAddr);
     reply->setAddrParams(addrParams);
     double extraDelay = 0.0;
     if (viaRelays) {
@@ -559,7 +583,11 @@ void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays)
 
 void DHCPv6Srv::handleMessage(cMessage *msg)
 {
-    if (dynamic_cast<IPv6*>(msg)) {
+    IPv6 * ip = dynamic_cast<IPv6*>(msg);
+    if (!msg)
+	opp_error("Received non-IPv6 message in %s module.", fullName());
+
+    if (ip->getDhcpv6Relay()) {
 	handleRelay(msg);
 	delete msg;
 	return;
@@ -574,16 +602,18 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	}
 
 	if (sol->getRapidCommit()) {
-	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams(), sol->getRemoteConf() && !HandlingRelay );
+	    sendReply("SOLICIT with rapid-commit received, ", sol->getAddrParams(), 
+		      sol->getRemoteConf() && !HandlingRelay, sol->getSrcIP() );
 	    delete msg;
 	    return;
 	} else {
-	    DHCPv6Advertise * adv = new DHCPv6Advertise();
+	    DHCPv6Advertise * adv = new DHCPv6Advertise("DHCPv6 Advertise");
 	    int pref = par("preference");
 	    double extraDelay = 0.0;
 
 	    adv->setPreference(pref);
 	    adv->setAddrParams(sol->getAddrParams());
+	    adv->setDstIP(sol->getSrcIP());
 	    Log(Info) << "SOLICIT received,";
 
 	    Log(Cont) << " sending ADVERTISE (preference=" << pref << ")." << LogEnd;
@@ -601,7 +631,7 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	    return;
 	}
 
-	sendReply("REQUEST received,", req->getAddrParams(), req->getRemoteConf() && !HandlingRelay);
+	sendReply("REQUEST received,", req->getAddrParams(), req->getRemoteConf() && !HandlingRelay, req->getSrcIP());
 	delete msg;
 	return;
     }
@@ -614,7 +644,7 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	    return;
 	}
 
-	sendReply("CONFIRM received,", conf->getAddrParams(), conf->getRemoteConf() && !HandlingRelay);
+	sendReply("CONFIRM received,", conf->getAddrParams(), conf->getRemoteConf() && !HandlingRelay, conf->getSrcIP());
 	delete msg;
 	return;
     }

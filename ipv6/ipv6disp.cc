@@ -88,8 +88,6 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 	return;
     };
 
-    /// @TODO - MIPv6
-
     if (handleTraffic) {
 	send(msg, "genOut", 0); // send to generator directly
 	Log(Debug) << "Message " << msg->fullName() << " received and sent to upper layer." << endl;
@@ -191,13 +189,22 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
         return;
     }
 
-    if (!strcmp(gate->fullName(), "dhcpIn") && dynamic_cast<IPv6*>(msg)) {
-	Log(Info) << "Forwarding outgoing DHCPv6 relay message." << LogEnd;
-	// handle outgoing DHCPv6 relay
-	send (msg, "genOut", 0);
+    if (!strcmp(gate->fullName(), "dhcpIn")) {
+	IPv6 * ip = dynamic_cast<IPv6*>(msg);
+	if (ip->getDhcpv6Relay() && BS)
+	{
+	    // this is relay, route it via backbone
+	    Log(Info) << "Forwarding outgoing relay message." << LogEnd;
+	    send (msg, "genOut", 0);
+	    return;
+	} 
+	// this is normal message, route it to SS/BS via radio
+	Log(Info) << "Forwarding outgoing DHCPv6 message." << LogEnd;
+	send(msg, "ipOut",0);
 	return;
     }
 
+#if 0
     if (strcmp(gate->fullName(), "dhcpIn") && dynamic_cast<IPv6*>(msg)) {
 	// handle incoming DHCPv6 relay
 	IPv6 * ip = dynamic_cast<IPv6*>(msg);
@@ -207,10 +214,11 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	    return;
 	}
     }
+#endif
     
     // relay RAs all the time
-    if (!strcmp(gate->fullName(),"raIn") ||
-	!strcmp(gate->fullName(), "dhcpIn")) {
+    if (!strcmp(gate->fullName(),"raIn"))
+    {
 	send(msg, "ipOut", 0);
 	return;
     }
@@ -220,29 +228,28 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	RcvdBytesPers += msg->length();                                     
 	dispatchMessage(msg);
 	return;
-    } else {
-	IPv6* ip = dynamic_cast<IPv6*>(msg);
-	if (ip && ip->getBindingUpdate()) {
-	    send(msg, "ipOut", 0);
-	    return;
-	}
-	
+    } 
 
-	if (handleTraffic) { 
-	    if (routingConfigured) {
-		SentBytesPers += msg->length();                 
-		send(msg, "ipOut", 0);
-		Log(Debug) << "Message " << msg->fullName() << " received and dispatched to ipOut gate." << LogEnd;
-	    } else {
-		Log(Notice) << "Message " << msg->fullName() << " dropped: no routing configured." << LogEnd;
-		DroppedMsgs++;
-		delete msg;
-	    }
+    IPv6* ip = dynamic_cast<IPv6*>(msg);
+    if (ip && ip->getBindingUpdate()) { // accept binding update at any time
+	send(msg, "ipOut", 0);
+	return;
+    }
+
+    if (handleTraffic) { 
+	if (routingConfigured) {
+	    SentBytesPers += msg->length();                 
+	    send(msg, "ipOut", 0);
+	    Log(Debug) << "Message (" << msg->fullName() << ") received and dispatched to ipOut gate." << LogEnd;
 	} else {
-	    Log(Notice) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	    Log(Notice) << "Message (" << msg->fullName() << ") dropped: no routing configured." << LogEnd;
 	    DroppedMsgs++;
 	    delete msg;
 	}
+    } else {
+	Log(Notice) << "Message (" << msg->fullName() << ") dropped, traffic is not supported right now." << LogEnd;
+	DroppedMsgs++;
+	delete msg;
     }
 }
 

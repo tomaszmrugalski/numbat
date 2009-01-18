@@ -17,6 +17,8 @@
 #include "ssinfo.h"
 #include "ipv6.h"
 
+extern const IPv6Addr dhcpv6Multicast;
+
 class DHCPv6Cli : public Fsm
 {
  public:
@@ -80,6 +82,8 @@ class DHCPv6Cli : public Fsm
     void stopTimer();
     static ssInfo * ssInfoGet(Fsm * fsm);
 
+    IPv6Addr getMyAddr();
+
     bool PurposeNextLocation; // are we going to obtain address for next location?
     bool GotAddrForNextLocation; // did we complete remote autoconf already?
     int  NextLocationBS;
@@ -105,10 +109,10 @@ class DHCPv6Srv : public cSimpleModule
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
  private:
-    double sendMsg(cMessage * msg, char * paramName, double extraDelay=0.0);
+    double sendMsg(cMessage * msg, const char * paramName, double extraDelay=0.0);
     void   sendRelay(cMessage * msg, int dstBS);
     void   handleRelay(cMessage * msg);
-    void   sendReply(string x, bool addrParams, bool viaRelays);
+    void   sendReply(string x, bool addrParams, bool viaRelays, IPv6Addr cliAddr);
     IPv6Addr getIPofBS(int bs);
 
     bool HandlingRelay;
