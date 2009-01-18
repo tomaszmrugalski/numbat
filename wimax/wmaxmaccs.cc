@@ -128,7 +128,13 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
     if (csTable.size() == 0)
     {
-	Log(Warning) << "Unable to forward message, no CS rules defined." << LogEnd;
+	if (!dstAddr.isMulticast()) // don't complain about multicasts so loud
+	{
+	    Log(Warning);
+	} else {
+	    Log(Debug);
+	}
+	Log(Cont)  << "Unable to forward message(" << msg->fullName() << "), no CS rules defined." << LogEnd;
 	delete msg;
 	return;
     }
@@ -147,7 +153,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 	    {
 		DHCPv6Reply * reply = dynamic_cast<DHCPv6Reply*>(msg);
 		Log(Info) << "DHCPv6 Reply: updating rule for CID=" << it->cid << ", MAC=" << MacToString(it->macAddr) 
-			  << " to " << reply->getAddr() << LogEnd;
+			  << " to dstAddr=" << reply->getAddr() << LogEnd;
 		it->dstAddr = reply->getAddr();
 	    }
 	    dlMsgSend(msg, it->cid);
@@ -170,7 +176,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 	Log(Warning) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
 		     << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
     } else {
-	Log(Info) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
+	Log(Debug) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
     }
     delete msg;
     return;
