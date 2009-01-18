@@ -61,6 +61,13 @@ void IPv6Dispatch::initialize()
 	info->addEventListener(this);
     }
 
+    // add number prefix to the module name
+    cModule * ss = parentModule()->parentModule();
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
+
     updateString();
 }
 

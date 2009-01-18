@@ -53,6 +53,12 @@ void DHCPv6Cli::initialize()
     GotAddrForNextLocation = false;
     PurposeNextLocation = false;
     NextLocationBS = 2;
+
+    // add number prefix to the module name
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
@@ -521,6 +527,13 @@ void DHCPv6Srv::initialize()
 {
     nextAddr=1;
     HandlingRelay = false;
+
+    // add number prefix to the module name
+    cModule * ss = parentModule()->parentModule();
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDelay)
