@@ -124,7 +124,7 @@ namespace logger {
 	    break;
 	}
 	buffer << ' ';
-	buffer.width(13);
+	buffer.width(14);
 	buffer << logger::logname ;
 	buffer << ' ' << lv[x-1] << " ";
 	return buffer;
