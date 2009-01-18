@@ -38,6 +38,13 @@ void WMaxMacCS::initialize() {
   } else {
       BS = true;
   }
+
+    // add number prefix to the module name
+    cModule * ss = parentModule()->parentModule();
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 
@@ -113,9 +120,11 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
     cGate * gate = msg->arrivalGate();
     IPv6Addr dstAddr = DstAddrGet(msg);
     uint64_t macAddr = dstAddr.MacAddrFromLinkLocal();
-    Log(Info) << "Trying to forward DL msg (" << msg->fullName() << ") to ipv6=" << dstAddr.plain();
-    Log(Cont) << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << LogEnd;
+    Log(Debug) << "Trying to forward DL msg (" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+	       << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << LogEnd;
+
     // try to find appropriate route for this dst address
+    int mcastReceiversCnt = 0; // how many SSes are going to receive this message?
 
     if (csTable.size() == 0)
     {
@@ -126,8 +135,10 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
     
     for(it=csTable.begin(); it!=csTable.end(); it++) {
 	// on SS side, just use first connection available
-	if (BS==false)
-	    break;
+	if (BS==false) {
+	    dlMsgSend(msg, it->cid);
+	    return;
+	}
 
 	if (it->macAddr==macAddr)
 	{
@@ -139,33 +150,43 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 			  << " to " << reply->getAddr() << LogEnd;
 		it->dstAddr = reply->getAddr();
 	    }
-	    break;
+	    dlMsgSend(msg, it->cid);
+	    return;
 	}
 	if (it->dstAddr == dstAddr)
 	{
 	    // found expected IPv6 address
-	    break;
+	    dlMsgSend(msg, it->cid);
+	    return;
+	}
+	if (dstAddr.isMulticast()) {
+	    mcastReceiversCnt++;
+	    dlMsgSend((cMessage*)msg->dup(), it->cid);
 	}
     }
 
-    if(it == csTable.end()) {
-        Log(Warning) << "Unable to find a proper connection. Message has been droped." << LogEnd;
-        delete msg;
-        return;
+    if (!dstAddr.isMulticast())
+    {
+	Log(Warning) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+		     << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
+    } else {
+	Log(Info) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
     }
+    delete msg;
+    return;
+}
 
+void WMaxMacCS::dlMsgSend(cMessage * msg, int cid)
+{
     cMessage *wmaxmacmsg = new cMessage(msg->fullName());
     wmaxmacmsg->encapsulate(msg);
     
     WMaxMacHeader * hdr = new WMaxMacHeader();
-    hdr->cid = it->cid;
+    hdr->cid = cid;
     wmaxmacmsg->setControlInfo(hdr);
-    
-    Log(Debug) << "New message. CID=" << it->cid << LogEnd;
     
     send(wmaxmacmsg, "macOut");
 }
-
 
 void WMaxMacCS::updateLog() {
     list<WMaxMacCSRule>::iterator it;

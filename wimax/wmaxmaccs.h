@@ -45,6 +45,7 @@ protected:
     virtual void handleDlMessage(cMessage *msg);
     virtual void updateLog();
 
+    void dlMsgSend(cMessage * msg, int cid);
     IPv6Addr DstAddrGet(cMessage *msg);
     list<WMaxMacCSRule> csTable;
     bool BS;
