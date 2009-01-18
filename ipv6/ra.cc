@@ -18,6 +18,8 @@
 
 using namespace std;
 
+const IPv6Addr allNodesMulticast = IPv6Addr("ff02::1", true);
+
 /********************************************************************************/
 /*** Router Advertisement Receiver **********************************************/
 /********************************************************************************/
@@ -102,6 +104,7 @@ void RaGen::handleMessage(cMessage *msg)
 void RaGen::sendRA() 
 {
     IPv6Ra * msg = new IPv6Ra("RA");
+    msg->setDstIP(allNodesMulticast);
     Log(Debug) << "Transmitting RA message." << LogEnd;
     send (msg, "raOut");
 }
