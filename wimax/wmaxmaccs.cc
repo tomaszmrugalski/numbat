@@ -11,16 +11,17 @@
 #include <omnetpp.h>
 #include <string>
 #include "wmaxmaccs.h"
-//#include "ipv6node.h"
+#include "ipv6.h"
 #include "wmaxmac.h"
 #include "logger.h"
+#include "ssinfo.h"
 
 using namespace std;
 
 ostream & operator <<(ostream & s, WMaxMacCSRule &rule)
 {
-  s << "cid=" << rule.cid;
-  return s;
+    s << "cid=" << rule.cid << ", dstAddr=" << rule.dstAddr.plain() << ", mac=" << MacToString(rule.macAddr);
+    return s;
 }
 
 /********************************************************************************/
@@ -31,6 +32,12 @@ Define_Module(WMaxMacCS);
 
 void WMaxMacCS::initialize() {
   WATCH_LIST(csTable);
+  std::string name=fullName();
+  if (!name.find("ss")) {
+      BS = false;
+  } else {
+      BS = true;
+  }
 }
 
 
@@ -45,10 +52,13 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
     }
 
     if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
-        WMaxMacCSRule rule;
-        rule.cid  = addconn->getCid();
+        WMaxMacCSRule rule = {0};
+        rule.cid     = addconn->getCid();
+	rule.dstAddr = addconn->getDstAddr();
+	rule.macAddr = addconn->getMacAddr();
+	
         list<WMaxMacCSRule>::iterator it;
-        csTable.push_front(rule);
+        csTable.push_back(rule);
         updateLog();
         delete msg;
         return;
@@ -88,18 +98,58 @@ void WMaxMacCS::handleUlMessage(cMessage *msg) {
     Log(Debug) << "Message send to upper layer." << LogEnd;
 }
 
+IPv6Addr WMaxMacCS::DstAddrGet(cMessage *msg)
+{
+    if (dynamic_cast<IPv6*>(msg))
+    {
+      IPv6* ipMsg = dynamic_cast<IPv6*>(msg);
+      return ipMsg->getDstIP();
+    }
+    opp_error("Non-IPv6 message is trying to sneak thru WMaxMacCS module: %s", fullName());
+}
 
 void WMaxMacCS::handleDlMessage(cMessage *msg) {
     list<WMaxMacCSRule>::iterator it;
     cGate * gate = msg->arrivalGate();
-    for(it=csTable.begin(); it!=csTable.end(); it++) {
-        /// @todo clasifier
-        if((it->cid != 0)) {
-            break;
-        }
+    IPv6Addr dstAddr = DstAddrGet(msg);
+    uint64_t macAddr = dstAddr.MacAddrFromLinkLocal();
+    Log(Info) << "Trying to forward DL msg (" << msg->fullName() << ") to ipv6=" << dstAddr.plain();
+    Log(Cont) << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << LogEnd;
+    // try to find appropriate route for this dst address
+
+    if (csTable.size() == 0)
+    {
+	Log(Warning) << "Unable to forward message, no CS rules defined." << LogEnd;
+	delete msg;
+	return;
     }
+    
+    for(it=csTable.begin(); it!=csTable.end(); it++) {
+	// on SS side, just use first connection available
+	if (BS==false)
+	    break;
+
+	if (it->macAddr==macAddr)
+	{
+	    // found on MAC based criteria
+	    if (dynamic_cast<DHCPv6Reply*>(msg))
+	    {
+		DHCPv6Reply * reply = dynamic_cast<DHCPv6Reply*>(msg);
+		Log(Info) << "DHCPv6 Reply: updating rule for CID=" << it->cid << ", MAC=" << MacToString(it->macAddr) 
+			  << " to " << reply->getAddr() << LogEnd;
+		it->dstAddr = reply->getAddr();
+	    }
+	    break;
+	}
+	if (it->dstAddr == dstAddr)
+	{
+	    // found expected IPv6 address
+	    break;
+	}
+    }
+
     if(it == csTable.end()) {
-        Log(Debug) << "Unable to find a proper connection. Message has been droped." << LogEnd;
+        Log(Warning) << "Unable to find a proper connection. Message has been droped." << LogEnd;
         delete msg;
         return;
     }

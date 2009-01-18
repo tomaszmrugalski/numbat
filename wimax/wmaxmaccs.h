@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <omnetpp.h>
 #include <string>
+#include "ipv6msg_m.h"
 
 using namespace std;
 
@@ -25,6 +26,8 @@ typedef struct {
      uint16_t cid;
      //int gateIndex; 
      /// @todo IPv6 source and destination addr
+     uint64_t macAddr;
+     IPv6Addr dstAddr;
 } WMaxMacCSRule;
 
 
@@ -42,7 +45,9 @@ protected:
     virtual void handleDlMessage(cMessage *msg);
     virtual void updateLog();
 
+    IPv6Addr DstAddrGet(cMessage *msg);
     list<WMaxMacCSRule> csTable;
+    bool BS;
 };
 
 ostream & operator <<(ostream & s, WMaxMacCSRule &f);

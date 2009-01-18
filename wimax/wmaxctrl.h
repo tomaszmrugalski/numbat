@@ -133,7 +133,7 @@ public:
     double hoReentryTimestamp; // timestamp of the reentry start
     double hoReentryCompleteTimestamp; // timestamp of the reentry completion
     double hoActionTime; //time of handover idle
-    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid, double extraDelay = 0.0f);
+    double sendMsg(cMessage * msg, std::string paramName, const std::string &gateName, int cid, double extraDelay = 0.0f);
     cStdDev hoActionTimeData;
 protected:
     void fsmInit();
@@ -249,7 +249,7 @@ protected:
     void fsmInit();
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    double sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid);
+    double sendMsg(cMessage * msg, const char * paramName, const char * gateName, int cid);
     uint16_t getNextCid() { return cid++; };
     SSInfo_t * getSS(uint16_t basicCid, string reason);
     void deleteSS(uint16_t basicCid);

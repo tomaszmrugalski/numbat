@@ -169,15 +169,15 @@ void WMaxCtrlSS::initialize() {
     WATCH_PTRLIST(serviceFlows);
 }
 
-double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid, double extraDelay)
+double WMaxCtrlSS::sendMsg(cMessage * msg, std::string paramName, const std::string &gateName, int cid, double extraDelay)
 {
     double delay = 0;
-    if (strlen(paramName)) {
+    if (strlen(paramName.c_str())) {
 	char buf[80];
-	sprintf(buf, "Min%s", paramName);
+	sprintf(buf, "Min%s", paramName.c_str());
 	double min = (double)par(buf);
 	
-	sprintf(buf, "Max%s", paramName);
+	sprintf(buf, "Max%s", paramName.c_str());
 	double max = (double)par(buf);
 	
 	delay = uniform(min, max);
@@ -191,7 +191,7 @@ double WMaxCtrlSS::sendMsg(cMessage * msg, char * paramName, const char * gateNa
     hdr->cid = cid;
     msg->setControlInfo(hdr);
 
-    sendDelayed(msg, delay, gateName);
+    sendDelayed(msg, delay, gateName.c_str());
 
     return delay;
 }
@@ -465,6 +465,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
 		      SLog(ss, Info) << "Creating SF cid=" << newCid << LogEnd;
 		      WMaxMacAddConn *addConn = new WMaxMacAddConn();
 		      addConn->setName("Add connection");
+		      addConn->setMacAddr(ssinfo->info.macAddr);
 		      addConn->setGateIndex(0);
 		      addConn->setCid((*it)->cid);
 		      addConn->setQosArraySize(1);
@@ -1059,7 +1060,7 @@ bool WMaxCtrlBS::pkmEnabled()
     return pkmSupport;
 }
 
-double WMaxCtrlBS::sendMsg(cMessage * msg, char * paramName, const char * gateName, int cid)
+double WMaxCtrlBS::sendMsg(cMessage * msg, const char * paramName, const char * gateName, int cid)
 {
     char buf[80];
     sprintf(buf, "Min%s", paramName);
@@ -1136,6 +1137,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
             oldCid = req->getSfCid(i);
             newCid = getNextCid();
 
+	    addConn->setMacAddr(ss->macAddr);
             addConn->setName("Add connection");
             addConn->setGateIndex(0);
             addConn->setCid( newCid );
@@ -1338,7 +1340,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
     bool transFound = false;
 
     if (dynamic_cast<WMaxMsgDsaAck*>(msg)) {
-        getSS( GetCidFromMsg(msg), "DSA-ACK received");
+        SSInfo_t * ss = getSS( GetCidFromMsg(msg), "DSA-ACK received");
 
         WMaxMsgDsaAck *dsaack = dynamic_cast<WMaxMsgDsaAck*>(msg);
         Log(Notice) << "DSA-ACK received (transID=" << dsaack->getTransactionID() << "),";
@@ -1349,6 +1351,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
             Log(Cont) << " transaction found, creating new connection (cid=" << it->cid << ")" << LogEnd;
             WMaxMacAddConn *addConn = new WMaxMacAddConn();
             addConn->setName("Add connection");
+	    addConn->setMacAddr(ss->macAddr);
             addConn->setGateIndex(0);
             addConn->setCid(it->cid);
             addConn->setQosArraySize(1);
@@ -1535,6 +1538,7 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
 
     WMaxMacAddConn *addConn = new WMaxMacAddConn();
     addConn->setName("Add connection");
+    addConn->setMacAddr(ssinfo->info.macAddr);
     addConn->setGateIndex(flow->gate);
     addConn->setCid(flow->cid);
     addConn->setQosArraySize(1);
