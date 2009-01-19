@@ -14,7 +14,6 @@
 #include <stdint.h>
 #include <omnetpp.h>
 
-
 class IPv6Node : public cSimpleModule
 {
  public:
@@ -33,7 +32,11 @@ class IPv6Node : public cSimpleModule
     int BurstSize;
 
     // how large packets can be?
-    int BurstPacketSize;
+    int MaxPacketSize; // maximum packet size (configurable)
+    int MinPacketSize; // minimum packet size (sizeof(ip6hdr)+sizeof(udphdr)
+    
+    double Mean;
+    double StdDev; 
 
     // stats 
     uint32_t SentBytes;
@@ -45,6 +48,8 @@ class IPv6Node : public cSimpleModule
     cOutVector SentBytesVector;
     cOutVector RcvdPktsVector;
     cOutVector RcvdBytesVector;
+    cOutVector SentPktSizeVector;
+    cOutVector RcvdPktSizeVector;
 };
 
 #endif
