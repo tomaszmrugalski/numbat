@@ -28,6 +28,7 @@ class MobIPv6mn : public Fsm
     void fsmInit();
  private:
     bool connected;
+    int  index;
 };
 
 class MobIPv6ha : public cSimpleModule
@@ -49,6 +50,7 @@ class MobIPv6cn: public cSimpleModule
     virtual void handleBindingUpdate(cMessage * msg);
  private:
     bool connected;
+    int  index;
 };
 
 #endif

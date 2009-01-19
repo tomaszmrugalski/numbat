@@ -161,7 +161,9 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 	}
 
 	// downlink (sending data)
-	IPv6 * ip = new IPv6("Data from MN");
+	stringstream tmp;
+	tmp << "Data from MN[" << index << "]";
+	IPv6 * ip = new IPv6(tmp.str().c_str());
 	ip->encapsulate(msg);
 	ip->setSrcIP( srcAddr );
 	ip->setDstIP( dstAddr );
@@ -199,7 +201,8 @@ void MobIPv6cn::initialize()
     // add number prefix to the module name
     cModule * ss = parentModule()->parentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    index = ss->index();
+    sprintf(buf, "%s[%d]", fullName(), index);
     if (ev.isGUI()) 
         setName(buf);
 
@@ -271,7 +274,9 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	    connected = true;
 	}
 	
-	IPv6 * ip = new IPv6("data from CN");
+	stringstream tmp;
+	tmp << "Data from CN[" << index << "]";
+	IPv6 * ip = new IPv6(tmp.str().c_str());
 	ip->encapsulate(msg);
 	ip->setSrcIP(srcAddr);
 	ip->setDstIP(dstAddr);
