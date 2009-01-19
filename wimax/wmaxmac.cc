@@ -401,10 +401,10 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 
 	msg = (cMessage*) SendQueue.tail();
 
-	if (msg->length() > symbols*bytesPerPS) {
+	if (msg->byteLength() > symbols*bytesPerPS) {
 	    // message won't fit in this frame. What should we do in such case?
 
-	    Log(Debug) << "Tried to schedule message (len=" << msg->length() << "), but there are only "
+	    Log(Debug) << "Tried to schedule message (len=" << msg->byteLength() << "), but there are only "
 		       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	    if (ieCnt) // something has been scheduled - ok, end scheduling
@@ -421,14 +421,14 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
             // currently used: c)
             msg = (cMessage*) SendQueue.pop();
 	    queuedMsgsCnt--;
-            Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
+            Log(Error) << "Unable to send " << msg->byteLength() << "-byte message(" << msg->fullName() 
 		       << "), because it won't fit in DL subframe. Message is dropped." << endl;
             delete msg;
             continue;
 
 	    // currently used: d)
 	    /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in DL subframe (%d symbols *%dB/PS=%d bytes)",
-		      msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
+		      msg->byteLength(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
 	    break;*/
 	}
 	
@@ -441,14 +441,14 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	msg = (cMessage*)SendQueue.pop();
 	queuedMsgsCnt--;
 
-	lengthInPS = (int)ceil(double(msg->length())/bytesPerPS);
+	lengthInPS = (int)ceil(double(msg->byteLength())/bytesPerPS);
 	symbols -= lengthInPS;
 	
 	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
 	if (!hdr)
 	    opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
 	CLEAR(&ie);
-	ie.length  = msg->length();
+	ie.length  = msg->byteLength();
 	ie.cid     = hdr->cid;
 	ie.symbols = lengthInPS;
 	dlmap->setIE(ieCnt-1,ie);
@@ -892,21 +892,21 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 //    if (!strcmp(fullName(), "ssMac")) {
 	switch(it->type) {
 	case WMAX_CONN_TYPE_BE:
-	    Log(Debug) << "Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ") ";
-	    it->qos.be.reqbw += msg->length();
-	    if(msg->length() == 0) { /// @todo sending messages with length == 0
+	    Log(Debug) << "Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ") ";
+	    it->qos.be.reqbw += msg->byteLength();
+	    if(msg->byteLength() == 0) { /// @todo sending messages with length == 0
 		it->qos.be.reqbw += 12;
 	    }
 	    Log(Cont) << "CID=" << it->cid << " Required bandwidth: " << it->qos.be.reqbw << LogEnd; 
 	    it->queue->insert(msg);
 	    break;
 	case WMAX_CONN_TYPE_UGS:
-	    Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << LogEnd;
+	    Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
 	    SendQueue.insert(msg);
 	    break;
 	}
     } else {
-        Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->length() << ")." << LogEnd;
+        Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
         SendQueue.insert(msg);
     }
     queuedMsgsCnt++;
@@ -1035,9 +1035,9 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 	                 msg = (cMessage*) it->queue->tail();
 
-	                 if (msg->length() > symbols*bytesPerPS) {
+	                 if (msg->byteLength() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
-	                     Log(Debug) << "Tried to schedule message (len=" << msg->length() << "), but there are only " 
+	                     Log(Debug) << "Tried to schedule message (len=" << msg->byteLength() << "), but there are only " 
 				       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
@@ -1045,7 +1045,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
                              // currently used: c)
                              msg = (cMessage*) it->queue->pop();
-                             Log(Error) << "Unable to send " << msg->length() << "-byte message(" << msg->fullName() 
+                             Log(Error) << "Unable to send " << msg->byteLength() << "-byte message(" << msg->fullName() 
 					<<"), because it won't fit in UL subframe. Message is dropped." << LogEnd;
 			     queuedMsgsCnt--;
                              delete msg;
@@ -1053,7 +1053,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
                              // currently used: d)
 	                     /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in UL subframe (%d symbols *%dB/PS=%d bytes)",
-		             msg->length(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
+		             msg->byteLength(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
 	                     break;*/
 	                 }
 
@@ -1063,7 +1063,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                          msg = (cMessage*)it->queue->pop();
 			 queuedMsgsCnt--;
 
-                         lengthInPS = (int)ceil(double(msg->length())/bytesPerPS);
+                         lengthInPS = (int)ceil(double(msg->byteLength())/bytesPerPS);
 	
                          symbols -= lengthInPS;
 	
@@ -1071,7 +1071,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 if (!hdr)
 	                      opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
 
-	                 Log(Debug) << "Sent msg: length=" << msg->length() << ", used " << lengthInPS << " symbols, " 
+	                 Log(Debug) << "Sent msg: length=" << msg->byteLength() << ", used " << lengthInPS << " symbols, " 
 				    << symbols << " symbol(s) left" << LogEnd;
 	
 	                 send(msg, "phyOut");
@@ -1138,8 +1138,8 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                        if (it2->cid == it->cid){
                            if (!it2->queue->empty()) {
                                cMessage * msg = (cMessage*) it2->queue->tail();
-                               if(hdr->bwr < msg->length())
-                                   hdr->bwr = msg->length();
+                               if(hdr->bwr < msg->byteLength())
+                                   hdr->bwr = msg->byteLength();
                            }
                        }
                    }
