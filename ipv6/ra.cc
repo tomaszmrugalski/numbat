@@ -118,6 +118,7 @@ void RaGen::handleMessage(cMessage *msg)
 void RaGen::sendRA() 
 {
     IPv6Ra * msg = new IPv6Ra("RA");
+    msg->setByteLength(100);
     msg->setDstIP(allNodesMulticast);
     Log(Debug) << "Transmitting RA message." << LogEnd;
     send (msg, "raOut");
