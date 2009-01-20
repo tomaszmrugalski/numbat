@@ -33,6 +33,7 @@ void IPv6Node::initialize()
     this->BurstInterval   = (double)par("BurstInterval");
     this->BurstSize       = (int)par("BurstSize");
     this->MaxPacketSize = (int)par("BurstPacketSize");
+    this->MinPacketSize = 48; // IPv6 header (40) + UDP header (8)
 
     double initialDelay = (double)par("InitialDelay");
 
@@ -73,7 +74,6 @@ void IPv6Node::initialize()
     x = x+std::string(" Rcvd Pkt size");
     RcvdPktSizeVector.setName(x.c_str());
 
-    MinPacketSize = 48; // IPv6 header (40) + UDP header (8)
     Mean   = (MaxPacketSize+MinPacketSize)/2.0;
     StdDev = 0.8*(Mean-MinPacketSize);
 }
