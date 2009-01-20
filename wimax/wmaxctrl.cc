@@ -1587,8 +1587,16 @@ WMaxEvent_FlowCreationStart * WMaxCtrlSS::createNewFlowEvent()
     WMaxEvent_FlowCreationStart *msg = new WMaxEvent_FlowCreationStart();
     msg->setGateIndex(0);
     WMaxQos qos;
-    qos.connType = WMAX_CONN_TYPE_BE;
-    qos.msr = 80000;
+
+    int type = parentModule()->parentModule()->par("connType");
+    switch (type)
+    {
+    case 2: qos.connType = WMAX_CONN_TYPE_BE; break;
+    case 6: qos.connType = WMAX_CONN_TYPE_UGS; break;
+    default: opp_error("Invalid connection type for %s: %d (allowed: 2=BE, 6=UGS)", fullName(), type);
+    }
+
+    qos.msr = parentModule()->parentModule()->par("connMsr"); // 80000;
     msg->setQosArraySize(1);
     msg->setQos(0,qos);
     msg->setGateIndex(0);
