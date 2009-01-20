@@ -188,8 +188,7 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	    int c = (int)ie.cdmaIE.subchannels;
 	    int d = (int)ie.cdmaIE.rangingMethod;
 	    Log(Cont) << "(CDMA BWR): symbolOffset=" << a << " ofdmaSymbols=" << b
-		      << " subchannels=" << c << " rangingMethod=" ;
-#if 0
+		      << " subchannels=" << c << " rangingMethod=" << d;
 	    switch (ie.cdmaIE.rangingMethod) {
 	    case WMAX_RANGING_METHOD_INITIAL: 
 		Log(Cont) << "initial ranging";
@@ -200,11 +199,10 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	    default:
 		Log(Cont) << "[unknown ranging method]";
 	    }
-#endif
 	    break;
 	}
 	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
-	    Log(Cont) << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
+	    Log(Cont) << "(CDMA ALLOCATION): duration=" << (int)ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
 		      << " rangingCode=" << (int)ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << (int)ie.cdmaAllocIE.rangingSymbol
 		      << " rangingSubchannel=" << (int)ie.cdmaAllocIE.rangingSubchannel;
 	    break;
@@ -263,7 +261,7 @@ void WMaxMacBS::initialize()
     schedUcdCnt          = 0;
 
     char buf[80];
-    sprintf(buf, "MacBS[%d]", BS->index());
+    sprintf(buf, "%s[%d]", fullName(), BS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -326,8 +324,10 @@ void WMaxMacBS::handleRxMessage(cMessage *msg)
 {
     if (dynamic_cast<WMaxMsgCDMA*>(msg))
     {
-        if (dynamic_cast<WMaxMsgCDMA*>(msg)->getPurpose()==WMAX_CDMA_PURPOSE_BWR) {
-            Log(Debug) << " Received CDMA code (purpose=BWR)." << LogEnd;
+	WMaxMsgCDMA * cdma = dynamic_cast<WMaxMsgCDMA*>(msg);
+        if (cdma->getPurpose()==WMAX_CDMA_PURPOSE_BWR) 
+	{
+            Log(Debug) << "Received CDMA code " << cdma->getCode() << " (purpose=BWR)." << LogEnd;
             CDMAQueue->insert(msg);
             return;
         }
@@ -355,7 +355,7 @@ void WMaxMacBS::schedule()
 
     // trigger PHY to start frame
     WMaxPhyDummyFrameStart * frameStart = new WMaxPhyDummyFrameStart();
-    Log(Debug) << ": Generating FrameStart trigger for PHY" << LogEnd;
+    // Log(Debug) << "Generating FrameStart trigger for PHY" << LogEnd;
     send(frameStart, "phyOut");
 }
 
@@ -596,7 +596,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 		ie.dataIE.duration = it->bandwidth;
 		ulmap->setIE(ieCnt-1, ie);
 		it->bandwidth = 0;
-		Log(Debug) << ": Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+		Log(Info) << "Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
 			   << symbolLength << " symbols." << LogEnd;
 	    }
 	    break;
@@ -630,7 +630,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	}
     }    
 
-    Log(Warning) << "UL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
+    Log(Info) << "UL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
@@ -722,6 +722,11 @@ void WMaxMacSS::initialize()
           scheduleAt(0.0, ChangePosition);
         }
     }
+
+    char buf[80];
+    sprintf(buf, "%s[%d]", fullName(), SS->index());
+    if (ev.isGUI()) 
+        setName(buf);
 }
 
 void WMaxMacSS::setInitialPosition() {
@@ -786,7 +791,9 @@ void WMaxMac::addManagementConn(uint16_t cid)
 
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
-    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule("ssMac")))
+    stringstream tmp;
+    tmp << "ssMac[" << SS->index() << "]";
+    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule(tmp.str().c_str())))
 	mac->updateString();
 
     if (msg==ChangePosition) {
@@ -1162,7 +1169,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                    hdr->cid = it->cid;
                    WMaxMsgBWR *msg = new WMaxMsgBWR("Bandwidth request");
                    msg->setControlInfo(hdr);
-                   Log(Debug) << "Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << LogEnd;
+                   Log(Info) << "Sending Bandwidth request (bandwidth: " << hdr->bwr << ", cid: "  << hdr->cid << ")" << LogEnd;
                    send(msg, "phyOut");
                    CDMAlist.erase(it);
                    break;

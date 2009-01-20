@@ -203,8 +203,12 @@ double WMaxCtrlSS::sendMsg(cMessage * msg, std::string paramName, const std::str
  * @param msg 
  */
 void WMaxCtrlSS::handleMessage(cMessage *msg) 
+
 {
-    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule("ssMac")))
+    stringstream tmp;
+    tmp << "ssMac[" << SS->index() << "]";
+    
+    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule(tmp.str().c_str())))
 	mac->updateString();
 
     if (dynamic_cast<WMaxMsgDlMap*>(msg)) {
