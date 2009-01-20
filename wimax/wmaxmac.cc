@@ -27,8 +27,20 @@ ostream & operator<<(ostream & strum, WMaxMacCDMA &x) {
 }
 
 ostream & operator<<(ostream & s, WMaxConn &x) {
-    s << "type=" << x.type << " sfid=" << x.sfid << " cid=" << x.cid << " runtime:[ bandwidth=" 
-      << x.bandwidth << "] gateIndex=" << x.gateIndex << " controlConn=" << (x.controlConn?"YES":"NO");
+    s << "type=" << x.type << " sfid=" << x.sfid << " cid=" << x.cid;
+    
+    switch (x.type) {
+    case WMAX_CONN_TYPE_BE:
+	s << " qos=[BE, msr=" << x.qos.be.msr << "]";
+	break;
+    case WMAX_CONN_TYPE_UGS:
+	s << " qos=[UGS, msr=" << x.qos.ugs.msr << ", latency=" << x.qos.ugs.latency << ", jitter=" << x.qos.ugs.jitter << "]";
+	break;
+    default:
+	break;
+    }
+
+    s << " runtime:[ bandwidth=" << x.bandwidth << "] gateIndex=" << x.gateIndex << " controlConn=" << (x.controlConn?"YES":"NO");
     return s;
 }
 
@@ -168,30 +180,36 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 	case WMAX_ULMAP_UIUC_EXTENDED2:
 	case WMAX_ULMAP_UIUC_PAPR:
 	case WMAX_ULMAP_UIUC_EXTENDED:
-	    ev << " NOT SUPPORTED IE TYPE";
+	    Log(Cont) << " NOT SUPPORTED IE TYPE";
 	    break;
 	case WMAX_ULMAP_UIUC_CDMA_BWR: {
-	    ev << "(CDMA BWR): symbolOffset=" << (int)ie.cdmaIE.symbolOffset << " ofdmaSymbols=" << (int)ie.cdmaIE.ofdmaSymbols 
-	       << " subchannels=" << (int)ie.cdmaIE.subchannels << " rangingMethod=" << (int)ie.cdmaIE.rangingMethod;
+	    int a = (int)ie.cdmaIE.symbolOffset;
+	    int b = (int)ie.cdmaIE.ofdmaSymbols;
+	    int c = (int)ie.cdmaIE.subchannels;
+	    int d = (int)ie.cdmaIE.rangingMethod;
+	    Log(Cont) << "(CDMA BWR): symbolOffset=" << a << " ofdmaSymbols=" << b
+		      << " subchannels=" << c << " rangingMethod=" ;
+#if 0
 	    switch (ie.cdmaIE.rangingMethod) {
 	    case WMAX_RANGING_METHOD_INITIAL: 
-		ev << "initial ranging";
+		Log(Cont) << "initial ranging";
 		break;
 	    case WMAX_RANGING_METHOD_BWR:
-		ev << "bandwidth request";
+		Log(Cont) << "bandwidth request";
 		break;
 	    default:
-		ev << "[unknown ranging method]";
+		Log(Cont) << "[unknown ranging method]";
 	    }
+#endif
 	    break;
 	}
 	case WMAX_ULMAP_UIUC_CDMA_ALLOC:
-	    ev << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
-	       << " rangingCode=" << (int)ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << (int)ie.cdmaAllocIE.rangingSymbol
-	       << " rangingSubchannel=" << (int)ie.cdmaAllocIE.rangingSubchannel;
+	    Log(Cont) << "(CDMA ALLOCATION): duration=" << ie.cdmaAllocIE.duration << " uiuc=" << (int)ie.cdmaAllocIE.uiuc
+		      << " rangingCode=" << (int)ie.cdmaAllocIE.rangingCode << " rangingSymbol=" << (int)ie.cdmaAllocIE.rangingSymbol
+		      << " rangingSubchannel=" << (int)ie.cdmaAllocIE.rangingSubchannel;
 	    break;
 	default:
-	    ev << "(DATA): duration=" << (int)ie.dataIE.duration;
+	    Log(Cont) << "(DATA): duration=" << (int)ie.dataIE.duration;
 	    break;
 	}
 	Log(Cont) << LogEnd;
@@ -341,7 +359,7 @@ void WMaxMacBS::schedule()
     send(frameStart, "phyOut");
 }
 
-void WMaxMacBS::scheduleBcastMessages() 
+void WMaxMacBS::scheduleBcastMessages()
 {
     schedDcdCnt++;
     schedUcdCnt++;
@@ -378,6 +396,7 @@ void WMaxMacBS::scheduleBcastMessages()
  */
 WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 {
+    int startSymbols = symbols;
     int i;
     int ieCnt = 0;
     WMaxDlMapIE ie; // map element
@@ -459,6 +478,8 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	send(msg, "phyOut");
     }
 
+    Log(Debug) << "DL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
+
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
     dlmap->setControlInfo(hdr);
@@ -476,6 +497,7 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
  */
 WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 {
+    int startSymbols = symbols;
     int i;
     int ieCnt = 0;
     WMaxUlMapIE ie;
@@ -557,9 +579,28 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 
 	// for each configured service flow, grant some bandwidth (if necessary)
 	switch (it->type) {
-/*	case WMAX_CONN_TYPE_BE:
-	    /// @todo - best effort not supported yet
-	    break;*/
+        case WMAX_CONN_TYPE_BE:
+	{
+	    it->bandwidth += it->qos.be.reqbw;
+            it->qos.be.reqbw = 0;
+	    int symbolLength = (int)ceil(double(it->bandwidth)/bytesPerPS);
+	    if ( (it->bandwidth>=WMAX_SCHED_MIN_GRANT_SIZE) && (symbols>=symbolLength) ) {
+		symbols -= symbolLength;
+		
+		ieCnt++;
+		ulmap->setIEArraySize(ieCnt);
+		WMaxUlMapIE ie;
+		CLEAR(&ie);
+		ie.uiuc = WMAX_ULMAP_UIUC_DATA_2;
+		ie.cid = it->cid;
+		ie.dataIE.duration = it->bandwidth;
+		ulmap->setIE(ieCnt-1, ie);
+		it->bandwidth = 0;
+		Log(Debug) << ": Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+			   << symbolLength << " symbols." << LogEnd;
+	    }
+	    break;
+	}
 	case WMAX_CONN_TYPE_UGS:
 	{
 	    uint32_t x = uint32_t(double(it->qos.ugs.msr)/8.0*FrameLength);
@@ -582,41 +623,14 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 			   << symbolLength << " symbols." << LogEnd;
 		break;
 	    }
-	    
 	}
-	}
-    }
-
-    for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); it++) {
-	if (symbols <=0) {
-	    Log(Debug) << "No symbols left, scheduling aborted." << LogEnd;
+	default:
+	    // other traffic types are not supproted
 	    break;
 	}
-	switch (it->type) {
-
-        case WMAX_CONN_TYPE_BE:
-	    it->bandwidth += it->qos.be.reqbw;
-            it->qos.be.reqbw = 0;
-	    int symbolLength = (int)ceil(double(it->bandwidth)/bytesPerPS);
-	    if ( (it->bandwidth>=WMAX_SCHED_MIN_GRANT_SIZE) && (symbols>=symbolLength) ) {
-		symbols -= symbolLength;
-
-		ieCnt++;
-		ulmap->setIEArraySize(ieCnt);
-		WMaxUlMapIE ie;
-		CLEAR(&ie);
-		ie.uiuc = WMAX_ULMAP_UIUC_DATA_2;
-		ie.cid = it->cid;
-		ie.dataIE.duration = it->bandwidth;
-		ulmap->setIE(ieCnt-1, ie);
-		it->bandwidth = 0;
-		Log(Debug) << ": Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
-			   << symbolLength << " symbols." << LogEnd;
-		break;
-	    }
-
-	}
     }    
+
+    Log(Warning) << "UL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
@@ -855,12 +869,10 @@ void WMaxMacSS::handleMessage(cMessage *msg)
  */
 void WMaxMac::handleTxMessage(cMessage *msg)
 {
-
-/// @todo find proper connection 
-     cGate * gate = msg->arrivalGate();
-     list<WMaxConn>::iterator it;
-
-     // message from WMaxCtrl - add header
+    cGate * gate = msg->arrivalGate();
+    list<WMaxConn>::iterator it;
+    
+    // message from WMaxCtrl - add header
      if (!msg->controlInfo()) {
 	 for (it = Conns.begin(); it!=Conns.end(); it++) {
 	     if ((it->gateIndex == gate->index()) && (it->controlConn == true)) {
@@ -871,46 +883,49 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 	     }
 	 }
      }
-
-    WMaxMacHeader * hdr = 0;
-    hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
-    if (!hdr)
-	opp_error("Unable to handle %s message: no header included", msg->fullName());
-    // find proper connection, not just get first one
-    for (it = Conns.begin(); it!=Conns.end(); it++) {
-	if (it->cid == hdr->cid) {
-	    break;
-	}
-    }
-    if (it==Conns.end()) {
-	Log(Error) << "Unable to find connection for CID=" << hdr->cid << LogEnd;
-        delete msg;
-	return;
-    }
-
-    if (dynamic_cast<WMaxMacSS*>(this)) {
-//    if (!strcmp(fullName(), "ssMac")) {
-	switch(it->type) {
-	case WMAX_CONN_TYPE_BE:
-	    Log(Debug) << "Received BE message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ") ";
-	    it->qos.be.reqbw += msg->byteLength();
-	    if(msg->byteLength() == 0) { /// @todo sending messages with length == 0
-		it->qos.be.reqbw += 12;
-	    }
-	    Log(Cont) << "CID=" << it->cid << " Required bandwidth: " << it->qos.be.reqbw << LogEnd; 
-	    it->queue->insert(msg);
-	    break;
-	case WMAX_CONN_TYPE_UGS:
-	    Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
-	    SendQueue.insert(msg);
-	    break;
-	}
-    } else {
-        Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
-        SendQueue.insert(msg);
-    }
-    queuedMsgsCnt++;
-    stringUpdate();
+     
+     WMaxMacHeader * hdr = 0;
+     hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+     if (!hdr)
+	 opp_error("Unable to handle %s message: no header included", msg->fullName());
+     // find proper connection, not just get first one
+     for (it = Conns.begin(); it!=Conns.end(); it++) {
+	 if (it->cid == hdr->cid) {
+	     break;
+	 }
+     }
+     if (it==Conns.end()) {
+	 Log(Error) << "Unable to find connection for CID=" << hdr->cid << LogEnd;
+	 delete msg;
+	 return;
+     }
+     
+     if (dynamic_cast<WMaxMacSS*>(this)) {
+	 switch(it->type) {
+	 case WMAX_CONN_TYPE_BE:
+	 {
+	     Log(Debug) << "Received BE message (CID=" << it->cid << ", len=" << msg->byteLength() << ") ";
+	     int symbolLength = (int)ceil(double(msg->byteLength())/WMAX_BYTES_PER_SYMBOL);
+	     it->qos.be.reqbw += symbolLength*WMAX_BYTES_PER_SYMBOL;
+	     if(msg->byteLength() == 0) { /// @todo sending messages with length == 0
+		 it->qos.be.reqbw += 12;
+	     }
+	     Log(Cont) << "CID=" << it->cid << " Required bandwidth: " << symbolLength << " (" << symbolLength*WMAX_BYTES_PER_SYMBOL << ")" 
+		       << ", " << it->qos.be.reqbw << " required so far" << LogEnd; 
+	     it->queue->insert(msg);
+	     break;
+	 }
+	 case WMAX_CONN_TYPE_UGS:
+	     Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
+	     SendQueue.insert(msg);
+	     break;
+	 }
+     } else {
+	 Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
+	 SendQueue.insert(msg);
+     }
+     queuedMsgsCnt++;
+     stringUpdate();
 }
 
 void WMaxMacSS::handleRxMessage(cMessage *msg)
@@ -1182,5 +1197,5 @@ void WMaxMacSS::finish()
     ev << "DL-MAPs received  : " << Stats.rcvdDlmaps << endl;
 
     ev << "---errors--------------" << endl;
-    ev << "Dropped frames (invalid CID): " << Stats.dropInvalidCid << endl;
+    ev << "Dropped frames (invalid CID): " << Stats.dropInvalidCid << " (SS receives other SS'es traffic)" << endl;
 }
