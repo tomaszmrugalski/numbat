@@ -166,14 +166,16 @@ void IPv6Dispatch::handleMihMessage(cMessage *msg)
 
 void IPv6Dispatch::updateString()
 {
-  char buf[80];
-  sprintf(buf, "%s\n%s\n%s\n%s", handleTraffic?"trf":"no trf", 
-	  routingConfigured?"rt":"no rt", 
-	  addrConfigured?"addr":"no addr", 
-	  locationUpdated?"loc upd":"no loc upd");
-  if (ev.isGUI())
-    displayString().setTagArg("t", 0, buf);
-
+    if (BS)
+	return;
+    char buf[80];
+    sprintf(buf, "%s\n%s\n%s\n%s", handleTraffic?"trf":"no trf", 
+	    routingConfigured?"rt":"no rt", 
+	    addrConfigured?"addr":"no addr", 
+	    locationUpdated?"loc upd":"no loc upd");
+    if (ev.isGUI())
+	displayString().setTagArg("t", 0, buf);
+    
   // displayString().setTagArg("i",1,"yellow");
 }
 
