@@ -99,13 +99,13 @@ module IPv6Server
         out: networkOut;
     submodules:
         DispatchBS: IPv6Dispatch;
-            display: "i=abstract/dispatcher;p=264,172";
+            display: "i=abstract/dispatcher;p=168,164";
         raGen: RaGen;
-            display: "i=block/source;p=448,176";
+            display: "i=block/source;p=272,72";
         mobIPv6ha: MobIPv6ha;
-            display: "i=misc/house;p=328,72";
+            display: "i=misc/house;p=168,72";
         DHCPv6Srv: DHCPv6Srv;
-            display: "i=device/mainframe;p=80,192";
+            display: "i=device/mainframe;p=72,72";
     connections nocheck:
         eventIn --> DispatchBS.eventIn;
         DispatchBS.ipOut --> ipOut;
@@ -121,7 +121,7 @@ module IPv6Server
 
         mobIPv6ha.networkOut --> networkOut;
         networkIn --> mobIPv6ha.networkIn;
-    display: "b=515,257";
+    display: "b=323,225";
 endmodule
 module IPv6Client
     gates:
@@ -129,16 +129,16 @@ module IPv6Client
         out: ipOut;
     submodules:
         IPv6Node: IPv6Node;
-            display: "i=block/rxtx;p=184,72";
+            display: "i=block/rxtx;p=168,56";
         DispatchSS: IPv6Dispatch;
-            display: "i=abstract/dispatcher;p=256,192";
+            display: "i=abstract/dispatcher;p=168,256";
         DHCPv6Cli: DHCPv6Cli;
-            display: "i=device/laptop;p=88,136";
+            display: "i=device/laptop;p=72,128";
         mobIPv6mn: MobIPv6mn;
-            display: "i=block/user;p=344,72";
+            display: "i=block/user;p=264,128";
         raRcv: RaRcv;
             parameters:
-            display: "i=block/sink;p=424,144";
+            display: "i=block/sink;p=168,128";
     connections nocheck:
                          //         IPv6Node.ipOut --> IPv6Dispatch.genIn;
                          //         IPv6Dispatch.genOut --> IPv6Node.ipIn;
@@ -155,7 +155,7 @@ module IPv6Client
         DispatchSS.dhcpOut --> DHCPv6Cli.dhcpIn;
         DispatchSS.ipOut --> ipOut;
         ipIn --> DispatchSS.ipIn;
-    display: "b=477,273";
+    display: "b=309,321";
 endmodule
 simple MobIPv6cn
     parameters:
@@ -174,13 +174,14 @@ module CorrNode
         out: ipOut;
     submodules:
         IPv6Node: IPv6Node;
-            display: "i=block/rxtx;p=240,320";
+            display: "i=block/rxtx;p=176,88";
         mobIPv6cn: MobIPv6cn;
-            display: "i=block/user;p=240,184";
+            display: "i=block/user;p=80,88";
     connections nocheck:
         IPv6Node.ipOut --> mobIPv6cn.upperIn;
         mobIPv6cn.upperOut --> IPv6Node.ipIn;
         mobIPv6cn.lowerOut --> ipOut;
         ipIn --> mobIPv6cn.lowerIn;
+    display: "b=244,162";
 endmodule
 

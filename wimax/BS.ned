@@ -34,17 +34,17 @@ module BS
         out: networkOut;
     submodules:
         bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=104,280;q=SendQueue";
+            display: "i=abstract/accesspoint,#40e221;p=232,72;q=SendQueue";
         bsMac: bsMAC;
-            display: "i=block/control,#40e221;p=104,168;q=SendQueue";
+            display: "i=block/control,#40e221;p=144,72;q=SendQueue";
         radio: WMaxRadio;
             gatesizes:
                 radioIn[sizeof(in)],
                 radioOut[sizeof(in)]; // use in, for consistency
 
-            display: "p=216,280;i=device/receiverdish,#40e221,30";
+            display: "p=312,72;i=device/receiverdish,#40e221,30";
         bsIPv6: IPv6Server;
-            display: "i=block/app,#40e221;p=104,64";
+            display: "i=block/app,#40e221;p=64,72";
     connections nocheck:
 
         bsMac.phyOut --> bsPhy.phyIn;
@@ -58,7 +58,7 @@ module BS
 
         bsIPv6.networkOut --> networkOut;
         networkIn --> bsIPv6.networkIn;
-    display: "b=264,328";
+    display: "b=360,128";
 endmodule
 
 
