@@ -542,21 +542,25 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 
     if (CDMAQueue->length()) {
 	// append IE for allocation of bandwidth to a user that requested bandwidth using a CDMA code
-	ieCnt++;
-	schedCdmaInitRngCnt=0;
-	ulmap->setIEArraySize(ieCnt);
-	CLEAR(&ie);
-	ie.cid  = WMAX_CID_BROADCAST;
-	ie.uiuc = WMAX_ULMAP_UIUC_CDMA_ALLOC;
-	WMaxMsgCDMA *msgcdma = (WMaxMsgCDMA*)CDMAQueue->pop();
-	ie.cdmaAllocIE.rangingCode = msgcdma->getCode();
-	/// @todo - duration, rangingSymbol, rangingSubchannel
-	ulmap->setIE(ieCnt-1,ie);
-	symbols--; // use just 1 symbol
-	delete msgcdma;
+	for (i=0; i<CDMAQueue->length(); i++) {
+	    ieCnt++;
+	    schedCdmaInitRngCnt=0;
+	    ulmap->setIEArraySize(ieCnt);
+	    CLEAR(&ie);
+	    ie.cid  = WMAX_CID_BROADCAST;
+	    ie.uiuc = WMAX_ULMAP_UIUC_CDMA_ALLOC;
+	    WMaxMsgCDMA *msgcdma = (WMaxMsgCDMA*)CDMAQueue->pop();
+	    ie.cdmaAllocIE.rangingCode = msgcdma->getCode();
+	    /// @todo - duration, rangingSymbol, rangingSubchannel
+	    ulmap->setIE(ieCnt-1,ie);
+	    delete msgcdma;
+	    symbols--; // use just 1 symbol
+	    if (symbols==0)
+		break;
+	}
     }
 
-    if (schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
+    if (symbols && schedCdmaHoRngFreq && schedCdmaHoRngFreq<=schedCdmaHoRngCnt++) {
 	// append IE for handover ranging
 	ieCnt++;
 	schedCdmaHoRngCnt=0;
