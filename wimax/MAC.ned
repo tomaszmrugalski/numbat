@@ -68,11 +68,11 @@ module ssMAC
         in: ipIn;
     submodules:
         ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=160,208;q=SendQueue";
+            display: "i=block/control,#ce1821;p=160,96;q=SendQueue";
         WMaxCtrlSS: WMaxCtrlSS;
-            display: "i=block/cogwheel,#ce1821;p=280,144";
+            display: "i=block/cogwheel,#ce1821;p=264,80";
         ssCS: WMaxMacCS;
-            display: "p=104,96;i=block/classifier,#ce1821";
+            display: "p=64,64;i=block/classifier,#ce1821";
     connections nocheck:
         ssMac.phyOut --> phyOut;
         phyIn --> ssMac.phyIn;
@@ -86,7 +86,7 @@ module ssMAC
         ssMac.macOut++ --> WMaxCtrlSS.macIn;
         WMaxCtrlSS.macOut --> ssMac.macIn++;
 
-    display: "b=362,298";
+    display: "b=346,162";
 endmodule
 
 
@@ -98,11 +98,11 @@ module bsMAC
         in: ipIn;
     submodules:
         bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=160,208;q=SendQueue";
+            display: "i=block/control,#40e221;p=152,112;q=SendQueue";
         WMaxCtrlBS: WMaxCtrlBS;
-            display: "i=block/cogwheel,#40e221;p=280,144";
+            display: "i=block/cogwheel,#40e221;p=240,72";
         bsCS: WMaxMacCS;
-            display: "i=block/classifier,#40e221;p=104,96";
+            display: "i=block/classifier,#40e221;p=72,72";
     connections nocheck:
 
         bsMac.phyOut --> phyOut;
@@ -117,5 +117,6 @@ module bsMAC
         bsMac.macOut++ --> WMaxCtrlBS.macIn;
         WMaxCtrlBS.macOut --> bsMac.macIn++;
 
+    display: "b=306,162";
 endmodule
 
