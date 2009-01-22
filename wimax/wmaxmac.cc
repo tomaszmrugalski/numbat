@@ -478,7 +478,7 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	send(msg, "phyOut");
     }
 
-    Log(Debug) << "DL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
+    Log(Debug) << "DL schedule: " << startSymbols << " symbols available for DL, " << startSymbols-symbols << " used." << LogEnd;
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
@@ -600,7 +600,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 		ie.dataIE.duration = it->bandwidth;
 		ulmap->setIE(ieCnt-1, ie);
 		it->bandwidth = 0;
-		Log(Info) << "Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
+		Log(Debug) << "Adding BE grant: cid=" << ie.cid << ", bandwith=" << ie.dataIE.duration << ", " 
 			   << symbolLength << " symbols." << LogEnd;
 	    }
 	    break;
@@ -634,7 +634,7 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
 	}
     }    
 
-    Log(Info) << "UL schedule: " << startSymbols << " available for DL, " << startSymbols-symbols << " used." << LogEnd;
+    Log(Debug) << "UL schedule: " << startSymbols << " symbols available for DL, " << startSymbols-symbols << " used." << LogEnd;
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
