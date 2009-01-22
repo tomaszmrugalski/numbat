@@ -198,32 +198,30 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
         return;
     }
 
+    IPv6 * ip = dynamic_cast<IPv6*>(msg);
     if (!strcmp(gate->fullName(), "dhcpIn")) {
-	IPv6 * ip = dynamic_cast<IPv6*>(msg);
 	if (ip->getDhcpv6Relay() && BS)
 	{
 	    // this is relay, route it via backbone
-	    Log(Info) << "Forwarding outgoing relay message." << LogEnd;
+	    Log(Info) << "Forwarding outgoing relay message (src=" 
+		      << ip->getSrcIP() << ",dst=" << ip->getDstIP()
+		      << ")" << LogEnd;
 	    send (msg, "genOut", 0);
 	    return;
 	} 
+
 	// this is normal message, route it to SS/BS via radio
 	Log(Debug) << "Forwarding outgoing DHCPv6 message." << LogEnd;
 	send(msg, "ipOut",0);
 	return;
     }
 
-#if 0
-    if (strcmp(gate->fullName(), "dhcpIn") && dynamic_cast<IPv6*>(msg)) {
-	// handle incoming DHCPv6 relay
-	IPv6 * ip = dynamic_cast<IPv6*>(msg);
-	if (ip->getDhcpv6Relay()) {
-	    Log(Info) << "Forwarding incoming DHCPv6 relay message." << LogEnd;
-	    send(msg, "dhcpOut", 0);
-	    return;
-	}
+    if (!strcmp(gate->fullName(), "genIn") && ip && ip->getDhcpv6Relay()) {
+	Log(Info) << "Forwarding incoming DHCPv6 relay message (src=" 
+		  << ip->getSrcIP() << ",dst=" << ip->getDstIP() << ")" << LogEnd;
+	send(msg, "dhcpOut", 0);
+	return;
     }
-#endif
     
     // relay RAs all the time
     if (!strcmp(gate->fullName(),"raIn"))
@@ -239,7 +237,6 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	return;
     } 
 
-    IPv6* ip = dynamic_cast<IPv6*>(msg);
     if (ip && ip->getBindingUpdate()) { // accept binding update at any time
 	send(msg, "ipOut", 0);
 	return;
