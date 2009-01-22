@@ -141,7 +141,7 @@ void ssInfo::sendEvent(cMessage * msg)
 
     updateStats(msg);
 
-    Log(Info) << "Sending event " << getMsgName(msg) << " to " << EventListenersLst.size() << " listeners:";
+    Log(Debug) << "Sending event " << getMsgName(msg) << " to " << EventListenersLst.size() << " listeners:";
 
     for (it=EventListenersLst.begin(); it!=EventListenersLst.end(); it++) {
 	cModule * module = *it;
