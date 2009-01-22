@@ -70,10 +70,10 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 
     if (dynamic_cast<MihEvent_ReentryEnd*>(msg) ||
 	dynamic_cast<MihEvent_EntryEnd*>(msg)) {
-	Log(Notice) << "Starting DHCPv6 operation." << LogEnd;
 	PurposeNextLocation = false;
-	onEvent(EVENT_START, msg);
 	DhcpStartTime = simTime();
+	Log(Notice) << "Starting DHCPv6 operation (now=" << DhcpStartTime << ")" << LogEnd;
+	onEvent(EVENT_START, msg);
 	stringUpdate();
 	return;
     }
@@ -202,6 +202,7 @@ FsmStateType DHCPv6Cli::onEventState_Idle(Fsm * fsm, FsmEventType e, cMessage * 
 	    del = uniform(0, 1.0);
 	SLog(fsm, Info) << "Delay: Starting operation in " << del << LogEnd;
 	cli->startTimer(del);
+	return fsm->State();
 	break;
     }
 
@@ -269,7 +270,7 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
 	sol->setRemoteConf(false);
     }
     
-    SLog(fsm, Info) << "Sending SOLICIT " << x << LogEnd;
+    SLog(fsm, Notice) << "Sending SOLICIT " << x << LogEnd;
 
     fsm->send(sol, "dhcpOut", 0);
 
@@ -310,7 +311,6 @@ FsmStateType DHCPv6Cli::onEventState_WaitForAdvertise(Fsm * fsm, FsmEventType e,
 	cli->DhcpErrorCnt++;
 	cli->DhcpErrors.record(cli->DhcpErrorCnt);
 	return STATE_SEND_SOLICIT;
-
     }
     case EVENT_ABORT:
     {
@@ -321,7 +321,7 @@ FsmStateType DHCPv6Cli::onEventState_WaitForAdvertise(Fsm * fsm, FsmEventType e,
     case EVENT_ADVERTISE_RECEIVED:
     {
 	DHCPv6Advertise * adv = dynamic_cast<DHCPv6Advertise *>(msg);
-	SLog(fsm, Info) << "ADVERTISE with prerefence=" << adv->getPreference() << " received." << LogEnd;
+	SLog(fsm, Notice) << "ADVERTISE with prerefence=" << adv->getPreference() << " received." << LogEnd;
 	if (adv->getPreference()==255) {
 	    return STATE_SEND_REQUEST;
 	}
@@ -351,7 +351,7 @@ FsmStateType DHCPv6Cli::onEnterState_SendRequest(Fsm * fsm)
     req->setRemoteConf(info->hoInfo.dhcp.remoteAutoconf);
     req->setSrcIP(cli->getMyAddr());
 
-    SLog(fsm, Info) << "Sending REQUEST." << LogEnd;
+    SLog(fsm, Notice) << "Sending REQUEST." << LogEnd;
     fsm->send(req, "dhcpOut", 0);
 
     return fsm->State();
@@ -416,7 +416,7 @@ FsmStateType DHCPv6Cli::onEnterState_PerformingDad(Fsm * fsm)
     
     cli->startTimer(del);
 
-    SLog(fsm, Info) << "REPLY received, completing " << type << " DAD in " << del << ", addr=" << cli->Addr.plain() << LogEnd;
+    SLog(fsm, Notice) << "REPLY received, completing " << type << " DAD in " << del << ", addr=" << cli->Addr.plain() << LogEnd;
 
     return fsm->State();
 }
@@ -443,9 +443,9 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
     case EVENT_TIMER:
     {
 	if (!cli->PurposeNextLocation) {
-	    SLog(fsm, Info) << "DAD complete, addr " << cli->Addr.plain() << " is ready to use in this location." << LogEnd;
+	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() << " is ready to use in this location." << LogEnd;
 	} else {
-	    SLog(fsm, Info) << "DAD complete, addr " << cli->Addr.plain() << " will be ready for use in next location." << LogEnd;
+	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() << " will be ready for use in next location." << LogEnd;
 	}
 	return STATE_CONFIGURED;
     }
@@ -471,10 +471,10 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
     cli->DhcpCompleteCnt++;
     cli->DhcpComplete.record(cli->DhcpCompleteCnt);
 
-    SLog(fsm, Info) << "DHCPv6 configuration complete (configuration took " << length << " secs).";
+    SLog(fsm, Notice) << "DHCPv6 configuration complete (configuration took " << length << " secs).";
 
     if (cli->PurposeNextLocation) {
-	SLog(fsm, Cont) << "(remote autoconf: address will be used after handover)." << LogEnd;
+	SLog(fsm, Cont) << "(remote autoconf: address will be used after handover).";
 	cli->AddrForNextLocation = cli->Addr;
 	cli->GotAddrForNextLocation = true;
     }
@@ -585,10 +585,10 @@ void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays, IPv6Addr cl
 	double min = (double)par("MinDelayRelay");
 	double max = (double)par("MaxDelayRelay");
 	extraDelay = uniform(min, max);
-	Log(Info) << x << " relays will be used (extra " << extraDelay << "secs delay), sending REPLY (addr="
+	Log(Notice) << x << " relays will be used (extra " << extraDelay << "secs delay), sending REPLY (addr="
 		  << addr << ")" << LogEnd;
     } else {
-	Log(Info) << x << "sending REPLY (addr=" << addr << ")." << LogEnd;
+	Log(Notice) << x << "sending REPLY (addr=" << addr << ")." << LogEnd;
     }
 
     sendMsg(reply, "DelayReply", extraDelay);
@@ -627,9 +627,7 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	    adv->setPreference(pref);
 	    adv->setAddrParams(sol->getAddrParams());
 	    adv->setDstIP(sol->getSrcIP());
-	    Log(Info) << "SOLICIT received,";
-
-	    Log(Cont) << " sending ADVERTISE (preference=" << pref << ")." << LogEnd;
+	    Log(Notice) << "SOLICIT received, sending ADVERTISE (preference=" << pref << ")." << LogEnd;
 	    sendMsg(adv, "DelayAdvertise", extraDelay);
 	    delete msg;
 	    return;
@@ -710,10 +708,13 @@ void DHCPv6Srv::handleRelay(cMessage * msg)
 IPv6Addr DHCPv6Srv::getIPofBS(int bs)
 {
     char buf[512];
-    sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha", bs);
-    cModule * m = parentModule()->parentModule()->parentModule(); // whole network
-    m = m->moduleByRelativePath(buf);
-    string x = m->par("prefix").stringValue();
+    sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha", bs); // mobIPv6ha[%d]
+    cModule *sim = parentModule()->parentModule()->parentModule(); // whole network
+    cModule *ha  = sim->moduleByRelativePath(buf);
+
+    if (!ha)
+	opp_error("%s: Unable to find address of BS[%d]: %s module not found.", sim->fullName(), bs, buf);
+    string x = ha->par("prefix").stringValue();
 
     return IPv6Addr(x.c_str(), true);
 }
