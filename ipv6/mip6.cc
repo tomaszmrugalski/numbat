@@ -311,8 +311,8 @@ void MobIPv6ha::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s[%d]", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+//     if (ev.isGUI()) 
+//         setName(buf);
 }
 
 void MobIPv6ha::handleMessage(cMessage *msg)
