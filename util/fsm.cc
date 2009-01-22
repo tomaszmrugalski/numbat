@@ -125,7 +125,7 @@ bool Fsm::eventVerify() {
 
 void Fsm::onEvent(FsmEventType e, cMessage *msg)
 {
-    if ( (e<0) || (e>StatesCnt) ) {
+    if ( (e<0) || (e>EventsCnt) ) {
 	opp_error("%s: Invalid event type %d specified (0..%d allowed).\n", fullName(), e, StatesCnt);
     }
     FsmStateType newState;
@@ -133,14 +133,14 @@ void Fsm::onEvent(FsmEventType e, cMessage *msg)
     Log(Debug) << "Event " << Events[e].fullName() << " received." << LogEnd;
 
     newState = States[CurrentState].onEvent(this, e, msg);
-    if (newState>StatesCnt) {
+    if ((unsigned)newState>(unsigned)StatesCnt) {
 	opp_error("%s: Invalid state (%d) returned duing %s event processing in state %s.", fullName(),
 		  newState, Events[e].fullName().c_str(), States[CurrentState].fullName().c_str() );
     }
 
     if (newState != CurrentState) {
 	Log(Debug) << "State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
-		   << ", triggered by the " << Events[e].fullName().c_str() << " event." << LogEnd;
+		   << ", triggered by the " << Events[e].fullName() << " event." << LogEnd;
 	stateSet(newState);
     }
 }
