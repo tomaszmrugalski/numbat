@@ -20,6 +20,7 @@
 #include "wmaxmac.h"
 #include "ssinfo.h"
 #include "mih_m.h"
+#include "ipv6.h"
 
 static uint32_t transactionID = 1;
 
@@ -155,7 +156,7 @@ void WMaxCtrlSS::initialize() {
     connectBS(initialBS);
 
     char buf[80];
-    sprintf(buf, "WMaxCtrlSS[%d]", SS->index());
+    sprintf(buf, "%s%d", fullName(), SS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -408,6 +409,20 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 
     if (ss->neType == WMAX_CTRL_NETWORK_REENTRY) {
         purpose = "handover";
+
+	// find our IPv6 if remote autoconf is used
+	
+	if (ssinfo->hoInfo.dhcp.remoteAutoconf)
+	{
+	    cModule * ss = fsm->parentModule()->parentModule();
+	    stringstream tmp;
+	    tmp << "ssIPv6.DHCPv6Cli" << ss->index();
+	    cModule * dhcp = ss->moduleByRelativePath(tmp.str().c_str());
+	    IPv6Addr addr = IPv6Addr(dhcp->par("nextIP"), true);
+	    SLog(fsm, Info) << "Remote AutoConf enabled, sending my next IP:" << addr.plain() << LogEnd;
+	    rng->setMyIP(addr);
+	} else
+	    rng->setMyIP(IPv6Addr("::",true));
 
 	if (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER) {
 	    int cnt = 0;
@@ -1051,7 +1066,7 @@ void WMaxCtrlBS::initialize()
     ssList.clear();
 
     char buf[80];
-    sprintf(buf, "WMaxCtrlBS[%d]", BS->index());
+    sprintf(buf, "%s%d", fullName(), BS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -1149,8 +1164,11 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
             WMaxQos qos = req->getSfQos(i);
             addConn->setQos(0, qos);
 
+	    addConn->setDstAddr(req->getMyIP());
+
             Log(Info) << "Creating new connection: oldCid=" << oldCid << ", newCid=" << newCid 
-		      << ", qos[connType=" << qos.connType << ", msr=" << qos.msr << "]" << LogEnd;
+		      << ", qos[connType=" << qos.connType << ", msr=" << qos.msr << "], dstIP="
+		      << req->getMyIP() << "." << LogEnd;
             send(addConn, "macOut");
 
             rsp->setOldCid(i, oldCid);

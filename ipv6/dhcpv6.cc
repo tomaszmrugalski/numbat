@@ -56,7 +56,7 @@ void DHCPv6Cli::initialize()
 
     // add number prefix to the module name
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s%d", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
 }
@@ -443,9 +443,11 @@ FsmStateType DHCPv6Cli::onEventState_PerformingDad(Fsm * fsm, FsmEventType e, cM
     case EVENT_TIMER:
     {
 	if (!cli->PurposeNextLocation) {
-	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() << " is ready to use in this location." << LogEnd;
+	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() 
+			      << " is ready to use in this location." << LogEnd;
 	} else {
-	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() << " will be ready for use in next location." << LogEnd;
+	    SLog(fsm, Notice) << "DAD complete, addr " << cli->Addr.plain() 
+			      << " will be ready for use in next location." << LogEnd;
 	}
 	return STATE_CONFIGURED;
     }
@@ -477,6 +479,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 	SLog(fsm, Cont) << "(remote autoconf: address will be used after handover).";
 	cli->AddrForNextLocation = cli->Addr;
 	cli->GotAddrForNextLocation = true;
+	cli->par("nextIP") = cli->Addr.plain().c_str();
     }
     SLog(fsm, Cont) << LogEnd;
 
@@ -531,7 +534,7 @@ void DHCPv6Srv::initialize()
     // add number prefix to the module name
     cModule * ss = parentModule()->parentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s%d", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
 }

@@ -57,7 +57,7 @@ void ssMAC::updateString() {
     cModule *SS = parentModule();
     cModule *macSS = submodule("ssMac");
     char buf[80];
-    sprintf(buf, "WMaxCtrlSS[%d]", SS->index());
+    sprintf(buf, "%s%d", fullName(), SS->index());
     cModule *ctrlSS = submodule(buf);
     char buf1[80];
     sprintf(buf1, "%s\n%s", (macSS->displayString()).getTagArg("t",0), (ctrlSS->displayString()).getTagArg("t",0));
@@ -261,7 +261,7 @@ void WMaxMacBS::initialize()
     schedUcdCnt          = 0;
 
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), BS->index());
+    sprintf(buf, "%s%d", fullName(), BS->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -728,7 +728,7 @@ void WMaxMacSS::initialize()
     }
 
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), SS->index());
+    sprintf(buf, "%s%d", fullName(), SS->index());
     if (ev.isGUI()) 
         setName(buf);
 }

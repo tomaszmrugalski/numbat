@@ -56,6 +56,7 @@ message WMaxMsgRngReq
 fields:
     int purpose;
     WMaxRngReq rngReq;
+    IPv6Addr myIP; // used in remote autoconf
 
 // used during HO (to perform CID update and recreate connections at target BS)
     WMaxQos SfQos[];
