@@ -464,6 +464,9 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
         if (rngRsp.ssMacAddr == ssinfo->info.macAddr) {
           ssinfo->info.basicCid = rngRsp.basicCid;
           ssinfo->stringUpdate();
+
+          SLog(ss, Notice) << "RNG-RSP received." << LogEnd;
+
           WMaxMacAddMngmntConn *addConn = new WMaxMacAddMngmntConn();
           addConn->setCid(rngRsp.basicCid);
           ss->send(addConn,"macOut");
@@ -509,8 +512,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
 
+    SLog(fsm, Notice) << "#### ss->neType=" << ss->neType << " hoOptim=" 
+		      << ss->hoInfo->wmax.hoOptim << LogEnd;
+    
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_SBC_REQ)) {
-	SLog(fsm, Warning) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
+	SLog(fsm, Notice) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
 	return STATE_SEND_REG_REQ; /* state override: switch to SEND_REG_REQ */
     }
     
@@ -528,7 +534,7 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForSbcRsp(Fsm * fsm, FsmEventType e, c
     switch (e) {
     case EVENT_SBC_RSP_RECEIVED:
 	if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_SKIP_SA_TEK)) {
-	    SLog(fsm, Warning) << "Reentry: skip-sa-tek flag set, skipping SA-TEK exchange." << LogEnd;
+	    SLog(fsm, Notice) << "Reentry: skip-sa-tek flag set, skipping SA-TEK exchange." << LogEnd;
 	    return STATE_SEND_REG_REQ; /* state override: switch to SEND_REG_REQ */
 	}
 	return STATE_WAIT_SA_TEK_CHALLANGE;
@@ -577,7 +583,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRegReq(Fsm * fsm)
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_REG_REQ)) {
-	SLog(fsm, Warning) << "Reentry: omit-reg-req flag set, skipping REG-REQ." << LogEnd;
+	SLog(fsm, Notice) << "Reentry: omit-reg-req flag set, skipping REG-REQ." << LogEnd;
         return STATE_SVC_FLOW_CREATION; /* state override: switch to Service flow creation */
     }
 
@@ -605,7 +611,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SvcFlowCreation(Fsm * fsm) {
 
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER)) {
-	SLog(fsm, Warning) << "Reentry: full-state-transfer flag set, skipping service flow creation." << LogEnd;
+	SLog(fsm, Notice) << "Reentry: full-state-transfer flag set, skipping service flow creation." << LogEnd;
 	return STATE_OPERATIONAL; /* state override: switch to SEND_REG_REQ */
     }
 
@@ -646,7 +652,7 @@ FsmStateType WMaxCtrlSS::onEnterState_Operational(Fsm * fsm)
       ss->hoReentryCompleteTimestamp=ss->simTime();
       y = ss->hoReentryCompleteTimestamp - ss->hoStartTimestamp;
       ss->hoActionTimeData.collect(y);
-      SLog(fsm, Warning) << "Network reentry complete: " << x << "secs (" 
+      SLog(fsm, Notice) << "Network reentry complete: " << x << "secs (" 
                          << ss->hoReentryTimestamp << "-" << ss->simTime() << ")." << LogEnd;
       ss->mihNotify(MIH_EVENT_REENTRY_END);
       break;

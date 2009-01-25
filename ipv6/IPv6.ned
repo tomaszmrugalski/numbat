@@ -36,6 +36,9 @@ simple DHCPv6Srv
         in: dhcpIn;
 endsimple
 simple DHCPv6Cli
+    parameters:
+        //IP address that is going to be used in the next location after handover (if remote autoconf is enabled)
+        nextIP: string;
     gates:
         out: dhcpOut;
         in: dhcpIn;
