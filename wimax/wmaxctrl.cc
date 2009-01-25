@@ -511,9 +511,6 @@ FsmStateType WMaxCtrlSS::onEnterState_SendSbcReq(Fsm * fsm)
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
     ssInfo *ssinfo = dynamic_cast<ssInfo*>(ss->SS->submodule("ssInfo"));
-
-    SLog(fsm, Notice) << "#### ss->neType=" << ss->neType << " hoOptim=" 
-		      << ss->hoInfo->wmax.hoOptim << LogEnd;
     
     if ( (ss->neType == WMAX_CTRL_NETWORK_REENTRY) && (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_OMIT_SBC_REQ)) {
 	SLog(fsm, Notice) << "Reentry: omit-sbc-req flag set, skipping SBC-REQ." << LogEnd;
