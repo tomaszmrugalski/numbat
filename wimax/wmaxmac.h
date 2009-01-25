@@ -222,6 +222,8 @@ class WMaxMacBS: public WMaxMac
     WMaxMsgDlMap * scheduleDL(int symbols);
     WMaxMsgUlMap * scheduleUL(int symbols);
 
+    virtual void finish();
+
     // --- configuration parameters ---
     uint32_t schedUgsMinGrantSize; // minimal size of granted bandwidth on UGS connection
     uint32_t schedCdmaInitRngFreq; // frequency of the initial ranging CDMA regions

@@ -42,8 +42,7 @@ void RaRcv::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     updateString();
 }
@@ -99,8 +98,7 @@ void RaGen::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 }
 
 void RaGen::handleMessage(cMessage *msg)

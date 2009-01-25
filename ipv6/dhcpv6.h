@@ -80,6 +80,7 @@ class DHCPv6Cli : public Fsm
  private:
     void startTimer(double del);
     void stopTimer();
+    void finish();
     static ssInfo * ssInfoGet(Fsm * fsm);
 
     IPv6Addr getMyAddr();

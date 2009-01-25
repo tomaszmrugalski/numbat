@@ -32,6 +32,10 @@ using namespace std;
     if (Timer##name ->isScheduled())                          \
         cancelEvent(Timer##name);
 
+#define TIMER_DEL(name) \
+    cancelEvent(Timer##name); \
+    delete Timer##name;
+
 #define TIMER_SET(name, time) Timer##name##Value = time;
 
 #define TIMER_DEF(name)    \

@@ -57,8 +57,7 @@ void DHCPv6Cli::initialize()
     // add number prefix to the module name
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 }
 
 void DHCPv6Cli::handleMessage(cMessage *msg)
@@ -75,6 +74,7 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 	Log(Notice) << "Starting DHCPv6 operation (now=" << DhcpStartTime << ")" << LogEnd;
 	onEvent(EVENT_START, msg);
 	stringUpdate();
+	delete msg;
 	return;
     }
 
@@ -95,11 +95,13 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 	} else {
 	    onEvent(EVENT_ABORT, msg);
 	}
+	delete msg;
 	return;
     }
     if (  (dynamic_cast<MihEvent_ReentryStart*>(msg)) ||
 	  (dynamic_cast<MihEvent_EntryStart*>(msg)) ) {
 	onEvent(EVENT_ABORT, msg);
+	delete msg;
 	return;
     }
 
@@ -170,6 +172,11 @@ void DHCPv6Cli::startTimer(double del)
 void DHCPv6Cli::stopTimer()
 {
     TIMER_STOP(Delay);
+}
+
+void DHCPv6Cli::finish()
+{
+    TIMER_DEL(Delay);
 }
 
 IPv6Addr DHCPv6Cli::getMyAddr()
@@ -535,8 +542,7 @@ void DHCPv6Srv::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 }
 
 double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDelay)
@@ -711,7 +717,7 @@ void DHCPv6Srv::handleRelay(cMessage * msg)
 IPv6Addr DHCPv6Srv::getIPofBS(int bs)
 {
     char buf[512];
-    sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha", bs); // mobIPv6ha[%d]
+    sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha%d", bs, bs); // mobIPv6ha[%d]
     cModule *sim = parentModule()->parentModule()->parentModule(); // whole network
     cModule *ha  = sim->moduleByRelativePath(buf);
 

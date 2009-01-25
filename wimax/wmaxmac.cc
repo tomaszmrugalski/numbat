@@ -262,8 +262,7 @@ void WMaxMacBS::initialize()
 
     char buf[80];
     sprintf(buf, "%s%d", fullName(), BS->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     // Create permanent INITIAL-RANGING connection
     addRangingConn();
@@ -643,6 +642,17 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
     return ulmap;
 }
 
+void WMaxMacBS::finish()
+{
+    delete CDMAQueue;
+    for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); ++it)
+    {
+	delete it->queue;
+    }
+    Conns.clear();
+}
+
+
 /** 
  * method used to process received (RX) message (i.e. received from PHY, handled to MAC)
  * 
@@ -729,8 +739,7 @@ void WMaxMacSS::initialize()
 
     char buf[80];
     sprintf(buf, "%s%d", fullName(), SS->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 }
 
 void WMaxMacSS::setInitialPosition() {
@@ -1200,13 +1209,10 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
 void WMaxMacSS::finish()
 {
-    ev << " Stats for " << fullName() << endl;
-    ev << "-----------------------" << endl;
-    ev << "Grants            : " << Stats.rcvdGrants << endl;
-    ev << "Bandwidth granted : " << Stats.rcvdBandwidth << endl;
-    ev << "UL-MAPs received  : " << Stats.rcvdUlmaps << endl;
-    ev << "DL-MAPs received  : " << Stats.rcvdDlmaps << endl;
-
-    ev << "---errors--------------" << endl;
-    ev << "Dropped frames (invalid CID): " << Stats.dropInvalidCid << " (SS receives other SS'es traffic)" << endl;
+    delete CDMAQueue;
+    for (list<WMaxConn>::iterator it=Conns.begin(); it!=Conns.end(); ++it)
+    {
+	delete it->queue;
+    }
+    Conns.clear();
 }

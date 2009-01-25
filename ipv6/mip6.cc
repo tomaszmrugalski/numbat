@@ -39,8 +39,7 @@ void MobIPv6mn::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     connected = false;
 
@@ -203,8 +202,7 @@ void MobIPv6cn::initialize()
     char buf[80];
     index = ss->index();
     sprintf(buf, "%s%d", fullName(), index);
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     connected = false;
 
@@ -311,8 +309,7 @@ void MobIPv6ha::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-//     if (ev.isGUI()) 
-//         setName(buf);
+    setName(buf);
 }
 
 void MobIPv6ha::handleMessage(cMessage *msg)

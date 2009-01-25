@@ -43,8 +43,7 @@ void WMaxMacCS::initialize() {
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 }
 
 

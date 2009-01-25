@@ -40,8 +40,7 @@ void IPv6Node::initialize()
     cModule * ss = parentModule()->parentModule();
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     Log(Info) << " traffic parameters: BurstSize=" << BurstSize << ", PktSize=" << MinPacketSize
 	      << ".." << MaxPacketSize << ", BurstInterval=" << BurstInterval << LogEnd;

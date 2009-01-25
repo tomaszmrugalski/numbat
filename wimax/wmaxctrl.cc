@@ -157,9 +157,7 @@ void WMaxCtrlSS::initialize() {
 
     char buf[80];
     sprintf(buf, "%s%d", fullName(), SS->index());
-    if (ev.isGUI()) 
-        setName(buf);
-
+    setName(buf);
 
     cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
     if (tmp) {
@@ -418,6 +416,8 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 	    stringstream tmp;
 	    tmp << "ssIPv6.DHCPv6Cli" << ss->index();
 	    cModule * dhcp = ss->moduleByRelativePath(tmp.str().c_str());
+	    if (!dhcp)
+		opp_error("Failed to find DHCPv6 client: relative path:%s from module %s", tmp.str().c_str(), ss->fullName());
 	    IPv6Addr addr = IPv6Addr(dhcp->par("nextIP"), true);
 	    SLog(fsm, Info) << "Remote AutoConf enabled, sending my next IP:" << addr.plain() << LogEnd;
 	    rng->setMyIP(addr);
@@ -1043,6 +1043,16 @@ void WMaxCtrlSS::connectNextBS() {
 void WMaxCtrlSS::finish()
 {
     hoActionTimeData.recordScalar();
+    
+    TIMER_DEL(NetworkEntry);
+    TIMER_DEL(Handover);
+    TIMER_DEL(Reentry);
+
+
+    for (list<WMaxFlowSS*>::iterator it=serviceFlows.begin(); it!=serviceFlows.end(); ++it)
+    {
+	delete *it;
+    }
 }
 
 /********************************************************************************/
@@ -1070,8 +1080,7 @@ void WMaxCtrlBS::initialize()
 
     char buf[80];
     sprintf(buf, "%s%d", fullName(), BS->index());
-    if (ev.isGUI()) 
-        setName(buf);
+    setName(buf);
 
     WATCH_LIST(ssList);
     WATCH_LIST(Transactions);
