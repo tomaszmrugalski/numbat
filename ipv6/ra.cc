@@ -41,7 +41,7 @@ void RaRcv::initialize()
     // add number prefix to the module name
     cModule * ss = parentModule()->parentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s%d", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
 
@@ -98,7 +98,7 @@ void RaGen::initialize()
     // add number prefix to the module name
     cModule * ss = parentModule()->parentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s%d", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
 }

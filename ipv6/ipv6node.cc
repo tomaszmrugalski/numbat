@@ -39,7 +39,7 @@ void IPv6Node::initialize()
 
     cModule * ss = parentModule()->parentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s%d", fullName(), ss->index());
     if (ev.isGUI()) 
         setName(buf);
 
