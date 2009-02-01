@@ -53,6 +53,11 @@ void Internet::initialize()
     WATCH_LIST(RoutingTable);
 }
 
+void Internet::finish()
+{
+    MsgsTransmittedVector.record(MsgsTransmittedCnt);
+}
+
 double Internet::calculateDelay(IPv6 *msg)
 {
     double min = (double)par("MinDelay");
@@ -89,6 +94,8 @@ void Internet::handleMessage(cMessage *msg)
 	    Log(Debug) << "Route for dst addr=" << dst << " found: " << *it << LogEnd;
 	    sendDelayed(msg, delay, "ipOut", it->gateIndex);
 	    MsgsTransmittedCnt++;
+	    if (MsgsTransmittedCnt>1000) && (!MsgsTransmittedCnt%100)
+		
 	    MsgsTransmittedVector.record(MsgsTransmittedCnt);
 	    return;
 	}

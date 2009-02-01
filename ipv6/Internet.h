@@ -17,6 +17,7 @@ class Internet: public cSimpleModule
  protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void finish();
  private:
     double calculateDelay(IPv6 *msg);
     list<RouteEntry> RoutingTable;
