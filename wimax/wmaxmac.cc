@@ -159,7 +159,7 @@ void WMaxMac::printDlMap(WMaxMsgDlMap * dlmap)
     if (!logger::willPrint(logger::Debug))
 	return;
 
-    for (int i=0; i<dlmap->getIEArraySize(); i++) {
+    for (unsigned int i=0; i<dlmap->getIEArraySize(); i++) {
 	WMaxDlMapIE &ie = dlmap->getIE(i);
 	Log(Debug) << "IE[" << i << "]: cid=" << ie.cid << ", length=" << ie.length << ", symbols=" << ie.symbols << LogEnd;
     }
@@ -171,7 +171,7 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
     if (!logger::willPrint(logger::Debug))
 	return;
 
-    for (int i=0; i<ulmap->getIEArraySize(); i++) {
+    for (unsigned int i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE &ie = ulmap->getIE(i);
 	Log(Debug) << "IE[" << i << "]: cid=" << ie.cid << ", uiuc=" << ie.uiuc;
 
@@ -396,7 +396,6 @@ void WMaxMacBS::scheduleBcastMessages()
 WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 {
     int startSymbols = symbols;
-    int i;
     int ieCnt = 0;
     WMaxDlMapIE ie; // map element
 
@@ -478,6 +477,10 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
     }
 
     Log(Debug) << "DL schedule: " << startSymbols << " symbols available for DL, " << startSymbols-symbols << " used." << LogEnd;
+    if (symbols<=0)
+    {
+	Log(Warning) << "Full DL frame, " << startSymbols << " were available, " << symbols << " left." << LogEnd;
+    }
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
@@ -634,6 +637,10 @@ WMaxMsgUlMap * WMaxMacBS::scheduleUL(int symbols)
     }    
 
     Log(Debug) << "UL schedule: " << startSymbols << " symbols available for DL, " << startSymbols-symbols << " used." << LogEnd;
+    if (symbols<=0)
+    {
+	Log(Warning) << "Full UL frame, " << startSymbols << " were available, " << symbols << " used." << LogEnd;
+    }
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = WMAX_CID_BROADCAST;
@@ -743,9 +750,6 @@ void WMaxMacSS::initialize()
 }
 
 void WMaxMacSS::setInitialPosition() {
-    cModule *physim = SS->parentModule();
-    cModule *BS = physim->submodule("BS",SS->par("initialBS"));
-
     cDisplayString dispstr = SS->displayString();
     long int x,y;
     if ((long int)SS->par("x")) {
@@ -768,7 +772,7 @@ void WMaxMacSS::setInitialPosition() {
     SS->setDisplayString(dispstr);
 
     char buf[80];
-    sprintf(buf, "(%d,%d)", x, y );
+    sprintf(buf, "(%ld,%ld)", x, y );
 
     SS->displayString().setTagArg("t",0, buf);
 
@@ -946,6 +950,8 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 	     Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
 	     SendQueue.insert(msg);
 	     break;
+	 default:
+	     opp_error("Unsupported traffic type: %d", it->type);
 	 }
      } else {
 	 Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
@@ -1019,8 +1025,6 @@ void WMaxMacSS::changePosition() {
     long int x = atoi(dispstr.getTagArg("p",0));
     long int y = atoi(dispstr.getTagArg("p",1));
 
-    float centerx, centery, radius, radstep;
-
     switch ((int)SS->par("movementType")) {
     case 0:
         x++;
@@ -1049,7 +1053,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 {
     int bandwidth = 0;
     Log(Debug) << "UL-MAP received with " << ulmap->getIEArraySize() << " IE(s)." << LogEnd;
-    int i;
+    unsigned int i;
     for (i=0; i<ulmap->getIEArraySize(); i++) {
 	WMaxUlMapIE & ie = ulmap->getIE(i);
 	for (list<WMaxConn>::iterator it = Conns.begin(); it!=Conns.end(); it++) {
@@ -1135,7 +1139,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
         if (ie.uiuc==WMAX_ULMAP_UIUC_CDMA_BWR && ie.cdmaIE.rangingMethod==WMAX_RANGING_METHOD_BWR) { 
 
-            for (int i=0; i!=Conns.size(); i++) {
+            for (unsigned int i=0; i!=Conns.size(); i++) {
 
                 list<WMaxConn>::iterator BEit = Conns.begin();
                 for (int j=0; j!=BEpoint; j++){
