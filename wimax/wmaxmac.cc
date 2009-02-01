@@ -337,7 +337,7 @@ void WMaxMacBS::handleRxMessage(cMessage *msg)
 
 void WMaxMacBS::schedule()
 {
-    int symbols = 300; /// @todo - check/calculate how many symbols are available in each frame
+    int symbols = 3000; /// @todo - check/calculate how many symbols are available in each frame
     int dlSymbols = symbols/2;
     int ulSymbols = symbols - dlSymbols;
 
@@ -751,20 +751,27 @@ void WMaxMacSS::setInitialPosition() {
     if ((long int)SS->par("x")) {
         x = (long int)SS->par("x");
     } else {
-        x = atoi(BS->displayString().getTagArg("p", 0)) + rand()%200 - 100;
+	// expand 50,50,p,300 in physim.ned
+	int multi = atoi(SS->displayString().getTagArg("p",3));
+        x = atoi(SS->displayString().getTagArg("p", 0));
+	x = x + multi*SS->index();
     }
     if ((long int)SS->par("y")) {
         y = (long int)SS->par("y");
     } else {
-        y = atoi(BS->displayString().getTagArg("p", 1)) + rand()%200 - 100;
+        y = atoi(SS->displayString().getTagArg("p", 1));
     }
     dispstr.setTagArg("p", 0, x);
     dispstr.setTagArg("p", 1, y);
+    dispstr.setTagArg("p", 2, "");
+    dispstr.setTagArg("p", 3, "");
     SS->setDisplayString(dispstr);
 
     char buf[80];
-    sprintf(buf, "(%s,%s)", (SS->displayString()).getTagArg("p",0), (SS->displayString()).getTagArg("p",1));
+    sprintf(buf, "(%d,%d)", x, y );
+
     SS->displayString().setTagArg("t",0, buf);
+
 }
 
 void WMaxMac::addRangingConn()

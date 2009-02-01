@@ -675,10 +675,14 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 
     switch (e) {
       case EVENT_HANDOVER_START:
-        if (isMobile==1)
-          return STATE_SEND_MSHO_REQ; // isMobile == 1 -> handover executed after certain timeout
-        else
-          return STATE_SEND_MOB_SCN_REQ; // isMobile == 2 -> SS changes location and handover is based on distance
+	  switch (isMobile)
+	  {
+	  case 1:
+	  case 3:
+	      return STATE_SEND_MSHO_REQ; // isMobile == 1 -> handover executed after certain timeout
+	  case 2:
+	      return STATE_SEND_MOB_SCN_REQ; // isMobile == 2 -> SS changes location and handover is based on distance
+	  }
       default:
         CASE_IGNORE(fsm, e);
     }
@@ -762,6 +766,12 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 
     if (isMobile == 1) // mobility model 1: time based handover
       ctrlSS->hoInfo->wmax.nextBS = (actBS+1)%(BS->size());
+    if (isMobile == 3) // mobility model 3: time based, random target
+    {
+	do {
+	    ctrlSS->hoInfo->wmax.nextBS = uniform(0,BS->size());
+	} while (ctrlSS->hoInfo->wmax.nextBS==actBS);
+    }
 
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     ss->hoStartTimestamp = fsm->simTime();

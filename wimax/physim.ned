@@ -19,13 +19,13 @@ module Physim
             gatesizes:
                 in[numSS],
                 out[numSS];
-            display: "p=100,200,r,100;i=device/antennatower_l";
+            display: "p=100,200,r,200;i=device/antennatower_l";
         SS: SS[numSS];
-            display: "p=127,144;i=device/pc_s";
+            display: "p=50,50,r,50;i=device/pc_s";
         CN: CorrNode[numSS];
-            display: "i=device/pc2;p=50,355,r,90";
+            display: "i=device/pc2;p=50,355,r,50";
         internet: Internet;
-            display: "p=180,280;i=misc/cloud";
+            display: "p=480,280;i=misc/cloud";
     connections nocheck:
 
         for i=1..numSS do
@@ -38,7 +38,7 @@ module Physim
             internet.ipOut++ --> BS[i].networkIn;
         endfor;
 
-    display: "b=470,390";
+    display: "b=0,0";
 endmodule
 
 network physim : Physim
