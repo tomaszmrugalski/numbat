@@ -1,9 +1,10 @@
 /**
- * @file   wmaxmaccs.cc
- * @author Maciej Jureko <maciek01@gmail.com>
- * @date   2007-04-20 23:09:38+0100
+ * @file    wmaxmaccs.cc
+ * @author  Maciej Jureko <maciek01@gmail.com>
+ * @changes Tomasz Mrugalski <thomson@klub.com.pl>
+ * @date    2007-04-20 23:09:38+0100
  * 
- * @brief  WMax MAC convergence sublayer
+ * @brief   WMax MAC convergence sublayer
  * @licence GNU GPLv2 or later
  *
  */
@@ -172,8 +173,8 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
     if (!dstAddr.isMulticast())
     {
-	Log(Warning) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
-		     << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
+	Log(Notice) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+		    << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
     } else {
 	Log(Debug) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
     }
