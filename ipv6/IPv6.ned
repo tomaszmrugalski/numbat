@@ -131,7 +131,7 @@ module IPv6Client
         in: ipIn;
         out: ipOut;
     submodules:
-        IPv6Node: IPv6Node;
+        MNode: IPv6Node;
             display: "i=block/rxtx;p=168,56";
         DispatchSS: IPv6Dispatch;
             display: "i=abstract/dispatcher;p=168,256";
@@ -148,8 +148,8 @@ module IPv6Client
 
         //         mobIPv6mn.lowerOut --> IPv6Dispatch.mipIn;
         //         IPv6Dispatch.mipOut --> mobIPv6mn.lowerIn;
-        IPv6Node.ipOut --> mobIPv6mn.upperIn;
-        mobIPv6mn.upperOut --> IPv6Node.ipIn;
+        MNode.ipOut --> mobIPv6mn.upperIn;
+        mobIPv6mn.upperOut --> MNode.ipIn;
         DispatchSS.genOut --> mobIPv6mn.lowerIn;
         mobIPv6mn.lowerOut --> DispatchSS.genIn;
 
@@ -176,13 +176,13 @@ module CorrNode
         in: ipIn;
         out: ipOut;
     submodules:
-        IPv6Node: IPv6Node;
+        CNode: IPv6Node;
             display: "i=block/rxtx;p=176,88";
         mobIPv6cn: MobIPv6cn;
             display: "i=block/user;p=80,88";
     connections nocheck:
-        IPv6Node.ipOut --> mobIPv6cn.upperIn;
-        mobIPv6cn.upperOut --> IPv6Node.ipIn;
+        CNode.ipOut --> mobIPv6cn.upperIn;
+        mobIPv6cn.upperOut --> CNode.ipIn;
         mobIPv6cn.lowerOut --> ipOut;
         ipIn --> mobIPv6cn.lowerIn;
     display: "b=244,162";

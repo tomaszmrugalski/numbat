@@ -37,7 +37,15 @@ void IPv6Node::initialize()
 
     double initialDelay = (double)par("InitialDelay");
 
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = parentModule(); //->parentModule();
+    int index = 0;
+    if (ss->index()>0)
+	index = ss->index(); // this is corresponding node, use its parent index
+    else
+    {
+	ss = ss->parentModule(); // this is mobile node, use grandparent index
+	index = ss->index();
+    }
     char buf[80];
     sprintf(buf, "%s%d", fullName(), ss->index());
     setName(buf);
