@@ -94,7 +94,7 @@ void Internet::handleMessage(cMessage *msg)
 	    Log(Debug) << "Route for dst addr=" << dst << " found: " << *it << LogEnd;
 	    sendDelayed(msg, delay, "ipOut", it->gateIndex);
 	    MsgsTransmittedCnt++;
-	    if ( (MsgsTransmittedCnt>1000) && (!MsgsTransmittedCnt%100) )
+	    if ( ( MsgsTransmittedCnt<=1000) || ( (MsgsTransmittedCnt>1000) && (!MsgsTransmittedCnt%100) ) )
 		MsgsTransmittedVector.record(MsgsTransmittedCnt);
 	    return;
 	}
