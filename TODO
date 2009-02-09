@@ -4,11 +4,17 @@
 
  TODO
 ------
+- Ustalic, ile symboli jest w ramce .16 (na razie jest wbite na pałe 300)
+- Doc: common sim mistakes:
+   - opisac, jak w kolejkach MACoskich zbiera sie coraz wiecej messydży,
+     bo generowany ruch jest większy niż skonfigurowane pasmo
+- wyjaśnić, czemu na koniec symulacji jest coś takiego:
+  Dropped frames (invalid CID): 65090
+- check average radvd msg size
+ 
 - ipv6/Internet.cc::calculateDelay()
   add different delays in routing for close (bs-bs) or
   remote (ss-cn) packets
-- Internet: dropped packets should be recorded periodically, not
-   during drops
 - diagram3 has cosmic values in runs 3, 5-10
 
  SCENARIOS
