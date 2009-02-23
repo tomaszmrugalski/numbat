@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+if ($#ARGV != 1) {
+    print "usage: processvec -option filename-with-list-of-files\n";
+    exit;
+}
+
+my $oper   = $ARGV[0];
+my $fname  = $ARGV[1];
+
+open OLD, "< $fname" or die "Unable to open $fname file.\n";
+open NEW, "> $fname.new" or die "Unable to create ${fname}.new file.\n";
+
+my $i=0;
+
+while (<OLD>) {
+    my $line = $_;
+
+    if (!($i % 5))
+    {
+	print NEW $line;
+    } else {
+#	//print NEW $i."+".$line;
+    }
+    $i++;
+}
+
+close(OLD);
+close(NEW);
+
+
+print "Renaming: $fname => ${fname}.old\n";
+system("mv -f $fname $fname.old");
+print "Renaming ${fname}.new => ${fname}\n";
+system("mv ${fname}.new $fname");
