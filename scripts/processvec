@@ -59,12 +59,12 @@ while (<OLD>) {
 	next;
     }
 
+    $inLines++;
     if ($skipcnt)
     {
 	$skipcnt--;
 	next;
     }
-    $inLines++;
 
     if ($sumrows!=1)
     {
@@ -84,7 +84,7 @@ while (<OLD>) {
 	{
 	    $line2 .= $v/$sumrows. " ";
 	}
-	$line2 .= " *\n";
+	$line2 .= "\n";
 	$sumcnt = 0;
 	@sum = ();
 	$line = $line2;
@@ -116,7 +116,7 @@ close(NEW);
 print "Input file lines: ".$inLines." => outfileLines: ".$outLines."\n";
 
 
-exit(-1);
+#exit(-1);
 
 print "Renaming: $fname => ${fname}.old\n";
 system("mv -f $fname $fname.old");
