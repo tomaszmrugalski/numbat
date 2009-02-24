@@ -1,33 +1,122 @@
 #!/usr/bin/perl -w
 
-if ($#ARGV != 1) {
-    print "usage: processvec -option filename-with-list-of-files\n";
+if ($#ARGV < 1) {
+    print "usage:\n";
+    print " processvec -d5 vector-file.vec - decimate file (leaves every 5th line)\n";
+    print " processvec -a3 vector-file.vec - averages values in every 3 lines\n";
+    print " processvec -s100 vector-file.vec - skips first 100 lines\n";
     exit;
 }
 
 my $oper   = $ARGV[0];
 my $fname  = $ARGV[1];
 
+my $decimate = 1;
+my $sumrows = 1;
+my $skipcnt = 0;
+
+if ($oper =~ "^-d")
+{
+    $decimate = substr($oper,2);
+}
+
+if ($oper =~ "^-a")
+{
+    $sumrows = substr($oper,2);
+}
+
+if ($oper =~ "^-s")
+{
+    $skipcnt = substr($oper,2);
+}
+
 open OLD, "< $fname" or die "Unable to open $fname file.\n";
 open NEW, "> $fname.new" or die "Unable to create ${fname}.new file.\n";
 
 my $i=0;
 
-while (<OLD>) {
-    my $line = $_;
+print "Decimate: ".$decimate." Average: ".$sumrows." Skip: ".$skipcnt."\n";
 
-    if (!($i % 5))
+$sumcnt = 0;  # number of already summed lines
+$inLines = 0; # number of currently processed line
+$outLines = 0;
+
+my @sum = ();
+$firstLine = 1;
+
+my $printSum;
+
+while (<OLD>) {
+
+    my $line = $_;
+    $printSum = 0;
+
+    if ($firstLine)
+    {
+	# copy first line
+	$firstLine = 0;
+	print NEW $line;
+	next;
+    }
+
+    if ($skipcnt)
+    {
+	$skipcnt--;
+	next;
+    }
+    $inLines++;
+
+    if ($sumrows!=1)
+    {
+	my @tmp = split(" ", $line);
+	for (my $i=0; $i<=$#tmp; $i++)
+	{
+	    $sum[$i] += $tmp[$i] + 0;
+	}
+    }
+    $sumcnt++;
+
+    if ( ($sumcnt == $sumrows) && ($sumrows>1) )
+    {
+	my $line2;
+	# print sum
+	foreach my $v (@sum)
+	{
+	    $line2 .= $v/$sumrows. " ";
+	}
+	$line2 .= " *\n";
+	$sumcnt = 0;
+	@sum = ();
+	$line = $line2;
+	$printSum = 1;
+    } 
+
+    $i++;
+
+#    print $sumrows."=sumrows sumcnt=".$sumcnt." i=".$i."\n";
+
+    if (!$printSum && $sumrows>1)
+    {
+	# print $linecnt." skipping line.\n";
+	next;
+    }
+    
+    if (!($i % $decimate))
     {
 	print NEW $line;
+	$outLines++;
     } else {
 #	//print NEW $i."+".$line;
     }
-    $i++;
 }
 
 close(OLD);
 close(NEW);
 
+print "Input file lines: ".$inLines." => outfileLines: ".$outLines."\n";
+
+
+exit(-1);
 
 print "Renaming: $fname => ${fname}.old\n";
 system("mv -f $fname $fname.old");
