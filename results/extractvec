@@ -41,7 +41,7 @@ for i in *.vec; do
 processvec -s500 $i
 
 # average remaining lines (1 avg per 10 lines)
-processvec -a10 $i
+processvec -a10 $i.new
 
 done
 
