@@ -1,7 +1,6 @@
 #ifndef INTERNET_H
 #define INTERNET_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include "ipv6msg_m.h"
 #include "ipv6.h"

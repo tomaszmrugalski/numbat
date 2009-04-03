@@ -2,7 +2,7 @@
 #define IPV6MSG_H
 
 #include <ostream>
-//#include <netinet/in.h>
+#include "Portable.h"
 
 using namespace std;
 

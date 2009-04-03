@@ -21,7 +21,7 @@
 #include <string>
 
 #define Log(X) SLog(this,X)
-#define SLog(OBJ,X) logger::setSimTime(OBJ->simTime()); logger::setLogName(OBJ->fullName()); logger::setEv(&ev); logger :: log##X ()
+#define SLog(OBJ,X) logger::setSimTime((float)OBJ->simTime()); logger::setLogName(OBJ->fullName()); logger::setEv(&ev); logger :: log##X ()
 #define LogEnd logger :: endl
 
 #define LOGMODE_DEFAULT LOGMODE_SIMTIME

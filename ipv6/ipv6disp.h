@@ -11,7 +11,6 @@
 #ifndef IPV6DISP_H
 #define IPV6DISP_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 
 class IPv6Dispatch : public cSimpleModule

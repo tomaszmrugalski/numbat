@@ -1,7 +1,7 @@
 #ifndef WMAXMSG_H
 #define WMAXMSG_H
 
-#include <stdint.h>
+#include "Portable.h"
 #include <omnetpp.h>
 
 typedef enum

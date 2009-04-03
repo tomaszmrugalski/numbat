@@ -8,9 +8,9 @@
  * 
  */
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include <vector>
+#include "Portable.h"
 #include "wmaxmsg_m.h"
 
 using namespace std;

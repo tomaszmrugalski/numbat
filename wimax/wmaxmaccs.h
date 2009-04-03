@@ -11,9 +11,9 @@
 #ifndef WMAXMACCS_H
 #define WMAXMACCS_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include <string>
+#include "Portable.h"
 #include "ipv6msg_m.h"
 
 using namespace std;

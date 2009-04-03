@@ -344,6 +344,7 @@ FsmStateType DHCPv6Cli::onExitState_WaitForAdvertise(Fsm * fsm)
 {
     DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
     cli->stopTimer();
+    return fsm->State();
 }
 
 

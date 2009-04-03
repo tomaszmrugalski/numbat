@@ -11,9 +11,9 @@
 #ifndef SSINFO_H
 #define SSINFO_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include <string>
+#include "Portable.h"
 #include "hoinfo.h"
 
 using namespace std;

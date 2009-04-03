@@ -11,8 +11,8 @@
 #ifndef IPV6NODE_H
 #define IPV6NODE_H
 
-#include <stdint.h>
 #include <omnetpp.h>
+#include "Portable.h"
 
 class IPv6Node : public cSimpleModule
 {

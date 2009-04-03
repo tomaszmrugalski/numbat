@@ -727,13 +727,13 @@ cModule *SS, *physim, *BS;
         x2 = atoi((BS->displayString()).getTagArg("p",0));
         y2 = atoi((BS->displayString()).getTagArg("p",1));
 
-        minR = sqrt(pow(x1-x2,2.0)+pow(y1-y2,2.0));
+        minR = sqrt(pow(float(x1-x2),float(2.0))+pow(float(y1-y2),float(2.0)));
 
         for(int i=0; i < (int)physim->par("numBS"); i++) {
             cModule *targetBS = physim->submodule("BS",i);
             x2 = atoi((targetBS->displayString()).getTagArg("p",0));
             y2 = atoi((targetBS->displayString()).getTagArg("p",1));
-            double R = sqrt(pow(x1-x2,2.0)+pow(y1-y2,2.0));
+            double R = sqrt(pow(float(x1-x2),float(2.0))+pow(float(y1-y2),float(2.0)));
             if(R < minR) {
                 minR = R;
                 nearestBS = targetBS->index();

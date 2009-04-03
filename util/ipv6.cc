@@ -1,8 +1,7 @@
 #include <ostream>
 #include "ipv6.h"
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include "Portable.h"
 #include "logger.h"
 
 using namespace std;
@@ -17,7 +16,7 @@ IPv6Addr::IPv6Addr(const char * a, bool plain)
     if (!plain)
 	memcpy(addr, a, 16);
     else
-	inet_pton(AF_INET6, a, addr);
+    inet_pton6((unsigned char*)a, (char*)addr);
 }
 
 IPv6Addr::IPv6Addr(unsigned int a, unsigned int b, unsigned int c, unsigned int d) 
@@ -32,7 +31,8 @@ IPv6Addr::IPv6Addr(unsigned int a, unsigned int b, unsigned int c, unsigned int 
 string IPv6Addr::plain()
 {
     char buf[80];
-    inet_ntop(AF_INET6, addr, buf, 80);
+    //inet_ntop(AF_INET6, addr, buf, 80);
+    inet_ntop6(addr, buf, 80);
     return string(buf);
 }
 
@@ -78,7 +78,8 @@ bool IPv6Addr::isMulticast()
 ostream & operator <<(ostream & s, IPv6Addr a) 
 {
     char buf[80];
-    inet_ntop(AF_INET6, a.addr, buf, 80);
+    // inet_ntop(AF_INET6, a.addr, buf, 80);
+    inet_ntop6(a.addr, buf, 80);
     s << string(buf);
 
     return s;

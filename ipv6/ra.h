@@ -11,10 +11,8 @@
 #ifndef IPV6RA_H
 #define IPV6RA_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include "fsm.h"
-
 
 class RaRcv : public Fsm
 {

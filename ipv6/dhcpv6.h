@@ -11,7 +11,6 @@
 #ifndef DHCPV6_H
 #define DHCPV6_H
 
-#include <stdint.h>
 #include <omnetpp.h>
 #include "fsm.h"
 #include "ssinfo.h"

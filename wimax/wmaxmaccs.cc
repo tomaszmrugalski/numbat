@@ -113,6 +113,7 @@ IPv6Addr WMaxMacCS::DstAddrGet(cMessage *msg)
       return ipMsg->getDstIP();
     }
     opp_error("Non-IPv6 message is trying to sneak thru WMaxMacCS module: %s", fullName());
+    return IPv6Addr();
 }
 
 void WMaxMacCS::handleDlMessage(cMessage *msg) {
