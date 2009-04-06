@@ -1,0 +1,26 @@
+#!/usr/bin/awk -f
+#
+# Splits an output vector (.vec) file into files with one vector in each
+#   ie: foo.vec --> foo-1.vec, foo-2.vec, foo-3.vec,...
+# --VA
+#
+# usage: splitvecth foo.vec - splits foo.vec into -> foo-1.vec, foo-2.vec ...
+#        splitvecth foo.vec 5 - extracts only vector 5
+#
+/^vector/	{
+			basefname=FILENAME
+			gsub( ".[^.]*$", "", basefname );
+			fname[$2] = basefname "-" $2 ".vec"
+#			print ARGV[2] " " $2
+			if ( (ARGC==2) || (ARGV[2] == $2) )
+			{
+			    print "creating file `" fname[$2] "'"
+			    print "" $0 > fname[$2]
+			}
+		}
+/^[0-9]/	{
+			if ( (ARGC==2) || (ARGV[2] == $1) )
+			{
+			    print $1 "\t" $2 "\t" $3 "\t" $4 >> fname[$1]
+			}
+		}
