@@ -21,5 +21,7 @@ util:
 
 clean:
 	cd wimax; $(MAKE) clean
+	cd util; $(MAKE) clean
+	cd ipv6; $(MAKE) clean
 
 .PHONY: tags wimax clean ipv6 util

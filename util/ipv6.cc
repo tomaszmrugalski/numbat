@@ -6,6 +6,19 @@
 
 using namespace std;
 
+#ifndef WIN32
+void inet_pton6(const char *plain, char *dst)
+{
+    inet_pton(AF_INET6, plain, dst);
+}
+
+void inet_ntop6(const char* src, char* dst, int dstSize)
+{
+    inet_ntop(AF_INET6, src, dst, dstSize);
+}
+#endif
+
+
 IPv6Addr::IPv6Addr() 
 { 
     memset(addr, 0, 16); 
@@ -16,7 +29,7 @@ IPv6Addr::IPv6Addr(const char * a, bool plain)
     if (!plain)
 	memcpy(addr, a, 16);
     else
-    inet_pton6((unsigned char*)a, (char*)addr);
+    inet_pton6(a, (char*)addr);
 }
 
 IPv6Addr::IPv6Addr(unsigned int a, unsigned int b, unsigned int c, unsigned int d) 
@@ -32,7 +45,7 @@ string IPv6Addr::plain()
 {
     char buf[80];
     //inet_ntop(AF_INET6, addr, buf, 80);
-    inet_ntop6(addr, buf, 80);
+    inet_ntop6((const char*)addr, buf, 80);
     return string(buf);
 }
 
@@ -79,7 +92,7 @@ ostream & operator <<(ostream & s, IPv6Addr a)
 {
     char buf[80];
     // inet_ntop(AF_INET6, a.addr, buf, 80);
-    inet_ntop6(a.addr, buf, 80);
+    inet_ntop6((const char*)a.addr, buf, 80);
     s << string(buf);
 
     return s;
