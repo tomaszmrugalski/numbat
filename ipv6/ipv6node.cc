@@ -34,6 +34,7 @@ void IPv6Node::initialize()
     this->BurstSize       = (int)par("BurstSize");
     this->MaxPacketSize = (int)par("BurstPacketSize");
     this->MinPacketSize = 48; // IPv6 header (40) + UDP header (8)
+    TrafficType = (int)par("TrafficType");
 
     double initialDelay = (double)par("InitialDelay");
 
@@ -102,10 +103,32 @@ void IPv6Node::handleMessage(cMessage *msg)
     delete msg;
 }
 
+
+/** 
+ * generic function for traffic generation
+ * 
+ */
 void IPv6Node::generateTraffic()
 {
-    cMessage *m = 0;
+    switch (TrafficType)
+    {
+    case 1: // truncated normal
+    default:
+	trafficTruncNormal();
+	return;
+    case 2:
+	trafficBeta();
+	return;
+    }
+}
 
+/** 
+ * generates traffic "truncated normal"
+ * 
+ */
+void IPv6Node::trafficTruncNormal()
+{
+    cMessage *m = 0;
     for (int i=0; i<BurstSize; i++) 
     {
 	m = new cMessage("IPv6 packet");
@@ -126,9 +149,32 @@ void IPv6Node::generateTraffic()
 
     updateStats();
 
-    scheduleAt(simTime()+(double)(BurstInterval), sendTimer);
-
     // reschedule this timer
+    scheduleAt(simTime()+(double)(BurstInterval), sendTimer);
+}
+
+/** 
+ * generates traffic Beta()
+ * 
+ */
+void IPv6Node::trafficBeta()
+{
+    int i;
+    int span = MaxPacketSize - MinPacketSize;
+
+    long len = MinPacketSize + span*beta(8.0,0.5);
+
+    m = new cMessage("IPv6 packet");
+    m->setByteLength(len);
+    SentPkts++;
+    SentBytes += len;
+    Log(Debug) << "Sending message " << len << " bytes long." << LogEnd;
+    send(m, "ipOut");
+
+    SentPktSizeVector.record(len);
+
+    updateStats();
+    sheduleAt(simTime()+(double)(BurstInterval), sendTimer);
 }
 
 void IPv6Node::updateStats()

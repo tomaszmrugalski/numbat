@@ -22,8 +22,13 @@ class IPv6Node : public cSimpleModule
     virtual void handleMessage(cMessage *msg);
     virtual void generateTraffic();
     virtual void updateStats();
+
+    void trafficTruncNormal();
+    void trafficBeta();
  private:
     cMessage * sendTimer;
+
+    int TrafficType;
 
     // how often packets should be sent?
     double BurstInterval;

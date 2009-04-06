@@ -14,7 +14,8 @@ simple IPv6Node
         BurstInterval: numeric,
         BurstSize: numeric,
         BurstPacketSize: numeric,
-        InitialDelay: numeric;
+        InitialDelay: numeric,
+	TrafficType: numeric;
     gates:
         out: ipOut;
         in: ipIn;
