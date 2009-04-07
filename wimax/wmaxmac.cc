@@ -337,14 +337,15 @@ void WMaxMacBS::handleRxMessage(cMessage *msg)
 
 void WMaxMacBS::schedule()
 {
-    int symbols = 3000; /// @todo - check/calculate how many symbols are available in each frame
+    int symbols = 48; // 48 symbols per frame
     int dlSymbols = symbols/2;
     int ulSymbols = symbols - dlSymbols;
+    int subchannels = 60;
 
     scheduleBcastMessages();
 
-    WMaxMsgDlMap * dlmap = scheduleDL(dlSymbols);
-    WMaxMsgUlMap * ulmap = scheduleUL(ulSymbols);
+    WMaxMsgDlMap * dlmap = scheduleDL(dlSymbols*subchannels);
+    WMaxMsgUlMap * ulmap = scheduleUL(ulSymbols*subchannels);
 
     printDlMap(dlmap);
     printUlMap(ulmap);
