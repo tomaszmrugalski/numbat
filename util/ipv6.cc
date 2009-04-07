@@ -7,14 +7,14 @@
 using namespace std;
 
 #ifndef WIN32
-void inet_pton6(const char *plain, char *dst)
+int inet_pton6(const char *plain, char *dst)
 {
-    inet_pton(AF_INET6, plain, dst);
+    return inet_pton(AF_INET6, plain, dst);
 }
 
-void inet_ntop6(const char* src, char* dst, int dstSize)
+const char * inet_ntop6(const char* src, char* dst, int dstSize)
 {
-    inet_ntop(AF_INET6, src, dst, dstSize);
+    return inet_ntop(AF_INET6, src, dst, dstSize);
 }
 #endif
 
