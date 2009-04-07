@@ -58,6 +58,7 @@ Define_Module(WMaxCtrlSS);
 
 WMaxCtrlSS::WMaxCtrlSS()
 {
+    serviceFlows.clear();
 }
 
 void WMaxCtrlSS::fsmInit() {
@@ -305,35 +306,28 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
         WMaxMsgDsxRvd *dsxrvd = dynamic_cast<WMaxMsgDsxRvd*>(msg);
 
         WMaxFlowSS *flow;
-        for (int i=0; i!= serviceFlows.size(); i++) {
-            flow = serviceFlows.front();
-            serviceFlows.pop_front();
-
-            if (flow->transactionID == dsxrvd->getTransactionID()) {
-                flow->handleMessage(msg);
-                serviceFlows.push_back(flow);
+	for (list<WMaxFlowSS*>::iterator it=serviceFlows.begin();it!=serviceFlows.end(); ++it)
+	{
+            if ( (*it)->transactionID == dsxrvd->getTransactionID()) {
+                (*it)->handleMessage(msg);
                 return;
             }
-            serviceFlows.push_back(flow);
-        }
+	}
         return;
     }
 
-    if (dynamic_cast<WMaxMsgDsaRsp*>(msg)) {
+    if (dynamic_cast<WMaxMsgDsaRsp*>(msg)) 
+    {
         WMaxMsgDsaRsp *dsarsp = dynamic_cast<WMaxMsgDsaRsp*>(msg);
 
         WMaxFlowSS *flow;
-        for (int i=0; i!= serviceFlows.size(); i++) {
-            flow = serviceFlows.front();
-            serviceFlows.pop_front();
-            if (flow->transactionID == dsarsp->getTransactionID()) {
-                flow->handleMessage(msg);
-                serviceFlows.push_back(flow);
+	for (list<WMaxFlowSS*>::iterator it=serviceFlows.begin(); it!=serviceFlows.end(); ++it)
+	{
+            if ((*it)->transactionID == dsarsp->getTransactionID()) {
+                (*it)->handleMessage(msg);
                 return;
             }
-            serviceFlows.push_back(flow);
         }
-
         return;
     }
 
@@ -475,11 +469,10 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
               int oldCid = rng->getOldCid(i);
               int newCid = rng->getNewCid(i);
 
-              for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin();
-                   it!=ss->serviceFlows.end(); it++) {
+              for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
 		  SLog(ss, Debug) << "Trying to update cid " << oldCid << "->" << newCid << LogEnd;
-
-          if ((*it)->cid == oldCid) {
+		  
+		  if ((*it)->cid == oldCid) {
 		      SLog(ss, Debug) << "SF found. Performing update." << LogEnd;
 		      (*it)->cid = newCid;
 		      WMaxEvent_FlowEnable * en = new WMaxEvent_FlowEnable();
@@ -862,9 +855,6 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForL3Detach(Fsm * fsm, FsmEventType e,
     default:
 	CASE_IGNORE(fsm, e);
     }
-    
-
-
 }
 
 // sent HO-IND state
@@ -883,21 +873,19 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 
     // disable all service flows
     if (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER) {
-	    // disable all flows
-	    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
-		WMaxEvent_FlowDisable * dis = new WMaxEvent_FlowDisable();
-		(*it)->handleMessage(dis);
-	    } 
-	} else {
-	    // delete flows
-	    ss->serviceFlows.clear();
-#if 0
-	    for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); it++) {
-		ss->serviceFlows.erase(*it);
-	    } 
-#endif
-	}
-
+	// disable all flows
+	for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); ++it) {
+	    WMaxEvent_FlowDisable * dis = new WMaxEvent_FlowDisable();
+	    (*it)->handleMessage(dis);
+	} 
+    } else {
+	// delete flows
+	for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); ++it) {
+	    delete *it;
+	} 
+	ss->serviceFlows.clear();
+    }
+    
     return fsm->State();
 }
 
@@ -1440,7 +1428,8 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
 WMaxFlowSS::WMaxFlowSS(Fsm * fsm) {
     parentFsm = fsm;
     fsmInit();
-
+    cid = 0;
+    gate = 0;
     transactionID = 0; // it doesn't matter now, it will be set in WMaxFlowSS::onEventState_Start()
 }
 
@@ -1467,6 +1456,10 @@ void WMaxFlowSS::fsmInit() {
     eventVerify();
 }
 
+WMaxFlowSS::~WMaxFlowSS()
+{
+    parentFsm = 0;
+}
 
 void WMaxFlowSS::handleMessage(cMessage *msg) {
     if(dynamic_cast<WMaxEvent_FlowCreationStart*>(msg)) {

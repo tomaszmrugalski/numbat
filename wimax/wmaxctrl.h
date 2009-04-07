@@ -266,10 +266,9 @@ public:
     void handleMessage(cMessage *msg);
     Fsm *parentFsm;
 
+    ~WMaxFlowSS();
 protected:
     void fsmInit();
-//    virtual void initialize();
-    
 
     typedef enum {
         STATE_START,
