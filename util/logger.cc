@@ -130,15 +130,15 @@ namespace logger {
 	return buffer;
     }
 
-    ostream& logCont()    { return logger::buffer; }
-    ostream& logEmerg()   { return logger::logCommon(1); }
-    ostream& logAlert()   { return logger::logCommon(2); }
-    ostream& logCrit()    { return logger::logCommon(3); }
-    ostream& logError()   { return logger::logCommon(4); }
-    ostream& logWarning() { return logger::logCommon(5); }
-    ostream& logNotice()  { return logger::logCommon(6); }
-    ostream& logInfo()    { return logger::logCommon(7); }
-    ostream& logDebug()   { return logger::logCommon(8); }
+    ostream& logCont(float simtime, const char * name, cEnvir * ev)    { return logger::buffer; }
+    ostream& logEmerg(float simtime, const char * name, cEnvir * ev)   { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(1); }
+    ostream& logAlert(float simtime, const char * name, cEnvir * ev)   { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(2); }
+    ostream& logCrit(float simtime, const char * name, cEnvir * ev)    { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(3); }
+    ostream& logError(float simtime, const char * name, cEnvir * ev)   { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(4); }
+    ostream& logWarning(float simtime, const char * name, cEnvir * ev) { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(5); }
+    ostream& logNotice(float simtime, const char * name, cEnvir * ev)  { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(6); }
+    ostream& logInfo(float simtime, const char * name, cEnvir * ev)    { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(7); }
+    ostream& logDebug(float simtime, const char * name, cEnvir * ev)   { setSimTime(simtime); setLogName(name); setEv(ev); return logger::logCommon(8); }
 
     void Initialize(const char * file) {
 	logger::logFileMode = true;

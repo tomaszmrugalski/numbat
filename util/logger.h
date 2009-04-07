@@ -21,7 +21,7 @@
 #include <string>
 
 #define Log(X) SLog(this,X)
-#define SLog(OBJ,X) logger::setSimTime((float)OBJ->simTime()); logger::setLogName(OBJ->fullName()); logger::setEv(&ev); logger :: log##X ()
+#define SLog(OBJ,X) logger :: log##X ((float)OBJ->simTime(), OBJ->fullName(), &ev)
 #define LogEnd logger :: endl
 
 #define LOGMODE_DEFAULT LOGMODE_SIMTIME
@@ -46,15 +46,15 @@ namespace logger {
     };
 
     using namespace std;
-    ostream& logCont();
-    ostream& logEmerg();
-    ostream& logAlert();
-    ostream& logCrit();
-    ostream& logError();
-    ostream& logWarning();
-    ostream& logNotice();
-    ostream& logInfo();
-    ostream& logDebug();
+    ostream& logCont(float simtime, const char * name, cEnvir * ev);
+    ostream& logEmerg(float simtime, const char * name, cEnvir * ev);
+    ostream& logAlert(float simtime, const char * name, cEnvir * ev);
+    ostream& logCrit(float simtime, const char * name, cEnvir * ev);
+    ostream& logError(float simtime, const char * name, cEnvir * ev);
+    ostream& logWarning(float simtime, const char * name, cEnvir * ev);
+    ostream& logNotice(float simtime, const char * name, cEnvir * ev);
+    ostream& logInfo(float simtime, const char * name, cEnvir * ev);
+    ostream& logDebug(float simtime, const char * name, cEnvir * ev);
 
     void Initialize(const char * file);
     void Terminate();
