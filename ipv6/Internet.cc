@@ -24,6 +24,7 @@ Define_Module(Internet);
 
 void Internet::initialize()
 {
+    MsgsTransmittedCnt = 0;
     int logLevel = parentModule()->par("LogLevel");
     if ( (logLevel<1) || (logLevel>8) )
 	opp_error("Invalid LogLevel: %d. Accepted values: 1..8\n", logLevel);

@@ -30,6 +30,8 @@ void IPv6Dispatch::initialize()
 {
     handleTraffic = false; // L2 is not ready
     routingConfigured = false; // IPv6 routing is not configured
+    addrConfigured = false;
+    locationUpdated = false;
     SentBytesPers=0;
     RcvdBytesPers=0;
     DroppedMsgs = 0;

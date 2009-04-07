@@ -38,6 +38,7 @@ void MobIPv6mn::initialize()
     // add number prefix to the module name
     cModule * ss = parentModule()->parentModule();
     char buf[80];
+    index = ss->index();
     sprintf(buf, "%s%d", fullName(), ss->index());
     setName(buf);
 

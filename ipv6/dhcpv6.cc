@@ -32,6 +32,9 @@ Define_Module(DHCPv6Cli);
 void DHCPv6Cli::initialize()
 {
     fsmInit();
+    DhcpStartTime = 0;
+    DhcpErrorCnt = 0;
+    DhcpCompleteCnt = 0;
 
     // name vectors properly
     cModule * ss = parentModule()->parentModule();
