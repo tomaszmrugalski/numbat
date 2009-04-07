@@ -2,6 +2,9 @@
  Numbat Changelog
 ------------------
 
+2009-04-07
+- Experimental support for Windows version added (Visual Studio .NET 2003)
+
 2009-01-18
 - DHCPv6, RA messages are now derived from IPv6 messages
 - Convergence Sublayer in WiMax written for real

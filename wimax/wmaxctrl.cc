@@ -139,7 +139,7 @@ void WMaxCtrlSS::initialize() {
     hoInfo = new HoInfo_t();
     CLEAR(hoInfo);
     hoActionTimeData.setName("HO time length");
-    neType == WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
+    neType = WMAX_CTRL_NETWORK_ENTRY_INITIAL; // by default, use normal network entry
 
     fsmInit();
 
@@ -228,7 +228,7 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
     if (dynamic_cast<WMaxMsgUlMap*>(msg)) {
 	WMaxMsgUlMap * ulmap = dynamic_cast<WMaxMsgUlMap*>(msg);
 
-	for (int i=0; i<ulmap->getIEArraySize(); i++) {
+	for (unsigned int i=0; i<ulmap->getIEArraySize(); i++) {
 	    WMaxUlMapIE & ie = ulmap->getIE(i);
 	    if ( (ie.uiuc == WMAX_ULMAP_UIUC_CDMA_BWR) ) {
 		onEvent(EVENT_CDMA_CODE, msg);
@@ -471,14 +471,15 @@ FsmStateType WMaxCtrlSS::onEventState_WaitForRngRsp(Fsm * fsm, FsmEventType e, c
           addConn->setCid(rngRsp.basicCid);
           ss->send(addConn,"macOut");
           
-          for (int i=0; i<rng->getOldCidArraySize(); i++) {
+          for (unsigned int i=0; i<rng->getOldCidArraySize(); i++) {
               int oldCid = rng->getOldCid(i);
               int newCid = rng->getNewCid(i);
 
               for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin();
                    it!=ss->serviceFlows.end(); it++) {
 		  SLog(ss, Debug) << "Trying to update cid " << oldCid << "->" << newCid << LogEnd;
-		  if ((*it)->cid == oldCid) {
+
+          if ((*it)->cid == oldCid) {
 		      SLog(ss, Debug) << "SF found. Performing update." << LogEnd;
 		      (*it)->cid = newCid;
 		      WMaxEvent_FlowEnable * en = new WMaxEvent_FlowEnable();
@@ -705,10 +706,10 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMobScnReq(Fsm *fsm)
 FsmStateType WMaxCtrlSS::onEventState_WaitForMobScnRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
 WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
-int actBS, nextBS, nearestBS;
+int actBS, nearestBS;
 long int x1, y1, x2, y2;
 double minR;
-cModule *SS, *physim, *BS;
+cModule *physim, *BS;
 
     switch (e) {
     case EVENT_MOB_SCN_RSP_RECEIVED:
@@ -1098,7 +1099,7 @@ void WMaxCtrlBS::initialize()
 
 bool WMaxCtrlBS::pkmEnabled()
 {
-    return pkmSupport;
+    return (pkmSupport>0);
 }
 
 double WMaxCtrlBS::sendMsg(cMessage * msg, const char * paramName, const char * gateName, int cid)
@@ -1134,6 +1135,7 @@ SSInfo_t * WMaxCtrlBS::getSS(uint16_t basicCid, string reason)
   }
    
   opp_error("Unable to find SS with cid=%d while %s\n", basicCid, reason.c_str());
+  return 0; // just to avoid compilation warning
 }
 
 void WMaxCtrlBS::deleteSS(uint16_t basicCid)
@@ -1170,7 +1172,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         rsp->setOldCidArraySize(req->getSfCidArraySize());
         rsp->setNewCidArraySize(req->getSfCidArraySize());
 
-        for (int i=0; i<req->getSfCidArraySize(); i++) {
+        for (unsigned int i=0; i<req->getSfCidArraySize(); i++) {
             int oldCid = 0, newCid = 0;
 
             WMaxMacAddConn *addConn = new WMaxMacAddConn();

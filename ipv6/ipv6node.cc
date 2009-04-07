@@ -159,10 +159,10 @@ void IPv6Node::trafficTruncNormal()
  */
 void IPv6Node::trafficBeta()
 {
-    int i;
     int span = MaxPacketSize - MinPacketSize;
 
     long len = MinPacketSize + span*beta(8.0,0.5);
+    cMessage *m = 0;
 
     m = new cMessage("IPv6 packet");
     m->setByteLength(len);
@@ -174,7 +174,7 @@ void IPv6Node::trafficBeta()
     SentPktSizeVector.record(len);
 
     updateStats();
-    sheduleAt(simTime()+(double)(BurstInterval), sendTimer);
+    scheduleAt(simTime()+(double)(BurstInterval), sendTimer);
 }
 
 void IPv6Node::updateStats()

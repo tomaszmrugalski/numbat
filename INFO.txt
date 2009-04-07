@@ -2,9 +2,10 @@
   WiMax, DHCPv6 and Mobile IPv6 extenstions to Omnet++
  ------------------------------------------------------
  
- Authors: Tomasz Mrugalski <thomson(at)klub(dot)com(dot)pl>
-          Maciej Jureko
-          Andrzej Bojarski
+ Author: Tomasz Mrugalski <thomson(at)klub(dot)com(dot)pl>
+ 
+ Contributors: Maciej Jureko
+               Andrzej Bojarski
  
  Published under GNU GPL v2 (or later) licence.
 
@@ -13,7 +14,3 @@
  version will become available).
 
  Please use meaningful commit comments. 
-
- ------
- To rebuild makefiles, use following 
- opp_makemake -w -f -I../util

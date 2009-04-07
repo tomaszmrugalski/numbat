@@ -82,7 +82,7 @@ void WMaxMac::stringUpdate() {
 	// count all messages in the queue
 
         stringstream displayIt;
-        displayIt << queuedMsgsCnt << "msgs in " << Conns.size() << " queues.";
+        displayIt << queuedMsgsCnt << "msgs in " << (int)Conns.size() << " queues.";
         displayString().setTagArg("t",0, (displayIt.str()).c_str());
     }
 }
@@ -1149,7 +1149,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                 }
 
                 BEpoint++;
-                BEpoint = BEpoint%Conns.size();
+                BEpoint = BEpoint%(int)Conns.size();
 
                 if (BEit->type == WMAX_CONN_TYPE_BE) {
                     if (BEit->qos.be.reqbw) {

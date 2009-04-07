@@ -262,11 +262,20 @@
 			Filter="">
 			<File
 				RelativePath=".\port-win32\addrpack.c">
-			</File>
-			<File
-				RelativePath=".\port-win32\Portable-win32.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\Changelog">
+		</File>
+		<File
+			RelativePath=".\INFO.txt">
+		</File>
 		<File
 			RelativePath=".\Portable.h">
 		</File>

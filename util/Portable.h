@@ -1,8 +1,17 @@
 #ifndef PORTABLE_H
 #define PORTABLE_H
 
-extern int    inet_pton6(const unsigned char* src, char* dst);
-extern char * inet_ntop6(const unsigned char* src, char* dst, int dstSize); 
+#ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
+int    inet_pton6(const char* src, char* dst);
+char * inet_ntop6(const char* src, char* dst, int dstSize); 
+
+#ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
+}
+#endif
+
 
 
 #ifdef WIN32
