@@ -727,6 +727,8 @@ void WMaxMacSS::initialize()
     SendQueue.setName("SendQueue");
     CLEAR(&Stats);
 
+    ChangePosition = 0;
+
     // Create permanent INITIAL-RANGING connection
     addRangingConn();
 
