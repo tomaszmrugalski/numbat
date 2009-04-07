@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 int    inet_pton6(const char* src, char* dst);
-char * inet_ntop6(const char* src, char* dst, int dstSize); 
+const char * inet_ntop6(const char* src, char* dst, int dstSize); 
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }
