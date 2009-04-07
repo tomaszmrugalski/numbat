@@ -72,6 +72,12 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
     }
 
     if (WMaxEvent_DelConn *delcon = dynamic_cast<WMaxEvent_DelConn*>(msg)) {
+	if (delcon->getIsBasic())
+	{
+	    // there are no CS rules for basic connections
+	    delete msg; 
+	    return;
+	}
         list<WMaxMacCSRule>::iterator it;
         for(it=csTable.begin(); it!=csTable.end(); it++) {
             if((it->cid == delcon->getCid())) {
@@ -131,7 +137,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
     {
 	if (!dstAddr.isMulticast()) // don't complain about multicasts so loud
 	{
-	    Log(Warning);
+	    Log(Info); 
 	} else {
 	    Log(Debug);
 	}
@@ -174,7 +180,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
     if (!dstAddr.isMulticast())
     {
-	Log(Notice) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+	Log(Info) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
 		    << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
     } else {
 	Log(Debug) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;

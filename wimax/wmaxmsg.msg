@@ -219,6 +219,7 @@ message WMaxEvent_DelConn
 {
 fields:
     int cid;
+    bool isBasic;
 };
 
 message WMaxEvent_FlowEnable

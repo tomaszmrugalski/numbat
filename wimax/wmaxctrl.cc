@@ -879,10 +879,11 @@ FsmStateType WMaxCtrlSS::onEnterState_SendHoInd(Fsm *fsm)
 	    (*it)->handleMessage(dis);
 	} 
     } else {
-	// delete flows
+	// delete flow objects
 	for (list<WMaxFlowSS*>::iterator it=ss->serviceFlows.begin(); it!=ss->serviceFlows.end(); ++it) {
 	    delete *it;
 	} 
+	// remove pointers to those objects
 	ss->serviceFlows.clear();
     }
     
@@ -1052,6 +1053,7 @@ void WMaxCtrlSS::finish()
     {
 	delete *it;
     }
+    serviceFlows.clear();
 }
 
 /********************************************************************************/
@@ -1286,6 +1288,7 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
         WMaxEvent_DelConn * delConn;
         delConn = new WMaxEvent_DelConn();
         delConn->setCid(ss->basicCid);
+	delConn->setIsBasic(true);
         send(delConn, "macOut");
         
         for (int i=0;i <ss->sfCnt; i++) {
