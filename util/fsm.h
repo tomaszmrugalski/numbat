@@ -105,6 +105,7 @@ public:
 
 protected:
     virtual void fsmInit() = 0;
+    virtual ~Fsm();
     bool stateVerify();
     bool eventVerify();
     void statesEventsInit(int statesCnt, int eventsCnt, FsmStateType s);

@@ -209,3 +209,9 @@ void Fsm::stringUpdate()
     if (ev.isGUI()) 
 	displayString().setTagArg("t",0,buf);
 }
+
+Fsm::~Fsm()
+{
+    States.clear();
+    Events.clear();
+}
