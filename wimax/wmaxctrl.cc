@@ -125,7 +125,7 @@ void WMaxCtrlSS::fsmInit() {
     eventVerify();
     
     float ne = (double)SS->par("NetworkEntryTime");
-    float ho = (double)SS->par("HandoverTime");
+    float ho = (double)SS->par("HandoverTime") + uniform(0,0.5); // + extra random delay 0 ... 500ms
 
     TIMER(NetworkEntry, ne, "Start Network entry");
     TIMER(Handover,     ho, "Start handover");
