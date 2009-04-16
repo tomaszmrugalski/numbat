@@ -64,6 +64,13 @@ void ssMAC::updateString() {
     displayString().setTagArg("t",0, buf1);
 }
 
+void ssMAC::initialize()
+{
+    cModule *SS = parentModule();
+    char buf[80];
+    sprintf(buf, "%s%d", fullName(), SS->index());
+    setName(buf);
+}
 
 /********************************************************************************/
 /*** WMax Mac (common for BS/SS) ************************************************/

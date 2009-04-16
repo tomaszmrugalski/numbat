@@ -1148,31 +1148,32 @@ void WMaxCtrlBS::handleMessage(cMessage *msg)
       if (GetCidFromMsg(msg) != WMAX_CID_RANGING )
         opp_error("Received RNG-REQ on non-ranging connection (cid=%d)", GetCidFromMsg(msg));
 
-        WMaxMsgRngReq * req = dynamic_cast<WMaxMsgRngReq*>(msg);
-        WMaxRngReq rngReq = req->getRngReq();
-        WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
-
-        // remember that this SS is being supported
-        basicCid = getNextCid();
-        SSInfo_t * ss  = new SSInfo_t();
-        ss->macAddr  = rngReq.macAddr;
-        ss->basicCid = basicCid;
-        Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added." << LogEnd;
-
-        rsp->setOldCidArraySize(req->getSfCidArraySize());
-        rsp->setNewCidArraySize(req->getSfCidArraySize());
-
-        for (unsigned int i=0; i<req->getSfCidArraySize(); i++) {
-            int oldCid = 0, newCid = 0;
-
-            WMaxMacAddConn *addConn = new WMaxMacAddConn();
-
-            oldCid = req->getSfCid(i);
-            newCid = getNextCid();
-
-	    addConn->setMacAddr(ss->macAddr);
-            addConn->setName("Add connection");
-            addConn->setGateIndex(0);
+      WMaxMsgRngReq * req = dynamic_cast<WMaxMsgRngReq*>(msg);
+      WMaxRngReq rngReq = req->getRngReq();
+      WMaxMsgRngRsp * rsp = new WMaxMsgRngRsp("RNG-RSP (initial rng)");
+      
+      // remember that this SS is being supported
+      basicCid = getNextCid();
+      SSInfo_t * ss  = new SSInfo_t();
+      ss->macAddr  = rngReq.macAddr;
+      ss->basicCid = basicCid;
+      Log(Notice) << "New SS with mac=" << ss->getMac() << " has been added (basicCid=" 
+		  << ss->basicCid << ")." << LogEnd;
+      
+      rsp->setOldCidArraySize(req->getSfCidArraySize());
+      rsp->setNewCidArraySize(req->getSfCidArraySize());
+      
+      for (unsigned int i=0; i<req->getSfCidArraySize(); i++) {
+	  int oldCid = 0, newCid = 0;
+	  
+	  WMaxMacAddConn *addConn = new WMaxMacAddConn();
+	  
+	  oldCid = req->getSfCid(i);
+	  newCid = getNextCid();
+	  
+	  addConn->setMacAddr(ss->macAddr);
+	  addConn->setName("Add connection");
+	  addConn->setGateIndex(0);
             addConn->setCid( newCid );
             addConn->setQosArraySize(1);
             WMaxQos qos = req->getSfQos(i);

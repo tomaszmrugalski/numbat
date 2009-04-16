@@ -56,10 +56,12 @@ void ssInfo::initialize() {
     
     int initialBS = parentModule()->par("initialBS");
 
+    int index = parentModule()->index();
+
     stringUpdate();
-    Log(Notice) << "New SS [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
+    Log(Notice) << "New SS[" << index << "] [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
-    Log(Notice) << "New SS [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.dhcp.DadType 
+    Log(Notice) << "New SS[" << index << "] [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.dhcp.DadType 
 		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
 		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 

@@ -159,6 +159,7 @@ class ssMAC : public cCompoundModule
 {
 public:
     void updateString();
+    void initialize();
 };
 
 class WMaxStatsSS 
