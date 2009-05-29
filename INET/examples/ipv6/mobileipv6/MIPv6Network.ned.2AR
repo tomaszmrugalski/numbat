@@ -1,0 +1,136 @@
+// Copyright (C) 2007 Faqir Zarrar Yousaf
+// Communication Networks Institute
+// University of Dortmund, Germany
+// faqir.yousaf@uni-dortmund.de
+//
+// Copyright (C) 2004 Andras Varga
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+//
+
+
+package inet.examples.ipv6.mobileipv6;
+
+import inet.examples.ethernet.lans.ethernetline;
+import inet.networklayer.autorouting.FlatNetworkConfigurator6;
+import inet.nodes.ipv6.Router6;
+import inet.nodes.ipv6.StandardHost6;
+import inet.nodes.wireless.WirelessAPWithEth;
+import inet.nodes.xmipv6.HomeAgent6;
+import inet.nodes.xmipv6.WirelessHost6;
+import inet.world.ChannelControl;
+
+
+channel fiberline extends ned.DatarateChannel
+{
+    parameters:
+        delay = 1us;
+        datarate = 512*1000000;
+}
+
+channel ethernetline extends ned.DatarateChannel
+{
+    parameters:
+        delay = 0.1us;
+}
+
+module MIPv6Network
+{
+    parameters:
+        double n;
+        double playgroundSizeX;
+        double playgroundSizeY;
+
+        @display("bgb=799,698");
+    submodules:
+        configurator: FlatNetworkConfigurator6 {
+            parameters:
+                moduleTypes = "Router6 StandardHost6 HomeAgent6 WirelessHost6 ";
+                nonIPModuleTypes = "WirelessAPWithEth";
+                @display("p=763,37;i=block/cogwheel");
+        }
+        channelcontrol: ChannelControl {
+            parameters:
+                playgroundSizeX = playgroundSizeX;
+                playgroundSizeY = playgroundSizeY;
+                numChannels = 1;
+                @display("p=761,99;i=misc/sun");
+        }
+        Home_Agent: HomeAgent6 {
+            parameters:
+                @display("p=209,181;i=abstract/router");
+        }
+        R_1: Router6 {
+            parameters:
+                @display("p=526,179;i=abstract/router");
+        //R_2: Router6;
+        //    display: "p=529,465;i=abstract/router";
+        //R_3: Router6;
+          //  display: "p=209,465;i=abstract/router";
+        }
+        MN[n]: WirelessHost6 {
+            parameters:
+                @display("p=86,356;i=device/wifilaptop");
+        }
+        CN: StandardHost6 {
+            parameters:
+                @display("p=628,178;i=device/pc2");
+        }
+        AP_Home: WirelessAPWithEth {
+            parameters:
+                @display("p=163,124;i=device/accesspoint_s");
+        }
+        AP_1: WirelessAPWithEth {
+            parameters:
+                @display("p=571,124;i=device/accesspoint_s");
+        //AP_2: WirelessAPWithEth;
+          //  display: "p=587,508;i=device/accesspoint_s";
+        //AP_3: WirelessAPWithEth;
+          //  display: "p=179,516;i=device/accesspoint_s";
+        }
+    connections allowunconnected:
+
+        Home_Agent.ethOut++ --> ethernetline --> R_1.ethg$i++;
+        Home_Agent.ethIn++ <-- ethernetline <-- R_1.ethg$o++;
+
+        //R_1.ethOut++ --> ethernetline --> R_2.ethIn++;
+        //R_1.ethIn++ <-- ethernetline <-- R_2.ethOut++;
+
+        //R_2.ethOut++ --> ethernetline --> R_3.ethIn++;
+        //R_2.ethIn++ <-- ethernetline <-- R_3.ethOut++;
+
+        //Home_Agent.ethOut++ --> ethernetline --> R_3.ethIn++;
+        //Home_Agent.ethIn++ <-- ethernetline <-- R_3.ethOut++;
+
+        R_1.ethg++ <--> ethernetline <--> CN.ethg++;
+
+        AP_Home.ethg$o++ --> ethernetline --> Home_Agent.ethIn++;
+        AP_Home.ethg$i++ <-- ethernetline <-- Home_Agent.ethOut++;
+
+        AP_1.ethg++ <--> ethernetline <--> R_1.ethg++;
+
+        //AP_2.ethOut++ --> ethernetline --> R_2.ethIn++;
+        //AP_2.ethIn++ <-- ethernetline <-- R_2.ethOut++;
+
+        //AP_3.ethOut++ --> ethernetline --> R_3.ethIn++;
+        //AP_3.ethIn++ <-- ethernetline <-- R_3.ethOut++;
+
+}
+
+network mIPv6Network extends MIPv6Network
+{
+    parameters:
+}
+

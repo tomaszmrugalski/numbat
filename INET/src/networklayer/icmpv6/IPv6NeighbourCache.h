@@ -71,7 +71,7 @@ class INET_API IPv6NeighbourCache
         MACAddress macAddress;
         bool isRouter;
         bool isDefaultRouter; // is it on the Default Router List?
-
+	bool isHomeAgent;	//is the router also a Home Agent (RFC 3775-MIPv6)...Zarrar Yousaf 09.03.07
         // Neighbour Unreachability Detection variables
         ReachabilityState reachabilityState;
         simtime_t reachabilityExpires; // reachabilityLastConfirmed+reachableTime
@@ -109,10 +109,11 @@ class INET_API IPv6NeighbourCache
     typedef NeighbourMap::iterator iterator;
 
   protected:
+    cSimpleModule &neighbourDiscovery; // for cancelAndDelete() calls
     NeighbourMap neighbourMap;
 
   public:
-    IPv6NeighbourCache();
+    IPv6NeighbourCache(cSimpleModule &neighbourDiscovery);
     virtual ~IPv6NeighbourCache() {}
 
     /** Returns a neighbour entry, or NULL. */
@@ -138,14 +139,36 @@ class INET_API IPv6NeighbourCache
     /** Creates and initializes a router entry (isRouter=isDefaultRouter=true), state=INCOMPLETE. */
     //TODO merge into next one (using default arg)
     virtual Neighbour *addRouter(const IPv6Address& addr, int interfaceID,
-                        simtime_t expiryTime);
+                        simtime_t expiryTime, bool isHomeAgent = false); // added HA flag, 3.9.07 - CB
 
     /** Creates and initializes a router entry (isRouter=isDefaultRouter=true), MAC address and state=STALE. */
     virtual Neighbour *addRouter(const IPv6Address& addr, int interfaceID,
-                         MACAddress macAddress, simtime_t expiryTime);
+                         MACAddress macAddress, simtime_t expiryTime, bool isHomeAgent = false); // added HA flag, 3.9.07 - CB
+
+
+    /** Creates and initializes a HOME AGENT entry (isRouter=isDefaultRouter=isHomeAgent=true), state=INCOMPLETE. */
+    //Similar to addRouter() above. Addedy by Zarrar Yousaf on 09.03.07 for MIPv6 implementation
+    /*virtual Neighbour *addHomeAgent(const IPv6Address& addr, int interfaceID,
+                        simtime_t expiryTime);*/
+
+    /** Creates and initializes a HOME AGENT entry (isRouter=isDefaultRouter=isHomeAgent=true), MAC address and state=STALE. */
+    //Similar to addRouter() above. Addedy by Zarrar Yousaf on 09.03.07 for MIPv6 implementation
+    /*virtual Neighbour *addHomeAgent(const IPv6Address& addr, int interfaceID,
+                         MACAddress macAddress, simtime_t expiryTime);*/
+
+
 
     /** Deletes the given neighbour from the cache. */
     virtual void remove(const IPv6Address& addr, int interfaceID);
+
+    /** Set status of all neighbours on given interface to state PROBE. */
+    // Added by CB
+    virtual void invalidateEntriesForInterfaceID(int interfaceID);
+
+    /** Set status of all neighbours to state PROBE. */
+    // Added by CB
+    virtual void invalidateAllEntries();
+
 
     /** Deletes the given neighbour from the cache. */
     virtual void remove(NeighbourMap::iterator it);

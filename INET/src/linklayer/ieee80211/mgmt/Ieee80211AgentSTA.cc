@@ -46,9 +46,49 @@ void Ieee80211AgentSTA::initialize(int stage)
         NotificationBoard *nb = NotificationBoardAccess().get();
         nb->subscribe(this, NF_L2_BEACON_LOST);
 
+	//Statisitic variables initiailisation (ZY 24.11.07)
+	scanReqVector.setName("SCAN_REQUEST");
+	disassociateReqVector.setName("DISASSOC_REQ");
+	associateReqVector.setName("ASSOC_REQ");
+	authenticateReqVector.setName("AUTHENTICATE_REQ");
+	associateConfirmVector.setName("ASSOC_CONFIRM");
+	authenticateConfirmVector.setName("AUTHENTICATE_CONFIRM");
+	scanConfirmVector.setName("SCAN_CONFIRM");
+	
+	scanReqScalar.setName("SCAN_REQUEST1");
+	disassociateReqScalar.setName("DISASSOC_REQ1");
+	associateReqScalar.setName("ASSOC_REQ1");
+	authenticateReqScalar.setName("AUTHENTICATE_REQ1");
+	associateConfirmScalar.setName("ASSOC_CONFIRM1");
+	authenticateConfirmScalar.setName("AUTHENTICATE_CONFIRM1");
+	scanConfirmScalar.setName("SCAN_CONFIRM1");
+	
+	scanReq = 0;
+	disassociateReq = 0;
+	associateReq = 0;
+	authenticateReq = 0;
+	associateConfirm = 0;
+	authenticateConfirm = 0;
+	scanConfirm = 0;
+	
         // start up: send scan request
         scheduleAt(simTime()+uniform(0,maxChannelTime), new cMessage("startUp", MK_STARTUP));
     }
+}
+
+void Ieee80211AgentSTA::finish()
+{
+	recordScalar("ScanRequest_Time",scanReq );
+	recordScalar("DissassociateReq_Time",disassociateReq);
+	recordScalar("AssociateReq_Time",associateReq);
+	recordScalar("AuthenticateReq_Time",authenticateReq);
+	recordScalar("AssociateConf_Time",associateConfirm);
+	recordScalar("AuthenticateConf_Time",authenticateConfirm);
+	recordScalar("ScanConfirm_Time",scanConfirm);
+	recordScalar("SCAN_DELAY",authenticateReq - scanReq);
+	recordScalar("AUTHENTICATE_DELAY",authenticateConfirm - authenticateReq);
+	recordScalar("ASSOCIATE_DELAY",associateConfirm - authenticateConfirm);
+	recordScalar("L2_HO_DELAY",associateConfirm - scanReq);
 }
 
 void Ieee80211AgentSTA::handleMessage(cMessage *msg)
@@ -132,6 +172,9 @@ void Ieee80211AgentSTA::sendScanRequest()
         req->setChannelList(i, channelsToScan[i]);
     //XXX BSSID, SSID are left at default ("any")
 
+    scanReq = simTime(); //Statistic variable (ZY 24.11.07)
+    scanReqVector.record(scanReq);//Statistic variable (ZY 24.11.07)
+    scanReqScalar.collect(scanReq);   
     sendRequest(req);
 }
 
@@ -141,6 +184,11 @@ void Ieee80211AgentSTA::sendAuthenticateRequest(const MACAddress& address)
     Ieee80211Prim_AuthenticateRequest *req = new Ieee80211Prim_AuthenticateRequest();
     req->setAddress(address);
     req->setTimeout(authenticationTimeout);
+    
+    authenticateReq = simTime();
+    authenticateReqVector.record(authenticateReq);
+    authenticateReqScalar.collect(authenticateReq);
+    
     sendRequest(req);
 }
 
@@ -159,6 +207,11 @@ void Ieee80211AgentSTA::sendAssociateRequest(const MACAddress& address)
     Ieee80211Prim_AssociateRequest *req = new Ieee80211Prim_AssociateRequest();
     req->setAddress(address);
     req->setTimeout(associationTimeout);
+    
+    associateReq = simTime(); //Statisitic (ZY 24.11.07)
+    associateReqVector.record(associateReq); //Statisitic (ZY 24.11.07)
+    associateReqScalar.collect(associateReq);
+    
     sendRequest(req);
 }
 
@@ -177,6 +230,11 @@ void Ieee80211AgentSTA::sendDisassociateRequest(const MACAddress& address, int r
     Ieee80211Prim_DisassociateRequest *req = new Ieee80211Prim_DisassociateRequest();
     req->setAddress(address);
     req->setReasonCode(reasonCode);
+    
+    disassociateReq = simTime(); //Statisitic (ZY 24.11.07)
+    disassociateReqVector.record(disassociateReq); //Statisitic (ZY 24.11.07)
+    disassociateReqScalar.collect(disassociateReq);    
+    
     sendRequest(req);
 }
 
@@ -194,7 +252,17 @@ void Ieee80211AgentSTA::processScanConfirm(Ieee80211Prim_ScanConfirm *resp)
     dumpAPList(resp);
 
     Ieee80211Prim_BSSDescription& bssDesc = resp->getBssList(bssIndex);
+    
+    //The two statements below are added because the L2 handover time was greater than before when a STA wants to re-connect to an AP with which it was associated before. When the STA wants to associat again with the previous AP, then since the AP is already having an entry of the STA because of old association, and thus it is expectign an authentication frame number 3 but it receives authentication frame number 1 from STA, which will cause teh AP to return an Auth-Error making the MN STA to start teh handover process all over again. 
+    EV<<"First deauthenticate with AP address ="<<bssDesc.getBSSID()<<" before Authentication\n";
+    sendDeauthenticateRequest(bssDesc.getBSSID(), 0);
+    
     EV << "Chosen AP address=" << bssDesc.getBSSID() << " from list, starting authentication\n";
+    
+    scanConfirm = simTime(); //Statisitic added by ZY 28.11.07
+    scanConfirmVector.record(scanConfirm); //Statisitic added by ZY 28.11.07
+    scanConfirmScalar.collect(scanConfirm);
+    
     sendAuthenticateRequest(bssDesc.getBSSID());
 }
 
@@ -242,6 +310,11 @@ void Ieee80211AgentSTA::processAuthenticateConfirm(Ieee80211Prim_AuthenticateCon
     else
     {
         EV << "Authentication successful, let's try to associate\n";
+	
+	authenticateConfirm = simTime(); //Statisitic (ZY 24.11.07)
+	authenticateConfirmVector.record(authenticateConfirm); //Statisitic (ZY 24.11.07)
+	authenticateConfirmScalar.collect(authenticateConfirm);
+	
         sendAssociateRequest(resp->getAddress());
     }
 }
@@ -260,6 +333,11 @@ void Ieee80211AgentSTA::processAssociateConfirm(Ieee80211Prim_AssociateConfirm *
     {
         EV << "Association successful\n";
         // we are happy!
+	
+	associateConfirm = simTime(); //Statisitic (ZY 24.11.07)
+	associateConfirmVector.record(associateConfirm); //Statisitic (ZY 24.11.07)
+	associateConfirmScalar.collect(associateConfirm);
+	
         getParentModule()->getParentModule()->bubble("Associated with AP");
     }
 }

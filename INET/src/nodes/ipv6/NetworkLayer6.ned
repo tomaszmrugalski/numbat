@@ -28,6 +28,7 @@ import inet.networklayer.icmpv6.ICMPv6;
 import inet.networklayer.icmpv6.IPv6NeighbourDiscovery;
 import inet.networklayer.ipv6.IPv6;
 import inet.networklayer.ipv6.IPv6ErrorHandling;
+import inet.networklayer.ipv6.IPv6Tunneling;
 
 
 //
@@ -60,8 +61,8 @@ module NetworkLayer6
                 protocolMapping = "6:0,17:1,46:2,89:3";
                 @display("p=84,129");
             gates:
-                transportIn[4];
-                transportOut[4];
+                transportIn[5];
+                transportOut[5];
                 queueIn[sizeof(ifIn)];
                 queueOut[sizeof(ifIn)];
         }
@@ -77,6 +78,10 @@ module NetworkLayer6
             parameters:
                 @display("p=208,171");
         }
+        iptunneling: IPv6Tunneling {
+            parameters:
+		@display("p=204,254;i=block/network");
+        }
     connections allowunconnected:  // FIXME remove 'nocheck'!
         // IPv6 to transport Layer
         ipv6.transportOut[0] --> { @display("m=n"); } --> TCPOut;
@@ -90,6 +95,12 @@ module NetworkLayer6
 
         ipv6.transportOut[3] --> { @display("m=n"); } --> ospfOut;
         ipv6.transportIn[3] <-- { @display("m=n"); } <-- ospfIn;
+
+        // IPv6 to IPv6 Tunneling
+        iptunneling.upperLayerIn <-- ipv6.upperTunnelingOut;
+        iptunneling.upperLayerOut --> ipv6.upperTunnelingIn;
+        iptunneling.linkLayerIn <-- ipv6.lowerTunnelingOut;
+        iptunneling.linkLayerOut --> ipv6.lowerTunnelingIn;
 
         // IPv6 to ICMPv6
         ipv6.icmpOut --> icmpv6.ipv6In;

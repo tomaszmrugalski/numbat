@@ -1,0 +1,14 @@
+#! /bin/sh
+
+seedtool g 1 10000000 25 > seeds.txt
+for seed in `cat seeds.txt`; do
+   (
+     echo "[General]"
+     echo "random-seed = ${seed}"
+     echo "output-vector-file = mipv6-${seed}.vec"
+   ) > parameters.ini
+   ./MIPv6Demo
+done
+
+#for ((i =1; $i = 100; i++)) do
+#./MIPv6Demo -r $i

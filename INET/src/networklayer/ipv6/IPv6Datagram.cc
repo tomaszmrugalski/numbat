@@ -19,6 +19,7 @@
 
 #include "IPv6Datagram.h"
 #include "IPv6ExtensionHeaders_m.h"
+#include "MobilityHeader_m.h"
 
 
 Register_Class(IPv6Datagram);
@@ -35,22 +36,34 @@ IPv6Datagram& IPv6Datagram::operator=(const IPv6Datagram& other)
 
     for (ExtensionHeaders::const_iterator i=other.extensionHeaders.begin(); i!=other.extensionHeaders.end(); ++i)
     {
+    	addExtensionHeader( (IPv6ExtensionHeader*) (*i)->dup() );
+
         // addExtensionHeader((*i)->dup()); FIXME unfortunately ExtensionHeader doesn't have dup(),
         // so for now we have to resort to the following unsafe and unextensible nasty solution
-        IPv6ExtensionHeader *eh = (*i);
-        IPv6ExtensionHeader *dupEh = NULL;
+        //IPv6ExtensionHeader* eh = (*i);
+        //IPv6ExtensionHeader* dupEh;
+        /*
         if (dynamic_cast<IPv6HopByHopOptionsHeader*>(eh)) {
             dupEh = new IPv6HopByHopOptionsHeader();
             *dupEh = *(IPv6HopByHopOptionsHeader *)eh;
         } else if (dynamic_cast<IPv6RoutingHeader*>(eh)) {
-            dupEh = new IPv6RoutingHeader();
-            *dupEh = *(IPv6RoutingHeader *)eh;
+        	//dupEh = new IPv6RoutingHeader();
+            //*dupEh = *(IPv6RoutingHeader *)eh;
+        	// FIX 29.08.07 - CB
+        	// the code above was invalid and did not copy the old object
+        	dupEh = new IPv6RoutingHeader( * ((IPv6RoutingHeader*) eh));
+        	//*dupEh = (IPv6RoutingHeader) eh; // for non-pointer object
         } else if (dynamic_cast<IPv6FragmentHeader*>(eh)) {
             dupEh = new IPv6FragmentHeader();
             *dupEh = *(IPv6FragmentHeader *)eh;
         } else if (dynamic_cast<IPv6DestinationOptionsHeader*>(eh)) {
-            dupEh = new IPv6DestinationOptionsHeader();
-            *dupEh = *(IPv6DestinationOptionsHeader *)eh;
+            //dupEh = new IPv6DestinationOptionsHeader();
+            //*dupEh = *(IPv6DestinationOptionsHeader *)eh;
+        	// 19.10.07 - CB
+        	if (dynamic_cast<HomeAddressOption*>(eh))
+        		dupEh = new HomeAddressOption( * ((HomeAddressOption*) eh));
+        	else
+        		dupEh = new IPv6DestinationOptionsHeader( * ((IPv6DestinationOptionsHeader*) eh));
         } else if (dynamic_cast<IPv6AuthenticationHeader*>(eh)) {
             dupEh = new IPv6AuthenticationHeader();
             *dupEh = *(IPv6AuthenticationHeader *)eh;
@@ -61,6 +74,7 @@ IPv6Datagram& IPv6Datagram::operator=(const IPv6Datagram& other)
             throw cRuntimeError(this, "unrecognised HeaderExtension subclass %s in IPv6Datagram::operator=()", eh->getClassName());
         }
         addExtensionHeader(dupEh);
+    	*/
     }
 
     return *this;
@@ -109,6 +123,32 @@ int IPv6Datagram::calculateHeaderByteLength() const
     return len;
 }
 
+
+// #### Added by CB, 29.08.07 ####
+
+IPv6ExtensionHeaderPtr IPv6Datagram::popExtensionHeader()
+{
+	static IPv6ExtensionHeaderPtr null;
+    if ( extensionHeaders.size() == 0)
+        return (null=NULL);
+    IPv6ExtensionHeaderPtr eh = extensionHeaders.front();
+    extensionHeaders.erase( extensionHeaders.begin() );
+    return eh;
+}
+
+IPv6Datagram::~IPv6Datagram()
+{
+	IPv6ExtensionHeaderPtr eh;
+
+	while ( ! extensionHeaders.empty() )
+	{
+		eh = extensionHeaders.back();
+		extensionHeaders.pop_back(); // remove pointer element from container
+		delete eh; // delete the header
+	}
+}
+
+
 //---
 
 Register_Class(IPv6ExtensionHeader);
@@ -144,11 +184,12 @@ int IPv6ExtensionHeader::getByteLength() const
     if (dynamic_cast<const IPv6HopByHopOptionsHeader*>(this)) {
         return 8; // FIXME verify
     } else if (dynamic_cast<const IPv6RoutingHeader*>(this)) {
-        return 8; // FIXME verify
+        return 8 + 16 * ((IPv6RoutingHeader*)this)->getAddressArraySize(); // FIXME verify, update 28.08.07 - CB
     } else if (dynamic_cast<const IPv6FragmentHeader*>(this)) {
         return 8;
     } else if (dynamic_cast<const IPv6DestinationOptionsHeader*>(this)) {
-        return 8; // FIXME verify
+    	//return 8; // FIXME verify
+    	return 20; // FIXME only valid for Home Address Option!
     } else if (dynamic_cast<const IPv6AuthenticationHeader*>(this)) {
         return 8; // FIXME verify
     } else if (dynamic_cast<const IPv6EncapsulatingSecurityPayloadHeader*>(this)) {

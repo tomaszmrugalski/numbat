@@ -22,7 +22,15 @@
 IPv6ControlInfo::~IPv6ControlInfo()
 {
     delete dgram;
+
+    while ( ! extensionHeaders.empty() )
+    {
+    	IPv6ExtensionHeader* eh = extensionHeaders.back();
+    	extensionHeaders.pop_back();
+    	delete eh;
+    }
 }
+
 void IPv6ControlInfo::setOrigDatagram(IPv6Datagram *d)
 {
     if (dgram)
@@ -41,4 +49,31 @@ IPv6Datagram *IPv6ControlInfo::removeOrigDatagram()
     return ret;
 }
 
+unsigned int IPv6ControlInfo::extensionHeaderArraySize() const
+{
+    return extensionHeaders.size();
+}
 
+IPv6ExtensionHeader* IPv6ControlInfo::extensionHeader(unsigned int k)
+{
+    ASSERT(k>=0 && k<extensionHeaders.size());
+    return extensionHeaders[k];
+}
+
+/*void IPv6ControlInfo::setExtHeaders(unsigned int k, const IPv6ExtensionHeader& extHeaders_var)
+{
+    //throw new cException(this, "setExtensionHeader() not supported, use addExtensionHeader()");
+	throw new cException("setExtensionHeader() not supported, use addExtensionHeader()");
+}*/
+
+void IPv6ControlInfo::addExtensionHeader(IPv6ExtensionHeader* eh, int atPos)
+{
+    if (atPos<0 || atPos>=extensionHeaders.size())
+    {
+        extensionHeaders.push_back(eh);
+        return;
+    }
+
+    // insert at position atPos, shift up the rest of the array
+    extensionHeaders.insert(extensionHeaders.begin()+atPos, eh);
+}

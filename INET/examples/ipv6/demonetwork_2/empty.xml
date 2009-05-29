@@ -1,0 +1,72 @@
+<netconf>
+	<local node="r1" routePackets="on" mobileIPv6Role="HomeAgent">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<inetAddr tentative="true">aaaa:10:3::aaa:ff:fe00:11</inetAddr>
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:10:3::/64</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+		<tunnel>
+			<tunnelEntry entryPoint='aaaa:10:3:0:aaa:ff:fe00:11' exitPoint='aaaa:3a:f::aaa:ff:fe00:7'>
+				<triggers destination='aaaa:3a:f1:0:aaa:ff:fe00:13'/>
+			</tunnelEntry>
+		</tunnel>
+	</local>
+
+	<local node="mr1" routePackets="on">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:10:31::/64</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+	</local>
+
+	<local node="r3" routePackets="on" mobileIPv6Role="HomeAgent">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<inetAddr tentative="true">aaaa:3a:f::aaa:ff:fe00:7</inetAddr>
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:3a:f::/64</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+		<tunnel>
+			<tunnelEntry entryPoint='aaaa:3a:f::aaa:ff:fe00:7' exitPoint='aaaa:10:3:0:aaa:ff:fe00:11'>
+				<triggers destination='aaaa:10:31:0:aaa:ff:fe00:11'/>
+			</tunnelEntry>
+		</tunnel>
+	</local>
+
+	<local node="mr3" routePackets="on">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<!--<inetAddr tentative="false">aaaa:3a:31::aaa:ff:fe00:11</inetAddr>-->
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:3a:f1::/64</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+	</local>
+
+	<local node="r2" routePackets="on">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<!--<inetAddr tentative="true">aaaa:25:3::aaa:ff:fe00:4</inetAddr>-->
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:25:3::/36</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+	</local>
+	
+	<local node="r4" routePackets="on">
+		<interface name="eth0" AdvSendAdvertisements="on">
+			<!--<inetAddr tentative="true">aaaa:4f:3::aaa:ff:fe00:4</inetAddr>-->
+			<AdvPrefixList>
+				<AdvPrefix AdvOnLinkFlag="on" AdvRtrAddrFlag="on" AdvValidLifetime="88888" AdvPreferredLifetime="88888" AdvAutonomousFlag="on">aaaa:4f:3::/64</AdvPrefix>
+			</AdvPrefixList>
+		</interface>
+	</local>
+	
+	
+	<local node="host[0]" routePackets="off">
+		<interface name="eth0" AdvSendAdvertisements="off">
+			<inetAddr tentative="false">aaaa:10:31:0:aaa:ff:fe00:11</inetAddr>
+		</interface>
+	</local>
+</netconf>
+<!-- <nothing/> -->

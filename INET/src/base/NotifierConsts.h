@@ -72,6 +72,8 @@ enum
 
     // layer 3 - IPv6
     NF_IPv6_HANDOVER_OCCURRED,
+    // new ones
+    NF_MIPv6_RO_COMPLETED,
 
     // - layer 4 (transport)
     //...
@@ -82,8 +84,12 @@ enum
     NF_OVERLAY_NODE_LEAVE,                // OverSim
 
 
-    // - layer 7 (application)
-    //...
+    // IEEE 802.21
+    NF_LINK_REGISTER, // registers the NIC with 802.21
+    NF_MIH_LINK_UP, // attached to a base station | 13.12.07 - CB
+    NF_MIH_LINK_DOWN, // not attached to a base station | 13.12.07 - CB
+    NF_MIH_LINK_ACTION,
+    NF_MIH_LINK_DETECTED,
 };
 
 /**

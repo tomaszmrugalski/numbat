@@ -58,6 +58,13 @@ void PingApp::initialize()
     WATCH(dropCount);
     WATCH(outOfOrderArrivalCount);
 
+    //Additonal statistics parameters intialised (Zarrar Yousaf 15.11.07)
+    sentVector.setName("PING: Ping Request");
+    receivedVector.setName("PING: Ping Reply");
+    pingTx = 0;
+    pingRx = 0;
+
+
     // schedule first ping (use empty destAddr or stopTime<=startTime to disable)
     if (par("destAddr").stringValue()[0] && (stopTime==0 || stopTime>=startTime))
     {
@@ -79,7 +86,7 @@ void PingApp::handleMessage(cMessage *msg)
             EV << "Starting up: dest=" << destAddr << "  src=" << srcAddr << "\n";
         }
 
-        // send a ping
+        // send a ping request
         sendPing();
 
         // then schedule next one if needed
@@ -103,6 +110,10 @@ void PingApp::sendPing()
     msg->setOriginatorId(getId());
     msg->setSeqNo(sendSeqNo);
     msg->setByteLength(packetSize);
+
+    pingTx = sendSeqNo; //Statistics: Zarrar Yousaf
+    sentVector.record(pingTx); //Statistics: Zarrar Yousaf
+
 
     sendToICMP(msg, destAddr, srcAddr, hopLimit);
 }
@@ -162,6 +173,11 @@ void PingApp::processPingResponse(PingPayload *msg)
     }
 
     simtime_t rtt = simTime() - msg->getCreationTime();
+   //Statistics: Zarrar Yousaf 15.11.07
+    pingRx = msg->getSeqNo(); //ZY
+    receivedVector.record(pingRx); //ZY
+
+
 
     if (printPing)
     {

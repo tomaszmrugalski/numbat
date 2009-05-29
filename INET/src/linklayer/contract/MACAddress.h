@@ -161,6 +161,24 @@ class INET_API MACAddress
      */
     static MACAddress generateAutoAddress();
 
+    /**
+     * Added by Christian Mueller - 15.8.2007 - Adding Compare Operator for  MAC Address
+     */
+    bool operator<(const MACAddress& addr) const {return compare (addr)<0;}
+    bool operator>(const MACAddress& addr) const {return compare (addr)>0;}
+    /**
+     * Returns -1, 0 or 1.
+     */
+     int compare(const MACAddress& addr) const  
+     {
+		return address[0]<addr.address[0] ? -1 : address[0] >addr.address[0] ? 1 :
+                        address[1]<addr.address[1] ? -1 : address[1]>addr.address[1] ? 1 :
+                        address[2]<addr.address[2] ? -1 : address[2]>addr.address[2] ? 1 :
+			address[3]<addr.address[3] ? -1 : address[3]>addr.address[3] ? 1 :
+			address[4]<addr.address[4] ? -1 : address[4]>addr.address[4] ? 1 :
+			address[5]<addr.address[5] ? -1 : address[5]>addr.address[5] ? 1 : 0;
+     }
+
 };
 
 inline std::ostream& operator<<(std::ostream& os, const MACAddress& mac)
