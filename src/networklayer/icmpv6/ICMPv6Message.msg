@@ -46,7 +46,8 @@ enum ICMPv6Type
     ICMPv6_NEIGHBOUR_AD = 136;
     ICMPv6_REDIRECT = 137;
     ICMPv6_MLDv2_REPORT = 143;
-}
+    ICMPv6_EXPERIMENTAL_MOBILITY = 150;  //Zarrar Yousaf 02.08.07 (FMIPv6 Implementation)
+};
 
 
 //cplusplus {{

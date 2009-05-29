@@ -79,17 +79,23 @@ void Ieee80211MgmtAP::handleUpperMessage(cPacket *msg)
 {
     // must be an EtherFrame frame arriving from MACRelayUnit, that is,
     // bridged from another interface of the AP (probably Ethernet).
-    EtherFrame *etherframe = check_and_cast<EtherFrame *>(msg);
-
+    EthernetIIFrame *etherframe = check_and_cast<EthernetIIFrame *>(msg); //Zarrar Yousaf @ 30.06.07
+//EtherFrame *etherframe = check_and_cast<EtherFrame *>(msg); //original code
     // check we really have a STA with that dest address
+macAddr = etherframe->getDest();
+EV <<"\n++++++RECEIVED FRAME FROM RELAY UNIT WITH MAC ADDRESS: "<< macAddr<<"+++++++++\n";     
+
+if(!macAddr.isBroadcast()) //Added by Zarrar (02.07.07) because the NS and RA messages which were broadcasted were being dropped as the Braidacasr address didn't appear in the STA List. In my view, a frame with broadcast destination address should be indiscriminately forwarded without checking the STA List
+{
     STAList::iterator it = staList.find(etherframe->getDest());
-    if (it==staList.end() || it->second.status!=ASSOCIATED)
+     if (it==staList.end() || it->second.status!=ASSOCIATED)// || !(macAddr.isBroadcast()))
     {
+ 	EV <<"\n++Ethernet frame has the type: " << etherframe->getEtherType()<< "+++++++++\n";
         EV << "STA with MAC address " << etherframe->getDest() << " not associated with this AP, dropping frame\n";
         delete etherframe; // XXX count drops?
         return;
     }
-
+}
     // convert Ethernet frame
     Ieee80211DataFrame *frame = convertFromEtherFrame(etherframe);
     sendOrEnqueue(frame);
@@ -373,5 +379,25 @@ void Ieee80211MgmtAP::handleProbeResponseFrame(Ieee80211ProbeResponseFrame *fram
 {
     dropManagementFrame(frame);
 }
+/*
+Ieee80211DataFrame *Ieee80211MgmtAP::convertFromEtherFrame(EtherFrame *ethframe)
+{
+    // create new frame
+    Ieee80211DataFrame *frame = new Ieee80211DataFrame(ethframe->name());
+    frame->setFromDS(true);
 
+    // copy addresses from ethernet frame (transmitter addr will be set to our addr by MAC)
+    frame->setReceiverAddress(ethframe->getDest());
+    frame->setAddress3(ethframe->getSrc());
 
+    // encapsulate payload
+    cMessage *payload = ethframe->decapsulate();
+    if (!payload)
+        error("received empty EtherFrame from upper layer");
+    frame->encapsulate(payload);
+    delete ethframe;
+
+    // done
+    return frame;
+}
+*/

@@ -47,6 +47,26 @@ INET_API cModule *findModuleWhereverInNode(const char *name, cModule *from);
 INET_API cModule *findModuleSomewhereUp(const char *name, cModule *from);
 
 /**
+ * Checks if the module is node, i.e. it has a @node attribute.
+ */
+inline bool isNode(cModule *mod)
+{
+	if (mod)
+	{
+		cProperties *props = mod->getProperties();
+		return props && props->getAsBool("node");
+	}
+	return false;
+}
+
+/**
+ * Find the node containing the given module.
+ * Returns NULL, if no containing node.
+ */
+INET_API cModule *findContainingNode(cModule *from);
+
+
+/**
  * Finds and returns the pointer to a module of type T and name N.
  * Uses findModuleWherever(). See usage e.g. at RoutingTableAccess.
  */

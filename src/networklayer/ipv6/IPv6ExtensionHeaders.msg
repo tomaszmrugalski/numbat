@@ -43,8 +43,9 @@ class IPv6HopByHopOptionsHeader extends IPv6ExtensionHeader
 //
 class IPv6RoutingHeader extends IPv6ExtensionHeader
 {
-    unsigned char routingType;
-    unsigned char segmentsLeft;
+    @customize(true);
+    unsigned short routingType;
+    unsigned short segmentsLeft;
     IPv6Address address[];
 }
 
@@ -67,7 +68,8 @@ class IPv6FragmentHeader extends IPv6ExtensionHeader
 //
 class IPv6DestinationOptionsHeader extends IPv6ExtensionHeader
 {
-}
+    @customize(true);
+};
 
 //
 // Authentication Header

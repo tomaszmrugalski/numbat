@@ -48,6 +48,8 @@ class INET_API Ieee80211AgentSTA : public cSimpleModule, public INotifiable
     virtual int numInitStages() const {return 2;}
     virtual void initialize(int);
 
+    virtual void finish(); //Added by Zarrar Yousaf 04.12.07
+
     /** Overridden cSimpleModule method */
     virtual void handleMessage(cMessage *msg);
 
@@ -86,6 +88,32 @@ class INET_API Ieee80211AgentSTA : public cSimpleModule, public INotifiable
 
     // utility method, for debugging
     virtual void dumpAPList(Ieee80211Prim_ScanConfirm *resp);
+    
+    //Statistics (Zarrar Yousaf 24.11.07)
+    cOutVector scanReqVector;
+    cOutVector scanConfirmVector;
+    cOutVector disassociateReqVector;
+    cOutVector associateReqVector;
+    cOutVector associateConfirmVector;
+    cOutVector authenticateReqVector;
+    cOutVector authenticateConfirmVector;
+    
+    cDoubleHistogram scanReqScalar;
+    cDoubleHistogram scanConfirmScalar;
+    cDoubleHistogram disassociateReqScalar;
+    cDoubleHistogram associateReqScalar;
+    cDoubleHistogram associateConfirmScalar;
+    cDoubleHistogram authenticateReqScalar;
+    cDoubleHistogram authenticateConfirmScalar;
+		    
+    simtime_t scanReq;
+    simtime_t scanConfirm;
+    simtime_t disassociateReq;
+    simtime_t associateReq;
+    simtime_t associateConfirm;
+    simtime_t authenticateReq;
+    simtime_t authenticateConfirm;
+    
 };
 
 #endif

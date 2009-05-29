@@ -36,8 +36,8 @@ class INET_API PingApp : public cSimpleModule
     virtual void finish();
 
   protected:
-    virtual void sendPing();
-    virtual void scheduleNextPing(cMessage *timer);
+    virtual void sendPing();//sends out a ping request/response
+    virtual void scheduleNextPing(cMessage *timer);//schedules the next ping request
     virtual void sendToICMP(cMessage *payload, const IPvXAddress& destAddr, const IPvXAddress& srcAddr, int hopLimit);
     virtual void processPingResponse(PingPayload *msg);
     virtual void countPingResponse(int bytes, long seqNo, simtime_t rtt);
@@ -64,6 +64,12 @@ class INET_API PingApp : public cSimpleModule
     cOutVector dropVector;
     long dropCount;
     long outOfOrderArrivalCount;
+    
+    //statistics added by Zarrar Yousaf (15.11.07)
+    cOutVector sentVector;	//vector to record total pings transmitted
+    cOutVector receivedVector;	//vector to record total pings received
+    long int pingTx;		//Total number of pings transmitted
+    long int pingRx;		//Total number of pings received
 };
 
 

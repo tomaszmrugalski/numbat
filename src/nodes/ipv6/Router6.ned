@@ -15,6 +15,9 @@
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //
 
+//
+// Normal IPv6 Router.
+//
 
 package inet.nodes.ipv6;
 

@@ -18,12 +18,6 @@
 
 #include "ModuleAccess.h"
 
-inline bool isNode(cModule *mod)
-{
-    cProperties *props = mod->getProperties();
-    return props && props->getAsBool("node");
-}
-
 static cModule *findSubmodRecursive(cModule *curmod, const char *name)
 {
     for (cModule::SubmoduleIterator i(curmod); !i.end(); i++)
@@ -66,3 +60,12 @@ cModule *findModuleSomewhereUp(const char *name, cModule *from)
     return mod;
 }
 
+cModule *findContainingNode(cModule *from)
+{
+    for (cModule *curmod=from; curmod; curmod=curmod->getParentModule())
+    {
+        if (isNode(curmod))
+        	return curmod;
+    }
+    return NULL;
+}

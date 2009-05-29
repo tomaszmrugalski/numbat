@@ -51,10 +51,10 @@ void Ieee80211MgmtAPBase::distributeReceivedDataFrame(Ieee80211DataFrame *frame)
 EtherFrame *Ieee80211MgmtAPBase::convertToEtherFrame(Ieee80211DataFrame *frame)
 {
     // create a matching ethernet frame
-    EtherFrame *ethframe = new EthernetIIFrame(frame->getName()); //TODO option to use EtherFrameWithSNAP instead
+    EthernetIIFrame *ethframe = new EthernetIIFrame(frame->getName()); //TODO option to use EtherFrameWithSNAP instead
     ethframe->setDest(frame->getAddress3());
     ethframe->setSrc(frame->getTransmitterAddress());
-    //XXX set ethertype
+    ethframe -> setEtherType(ETHERTYPE_IPv6);//XXX set ethertype: added by Zarrar
 
     // encapsulate the payload in there
     cPacket *payload = frame->decapsulate();

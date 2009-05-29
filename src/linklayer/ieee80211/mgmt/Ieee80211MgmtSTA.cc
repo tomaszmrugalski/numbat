@@ -178,6 +178,11 @@ void Ieee80211MgmtSTA::handleTimer(cMessage *msg)
 void Ieee80211MgmtSTA::handleUpperMessage(cPacket *msg)
 {
     Ieee80211DataFrame *frame = encapsulate(msg);
+    
+    // UPDATE cb
+    if ( frame->getReceiverAddress().isUnspecified() )
+    	delete frame;
+    else
     sendOrEnqueue(frame);
 }
 
@@ -211,6 +216,10 @@ Ieee80211DataFrame *Ieee80211MgmtSTA::encapsulate(cPacket *msg)
 
     // receiver is the AP
     frame->setReceiverAddress(assocAP.address);
+
+    // UPDATE CB
+    //if( frame->getReceiverAddress().isUnspecified() )
+    //	frame->setReceiverAddress(MACAddress::BROADCAST_ADDRESS);
 
     // destination address is in address3
     Ieee802Ctrl *ctrl = check_and_cast<Ieee802Ctrl *>(msg->removeControlInfo());
@@ -554,7 +563,14 @@ int Ieee80211MgmtSTA::statusCodeToPrimResultCode(int statusCode)
 
 void Ieee80211MgmtSTA::handleDataFrame(Ieee80211DataFrame *frame)
 {
-    sendUp(decapsulate(frame));
+//Only send the Data frame up to the highe layer if the STA is associated with an AP,else delete the frame (Zarrar Yousaf 19.11.07)
+	if (isAssociated)
+            sendUp(decapsulate(frame));
+	else
+	{
+		EV<<"Rejecting Data Frame as STA not Associated with the AP yet"<<endl;
+		delete frame;
+	}
 }
 
 void Ieee80211MgmtSTA::handleAuthenticationFrame(Ieee80211AuthenticationFrame *frame)

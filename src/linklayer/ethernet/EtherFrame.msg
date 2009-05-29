@@ -68,7 +68,7 @@ packet EtherFrame
 //
 packet EthernetIIFrame extends EtherFrame
 {
-    int etherType;
+    int etherType enum (EtherType);
 }
 
 

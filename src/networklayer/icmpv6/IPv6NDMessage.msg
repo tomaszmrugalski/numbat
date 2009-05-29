@@ -36,12 +36,33 @@ class noncobject MACAddress;
 class IPv6NDPrefixInformation
 {
     unsigned int prefixLength;
-    bool onlinkFlag;
-    bool autoAddressConfFlag;
+    bool onlinkFlag;		//L-bit
+    bool autoAddressConfFlag;	//A-bit
+	bool routerAddress;		//R-bit: used in case of MIPv6 when the H-bit is set
     unsigned int validLifetime;
     unsigned int preferredLifetime;
     IPv6Address prefix;
 }
+
+// MIPv6 New Advertisement Interval Option
+// RFC 3775 Section 7.3
+//
+class MIPv6NDAdvertisementInterval
+{
+    properties:
+        omitGetVerb = true;
+    fields:
+      unsigned int advertisementInterval;		//MUST be equal to "maxRtrAdvInterval"  
+}
+
+//MIPv6 Home Agent Information Option
+//RFC 3775 Section 7.4
+class MIPv6HAInformation
+{
+      	unsigned int homeAgentPreference;
+	unsigned int homeAgentLifetime;  
+}
+
 
 //
 // Neighbour Discovery for IPv6.
@@ -78,17 +99,21 @@ packet IPv6RouterAdvertisement extends IPv6NDMessage
 {
     //Additional ICMP fields
     unsigned int curHopLimit;
-    bool managedAddrConfFlag;
-    bool otherStatefulConfFlag;
+    bool managedAddrConfFlag;	//M-bit
+    bool otherStatefulConfFlag;	//O-bit
+	bool homeAgentFlag = false;		//H-bit // set default value of false, 4.9.07 - CB 
     unsigned short routerLifetime;  // 0 indicates router is not a default router
     unsigned int reachableTime;
     unsigned int retransTimer;
 
     //Possible Options
-    MACAddress sourceLinkLayerAddress;
-    unsigned int MTU;
-    IPv6NDPrefixInformation prefixInformation[];
-}
+    MACAddress sourceLinkLayerAddress;		//source link layer option
+    unsigned int MTU;				//MTU option
+        	
+	IPv6NDPrefixInformation prefixInformation[];	//Prefix Information Option
+	MIPv6NDAdvertisementInterval advInterval;	//New Advertisement Interval Option (MIPv6)
+	MIPv6HAInformation haInformation;		//New Home Agent Information Option (MIPv6)
+};
 
 //
 // Neighbour Solicitation Message Format
@@ -110,14 +135,14 @@ packet IPv6NeighbourSolicitation extends IPv6NDMessage
 packet IPv6NeighbourAdvertisement extends IPv6NDMessage
 {
     //Additional ICMP fields
-    bool routerFlag;
-    bool solicitedFlag;
-    bool overrideFlag;
+    bool routerFlag;	//R-flag
+    bool solicitedFlag;	//S-flag
+    bool overrideFlag;	//O-flag
     IPv6Address targetAddress;// MUST NOT be a multicast address.
 
     //Possible Options
-    MACAddress targetLinkLayerAddress;
-}
+    MACAddress targetLinkLayerAddress;	//Target Link Layer Address option
+};
 
 //
 // Redirect Message Format

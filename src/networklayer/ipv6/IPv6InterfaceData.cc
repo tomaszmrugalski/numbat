@@ -25,6 +25,7 @@
 
 IPv6InterfaceData::IPv6InterfaceData()
 {
+	rt6 = RoutingTable6Access().get();
     /*******************Setting host/node/router Protocol Constants************/
     routerConstants.maxInitialRtrAdvertInterval = IPv6_MAX_INITIAL_RTR_ADVERT_INTERVAL;
     routerConstants.maxInitialRtrAdvertisements = IPv6_MAX_INITIAL_RTR_ADVERTISEMENTS;
@@ -35,6 +36,12 @@ IPv6InterfaceData::IPv6InterfaceData()
     hostConstants.maxRtrSolicitationDelay = IPv6_MAX_RTR_SOLICITATION_DELAY;
     hostConstants.rtrSolicitationInterval = IPv6_RTR_SOLICITATION_INTERVAL;
     hostConstants.maxRtrSolicitations = IPv6_MAX_RTR_SOLICITATIONS;
+    hostConstants.initialBindAckTimeout = MIPv6_INITIAL_BINDACK_TIMEOUT;//MIPv6: added by Zarrar Yousaf @ CNI UniDo 17.06.07
+    hostConstants.maxBindAckTimeout = MIPv6_MAX_BINDACK_TIMEOUT;//MIPv6: added by Zarrar Yousaf @ CNI UniDo 17.06.07
+    hostConstants.initialBindAckTimeoutFirst = MIPv6_INITIAL_BINDACK_TIMEOUT_FIRST; //MIPv6: 12.9.07 - CB
+    hostConstants.maxRRBindingLifeTime = MIPv6_MAX_RR_BINDING_LIFETIME; // 14.9.07 - CB
+    hostConstants.maxHABindingLifeTime = MIPv6_MAX_HA_BINDING_LIFETIME; // 14.9.07 - CB
+    hostConstants.maxTokenLifeTime = MIPv6_MAX_TOKEN_LIFETIME; // 14.9.07 - CB
 
     nodeConstants.maxMulticastSolicit = IPv6_MAX_MULTICAST_SOLICIT;
     nodeConstants.maxUnicastSolicit = IPv6_MAX_UNICAST_SOLICIT;
@@ -61,6 +68,7 @@ IPv6InterfaceData::IPv6InterfaceData()
     rtrVars.minRtrAdvInterval = 0.33*rtrVars.maxRtrAdvInterval;
     rtrVars.advManagedFlag = false;
     rtrVars.advOtherConfigFlag = false;
+    rtrVars.advHomeAgentFlag = false; //Zarrar Yousaf Feb-March 2007
     rtrVars.advLinkMTU = IPv6_MIN_MTU;
     rtrVars.advReachableTime = IPv6_DEFAULT_ADV_REACHABLE_TIME;
     rtrVars.advRetransTimer = IPv6_DEFAULT_ADV_RETRANS_TIMER;
@@ -79,11 +87,17 @@ std::string IPv6InterfaceData::info() const
     os << "IPv6:{" << endl;
     for (int i=0; i<getNumAddresses(); i++)
     {
-        os << (i?"\t            , ":"\tAddrs:") << getAddress(i)
-           << "(" << IPv6Address::scopeName(getAddress(i).getScope())
-           << (isTentativeAddress(i)?" tent":"") << ") "
-           << " expiryTime: " << (addresses[i].expiryTime==0 ? "inf" : SIMTIME_STR(addresses[i].expiryTime))
-           << " prefExpiryTime: " << (addresses[i].prefExpiryTime==0 ? "inf" : SIMTIME_STR(addresses[i].prefExpiryTime))
+    	if( rt6->isMobileNode() && getAddress(i).isGlobal())
+           os << (i?"\t            , ":"\tAddrs:") << getAddress(i)
+              << "(" << IPv6Address::scopeName(getAddress(i).getScope())
+              << (isTentativeAddress(i)?" tent":"") << ") "<< (addresses[i].addrType==0?"HoA":"CoA")
+              << " expiryTime: " << (addresses[i].expiryTime==0?"inf":SIMTIME_STR(addresses[i].expiryTime))
+              << " prefExpiryTime: " <<(addresses[i].prefExpiryTime==0?"inf":SIMTIME_STR(addresses[i].prefExpiryTime))<<endl;
+    	else
+    		os << (i?"\t            , ":"\tAddrs:") << getAddress(i)
+               << "(" << IPv6Address::scopeName(getAddress(i).getScope())
+               << (isTentativeAddress(i)?" tent":"") << ") "<< " expiryTime: " << (addresses[i].expiryTime==0?"inf":SIMTIME_STR(addresses[i].expiryTime))
+               << " prefExpiryTime: " << (addresses[i].prefExpiryTime==0?"inf":SIMTIME_STR(addresses[i].prefExpiryTime))
            << endl;
     }
 
@@ -92,7 +106,7 @@ std::string IPv6InterfaceData::info() const
         const AdvPrefix& a = getAdvPrefix(i);
         os << (i?", ":"\tAdvPrefixes: ") << a.prefix << "/" << a.prefixLength << "("
            << (a.advOnLinkFlag?"":"off-link ")
-           << (a.advAutonomousFlag?"":"non-auto ");
+           << (a.advAutonomousFlag?"":"non-auto ") << (a.advRtrAddr?"R-Flag = 1 ":"R-Flag = 0 ");
         if (a.advValidLifetime==0)
            os  << "lifetime:inf";
         else if (a.advValidLifetime>0)
@@ -110,6 +124,12 @@ std::string IPv6InterfaceData::info() const
     //os << " retransTimer=" << hostVars.retransTimer;
     //os << " baseReachableTime=" << hostVars.baseReachableTime;
     os << " reachableTime=" << hostVars.reachableTime << endl;
+
+    // the following is for MIPv6 support
+    // 4.9.07 - Zarrar, CB
+   	if ( rt6->isMobileNode() )
+   		os  << "\tHome Network Info: " << " HoA="<< homeInfo.HoA << ", HA=" << homeInfo.homeAgentAddr
+   			<< ", home prefix=" << homeInfo.prefix/*.prefix()*/ << "\n";
 
     if (rtrVars.advSendAdvertisements)
     {
@@ -134,6 +154,8 @@ std::string IPv6InterfaceData::detailedInfo() const
     return info(); // TBD this could be improved: multi-line text, etc
 }
 
+/*
+// removed this function at it is replaced by the overloaded version, 3.9.07 - CB
 void IPv6InterfaceData::assignAddress(const IPv6Address& addr, bool tentative,
                                       simtime_t expiryTime, simtime_t prefExpiryTime)
 {
@@ -145,6 +167,7 @@ void IPv6InterfaceData::assignAddress(const IPv6Address& addr, bool tentative,
     a.prefExpiryTime = prefExpiryTime;
     choosePreferredAddress();
 }
+*/
 
 void IPv6InterfaceData::updateMatchingAddressExpiryTimes(const IPv6Address& prefix, int length,
                                                          simtime_t expiryTime, simtime_t prefExpiryTime)
@@ -180,6 +203,20 @@ bool IPv6InterfaceData::isTentativeAddress(int i) const
     return addresses[i].tentative;
 }
 
+IPv6InterfaceData::AddressType IPv6InterfaceData::getAddressType(int i) const
+{
+    ASSERT(i>=0 && i<addresses.size());
+    return addresses[i].addrType;
+}
+
+IPv6InterfaceData::AddressType IPv6InterfaceData::getAddressType(const IPv6Address& addr) const
+{
+	int address = findAddress(addr);
+
+	ASSERT(address!=-1);
+    return getAddressType(address);
+}
+
 bool IPv6InterfaceData::hasAddress(const IPv6Address& addr) const
 {
     return findAddress(addr)!=-1;
@@ -204,6 +241,13 @@ void IPv6InterfaceData::permanentlyAssign(const IPv6Address& addr)
     int k = findAddress(addr);
     ASSERT(k!=-1);
     addresses[k].tentative = false;
+    choosePreferredAddress();
+}
+
+void IPv6InterfaceData::tentativelyAssign(int i)
+{
+	ASSERT(i>=0 && i<addresses.size());
+    addresses[i].tentative = true;
     choosePreferredAddress();
 }
 
@@ -232,6 +276,8 @@ bool IPv6InterfaceData::addrLess(const AddressData& a, const AddressData& b)
          return !a.tentative; // tentative=false is better
     if (a.address.getScope()!=b.address.getScope())
          return a.address.getScope()>b.address.getScope(); // bigger scope is better
+    if ( a.address.isGlobal() && b.address.isGlobal() && a.addrType != b.addrType)
+    	return a.addrType == CoA; // HoA is better than CoA, 24.9.07 - CB
     return (a.expiryTime==0 && b.expiryTime!=0) || a.expiryTime>b.expiryTime;  // longer expiry time is better
 }
 
@@ -291,4 +337,116 @@ simtime_t IPv6InterfaceData::generateReachableTime()
     return uniform(_getMinRandomFactor(), _getMaxRandomFactor()) * getBaseReachableTime();
 }
 
+//#############    Additional function definitions added by Zarrar Yousaf @ CNI UNI Dortmund 23.05.07######
 
+const IPv6Address& IPv6InterfaceData::getGlobalAddress(AddressType type) const
+{
+    for (AddressDataVector::const_iterator it=addresses.begin(); it!=addresses.end(); it++)
+        if (it->address.isGlobal() && it->addrType == type )  // FIXME and valid, 25.9.07 - CB
+            return it->address;
+    return IPv6Address::UNSPECIFIED_ADDRESS;
+}
+
+// =======Zarrar Yousaf @ CNI UNI Dortmund 08.07.07; ==============================
+
+const IPv6Address IPv6InterfaceData::autoConfRouterGlobalScopeAddress(int i) // removed return-by-reference - CB
+{
+	AdvPrefix& p = rtrVars.advPrefixList[i];
+	IPv6Address prefix = p.prefix;
+	short length = p.prefixLength;
+	IPv6Address linkLocalAddr = getLinkLocalAddress();
+ 	IPv6Address globalAddress = linkLocalAddr.setPrefix(prefix, length); //the global address gets autoconfigured, given its prefix, which during initialisation is supplied by the FlatnetworkConfigurator6
+ 	p.rtrAddress = globalAddress; //the newly formed global address from the respective adv prefix is stored in the AdvPrefix list, which will be used later by the RA prefix info option
+	return globalAddress;
+}
+
+void IPv6InterfaceData::autoConfRouterGlobalScopeAddress(AdvPrefix &p)
+{
+	IPv6Address prefix = p.prefix;
+	short length = p.prefixLength;
+	IPv6Address linkLocalAddr = getLinkLocalAddress();
+ 	IPv6Address globalAddress = linkLocalAddr.setPrefix(prefix, length); //the global address gets autoconfigured, given its prefix, which during initialisation is supplied by the FlatnetworkConfigurator6
+ 	p.rtrAddress = globalAddress; //the newly formed global address from the respective adv prefix is stored in the AdvPrefix list, which will be used later by the RA prefix info option
+}
+
+void IPv6InterfaceData::deduceAdvPrefix()
+{
+	for (int i=0; i< getNumAdvPrefixes();i++)
+	{
+		IPv6InterfaceData::AdvPrefix& p = rtrVars.advPrefixList[i];
+		/*IPv6Address globalAddr = */
+		autoConfRouterGlobalScopeAddress(p);
+		assignAddress(p.rtrAddress, false, 0, 0);
+	}
+}
+
+
+// overloaded version of assign address. Difference in terms of specifying the address as CoA or HoA. Zarrar 20.07.07
+void IPv6InterfaceData::assignAddress(const IPv6Address& addr, bool tentative, simtime_t expiryTime, simtime_t prefExpiryTime, bool hFlag)
+{
+    addresses.push_back( AddressData() );
+    AddressData& a = addresses.back();
+    a.address = addr;
+    a.tentative = tentative;
+    a.expiryTime = expiryTime;
+    a.prefExpiryTime = prefExpiryTime;
+
+    if ( addr.isGlobal() )  //only tag a global scope address as HoA or CoA, depending on the status of the H-Flag
+	{
+    	if (hFlag == true)
+    		a.addrType = HoA; //if H-Flag is set then the auto-conf address is the Home address -.....
+    	else
+    		a.addrType = CoA; // else it is a care of address (CoA)
+	}
+
+    choosePreferredAddress();
+}
+
+
+/**
+ * This method traverses the address list and searches for a specific address.
+ * The element is removed and returned.
+ */
+IPv6Address IPv6InterfaceData::removeAddress(IPv6InterfaceData::AddressType type)
+{
+	IPv6Address addr;
+
+	for (AddressDataVector::iterator it=addresses.begin(); it!=addresses.end(); ++it ) // 24.9.07 - CB
+	{
+		if ( (*it).addrType == type )
+		{
+			addr = it->address;
+			addresses.erase(it);
+			break; // it is assumed that we do not have more than one CoA
+		}
+	}
+
+	// pick new address as we've removed the old one
+	choosePreferredAddress();
+
+	return addr;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const IPv6InterfaceData::HomeNetworkInfo& homeNetInfo)
+{
+	os << "HoA of MN:" << homeNetInfo.HoA << " HA Address: " << homeNetInfo.homeAgentAddr
+	   << " Home Network Prefix: " << homeNetInfo.prefix/*.prefix()*/;
+	return os;
+}
+
+
+void IPv6InterfaceData::updateHomeNetworkInfo(const IPv6Address& hoa, const IPv6Address& ha, const IPv6Address& prefix, const int prefixLength)
+{
+	EV<< "\n++++++ Updating the Home Network Information \n";
+	homeInfo.HoA = hoa;
+	homeInfo.homeAgentAddr = ha;
+	homeInfo.prefix = prefix;
+
+	// check if we already have a HoA on this interface
+	// if not, then we create one
+	IPv6Address addr = getGlobalAddress(HoA);
+
+	if ( addr == IPv6Address::UNSPECIFIED_ADDRESS )
+		this->assignAddress(hoa, false, 0, 0, true);
+}

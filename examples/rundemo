@@ -69,6 +69,7 @@ foreach line {
    {"IPv6 (work in progress)"}
    {"NClients"               "ipv6/nclients"        "./run"               "run"}
    {"DemoNetworkEth"         "ipv6/demonetworketh"  "./run"               "run"}
+   {"Mobile IPv6"            "ipv6/mobileipv6"      "./run"               "run"}
 
    {"Ethernet"}
    {"ARP Test"               "ethernet/arptest"     "./run"               "run"}

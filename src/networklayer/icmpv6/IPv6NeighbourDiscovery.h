@@ -37,6 +37,7 @@
 #include "IPv6NeighbourCache.h"
 #include "ICMPv6.h"
 #include "ICMPv6Access.h"
+//#include "xMIPv6Access.h" // 13.9.07 - CB
 
 /**
  * Implements RFC 2461 Neighbor Discovery for IPv6.
@@ -51,6 +52,12 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
     public:
         IPv6NeighbourDiscovery();
         virtual ~IPv6NeighbourDiscovery();
+
+    private:
+	//bool MIPv6Enabled; //zarrar yousaf 14.07.07
+	//double minRAInterval; //zarrar yousaf 15.07.07
+	//double maxRAInterval; //zarrar yousaf 15.07.07
+    cOutVector statVectorStartDAD;
 
     public:
         /**
@@ -90,6 +97,8 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         IInterfaceTable *ift;
         RoutingTable6 *rt6;
         ICMPv6 *icmpv6;
+        class INET_API xMIPv6 *mipv6; // in case the node has MIP support
+
         IPv6NeighbourCache neighbourCache;
         typedef std::set<cMessage*> RATimerList;
 
@@ -128,6 +137,21 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         RDList rdList;
         //List of Advertising Interfaces
         AdvIfList advIfList;
+
+        // An entry that stores information for configuring the global unicast
+        // address, after DAD was succesfully performed
+        struct DADGlobalEntry
+        {
+        	bool hFlag; // home network flag from RA
+            simtime_t validLifetime; // valid lifetime of the received prefix
+            simtime_t preferredLifetime; // preferred lifetime of the received prefix
+            IPv6Address addr; // the address with scope > link local that the interface will get
+
+        	//bool returnedHome; // MIPv6-related: whether we returned home after a visit in a foreign network
+        	IPv6Address CoA; // MIPv6-related: the old CoA, in case we returned home
+        };
+        typedef std::map<InterfaceEntry*, DADGlobalEntry> DADGlobalList;
+        DADGlobalList dadGlobalList;
 
     protected:
         /************************Miscellaneous Stuff***************************/
@@ -270,7 +294,13 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         operate independently on the prefixes that have the appropriate flag set.*/
         virtual void processRAPrefixInfo(IPv6RouterAdvertisement *ra, InterfaceEntry *ie);
         virtual void processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInformation& prefixInfo,
-            InterfaceEntry *ie);
+            InterfaceEntry *ie,  bool hFlag = false); // overloaded method - 3.9.07 CB
+	/**
+	* An overloaded funciton whihc is called only if the node is a MN. Because the adress auto-configured
+	* in the MN has to be tagged as either being a HoA or a CoA by taking into account the status of the
+	* H-FLag in the RA.
+	**/
+	//void processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInformation& prefixInfo, InterfaceEntry *ie, bool hFlag); //overloaded function zarrar 20.07.07, removed 3.9.07 CB
         /**
          *  Create a timer for the given interface entry that sends periodic
          *  Router Advertisements
@@ -303,9 +333,13 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         /************End Of Neighbour Solicitation Stuff***********************/
 
         /************Neighbour Advertisment Stuff)*****************************/
+        IPv6NeighbourAdvertisement *createAndSendNAPacket(IPv6NeighbourSolicitation *ns,
+            const IPv6Address& nsSrcAddr, const IPv6Address& nsDestAddr, InterfaceEntry *ie);
         virtual void sendSolicitedNA(IPv6NeighbourSolicitation *ns,
             IPv6ControlInfo *nsCtrlInfo, InterfaceEntry *ie);
+public: // update 12.9.07 - CB
         virtual void sendUnsolicitedNA(InterfaceEntry *ie);
+protected: // update 12.9.07 - CB
         virtual void processNAPacket(IPv6NeighbourAdvertisement *na, IPv6ControlInfo *naCtrlInfo);
         virtual bool validateNAPacket(IPv6NeighbourAdvertisement *na, IPv6ControlInfo *naCtrlInfo);
         virtual void processNAForIncompleteNCEState(IPv6NeighbourAdvertisement *na,
@@ -319,12 +353,27 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         virtual void processRedirectPacket(IPv6Redirect *redirect, IPv6ControlInfo *ctrlInfo);
         /************End Of Redirect Message Stuff*****************************/
 
+		/* To determine whether a Router's Ethernet Interface is connected to
+		 * a WLAN AP or not (Zarrar Yousaf (23.09.07)
+		 *
+		 * Moved here from InterfaceEntry.h by BT.
+		 */
+		virtual bool isConnectedToWirelessAP(InterfaceEntry *ie);
+
         /**
          *  RFC2463 Section 3.1: Destination Unreachable Message
          *  Send an unreachable message to the IPv6 module.
          *  TODO: Relocate to ICMPv6 module
          */
-        /*ICMPv6DestUnreachableMsg *createAndSendUnreachableMessage(
-            const IPv6Address& destAddress, InterfaceEntry *ie);*/
+
+        /*ICMPv6DestUnreachableMsg *createAndSendUnreachableMessage(const IPv6Address& destAddress, InterfaceEntry *ie);*/
+
+	//double getMinRAInterval() const {return minRAInterval;} //zarrar yousaf 15.07.07
+	//double getMaxRAInterval() const {return maxRAInterval;} //zarrar yousaf 15.07.07
+	public:
+		void invalidateNeigbourCache();
+
+	protected:
+		void routersUnreachabilityDetection(const InterfaceEntry* ie); // 3.9.07 - CB
 };
 #endif //IPV6NEIGHBOURDISCOVERY_H
