@@ -1,171 +1,159 @@
 cplusplus {{
 #include "wmaxmsg.h"
 #include "ipv6.h"
-}};
+}}
+
 
 struct WMaxUlMapIE;
+
 struct WMaxDlMapIE;
+
 struct WMaxBSFull;
+
 struct WMaxQos;
+
 struct WMaxRngReq;
+
 struct WMaxRngRsp;
+
 struct IPv6Addr;
-struct uint64_t;
+
+//struct uint64_t;//MiM removed
 
 // ********************************************************************************
 // *** real WiMAX MAC messages ****************************************************
 // ********************************************************************************
 
+
 class WMaxMacHeader
 {
-properties:
-    customize=true;
-fields:
+    @customize(true);
     abstract int cid;
     abstract bool ht;
     abstract int bwr;
-};
+}
 
-message WMaxMsgDlMap
+//message --> packet changes (MiM)
+//message WMaxMsgDlMap
+packet WMaxMsgDlMap
 {
-fields:
     WMaxDlMapIE IE[];
-};
+}
 
 
-message WMaxMsgUlMap
+packet WMaxMsgUlMap
 {
-fields:
     WMaxUlMapIE IE[];
-};
+}
 
-message WMaxMsgDCD
+packet WMaxMsgDCD
 {
-fields:
     int confChangeCount;
-};
+}
 
-message WMaxMsgUCD
+packet WMaxMsgUCD
 {
-fields:
     int confChangeCount;
-};
+}
 
-message WMaxMsgRngReq
+packet WMaxMsgRngReq
 {
-fields:
     int purpose;
     WMaxRngReq rngReq;
     IPv6Addr myIP; // used in remote autoconf
 
-// used during HO (to perform CID update and recreate connections at target BS)
+    // used during HO (to perform CID update and recreate connections at target BS)
     WMaxQos SfQos[];
-    int     SfCid[];
-};
+    int SfCid[];
+}
 
-message WMaxMsgRngRsp
+packet WMaxMsgRngRsp
 {
-fields:
     int purpose;
     WMaxRngRsp rngRsp;
 
-// used during HO (to perform CID update and recreate connections at target BS)
+    // used during HO (to perform CID update and recreate connections at target BS)
     int oldCid[];
     int newCid[];
-};
+}
 
-message WMaxMsgSbcReq
+packet WMaxMsgSbcReq
 {
-
-};
-message WMaxMsgSbcRsp
+}
+packet WMaxMsgSbcRsp
 {
+}
 
-};
-
-message WMaxMsgPkmReq
+packet WMaxMsgPkmReq
 {
-fields:
     int code;
-};
+}
 
-message WMaxMsgPkmRsp
+packet WMaxMsgPkmRsp
 {
-fields:
     int code;
-};
+}
 
-message WMaxMsgRegReq
+packet WMaxMsgRegReq
 {
-
-};
-message WMaxMsgRegRsp
+}
+packet WMaxMsgRegRsp
 {
-};
+}
 
-message WMaxMsgMobScnReq
+packet WMaxMsgMobScnReq
 {
+}
 
-};
-
-message WMaxMsgMobScnRsp
+packet WMaxMsgMobScnRsp
 {
+}
 
-};
-
-message WMaxMsgMSHOREQ
+packet WMaxMsgMSHOREQ
 {
-fields:
     WMaxBSFull BSFull[];
 }
 
-message WMaxMsgBSHORSP
+packet WMaxMsgBSHORSP
 {
-fields:
     WMaxBSFull BSFull[];
 }
 
-message WMaxMsgHOIND
+packet WMaxMsgHOIND
 {
-fields:
     int status;
     WMaxBSFull target;
 }
 
-message WMaxMsgCDMA
+packet WMaxMsgCDMA
 {
-fields:
     int code;
     int purpose; // use WMaxCdmaPurpose type here
 
     /// @todo - add other parameters
 }
 
-message WMaxMsgBWR
+packet WMaxMsgBWR
 {
-
 }
 
 // Table 38
-message WMaxMsgDsaReq
+packet WMaxMsgDsaReq
 {
-fields:
     int transactionID;
     WMaxQos qos[];
 }
 
 // Table 56
-message WMaxMsgDsxRvd
+packet WMaxMsgDsxRvd
 {
-fields:
     int transactionID;
     int confirmationCode; // Table 384
 }
 
 // Table 39
-message WMaxMsgDsaRsp
+packet WMaxMsgDsaRsp
 {
-fields:
     int transactionID;
     int confirmationCode; // Table 384
     WMaxQos qos[];
@@ -173,35 +161,31 @@ fields:
 }
 
 // Table 40
-message WMaxMsgDsaAck
+packet WMaxMsgDsaAck
 {
-fields:
     int transactionID;
     int confirmationCode; // Table 384
     WMaxQos qos[];
 }
 
 // ********************************************************************************
-// *** fake messages used to communicate between modules **************************
+// *** fake packets used to communicate between modules **************************
 // ********************************************************************************
 
-// this message is sent once every 5ms from MAC to PHY to initiate next frame
-message WMaxPhyDummyFrameStart
+// this packet is sent once every 5ms from MAC to PHY to initiate next frame
+packet WMaxPhyDummyFrameStart
 {
+}
 
-};
-
-message WMaxEvent_FlowCreationStart
+packet WMaxEvent_FlowCreationStart
 {
-fields:
     int skipDSA;
     int gateIndex;
     WMaxQos qos[];
 }
 
-message WMaxMacAddConn
+packet WMaxMacAddConn
 {
-fields:
     int gateIndex;
     int cid;
     WMaxQos qos[];
@@ -209,32 +193,27 @@ fields:
     uint64_t macAddr;
 }
 
-message WMaxMacAddMngmntConn
+packet WMaxMacAddMngmntConn
 {
-fields:
     int cid;
-};
+}
 
-message WMaxEvent_DelConn
+packet WMaxEvent_DelConn
 {
-fields:
     int cid;
     bool isBasic;
-};
+}
 
-message WMaxEvent_FlowEnable
+packet WMaxEvent_FlowEnable
 {
+}
 
-};
-
-message WMaxEvent_FlowDisable
+packet WMaxEvent_FlowDisable
 {
+}
 
-};
-
-message WMaxMacTerminateAllConns
+packet WMaxMacTerminateAllConns
 {
-
-};
+}
 
 

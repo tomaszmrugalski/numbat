@@ -38,17 +38,17 @@ void IPv6Node::initialize()
 
     double initialDelay = (double)par("InitialDelay");
 
-    cModule * ss = parentModule(); //->parentModule();
+    cModule * ss = getParentModule(); //->getParentModule();
     int index = 0;
-    if (ss->index()>0)
-	index = ss->index(); // this is corresponding node, use its parent index
+    if (ss->getIndex()>0)
+	index = ss->getIndex(); // this is corresponding node, use its parent index
     else
     {
-	ss = ss->parentModule(); // this is mobile node, use grandparent index
-	index = ss->index();
+	ss = ss->getParentModule(); // this is mobile node, use grandparent index
+	index = ss->getIndex();
     }
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 
     Log(Info) << " traffic parameters: BurstSize=" << BurstSize << ", PktSize=" << MinPacketSize
@@ -58,27 +58,27 @@ void IPv6Node::initialize()
     scheduleAt(initialDelay, sendTimer);
     
     std::string x;
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Sent Packets");
     SentPktsVector.setName(x.c_str());
 
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Sent Bytes");
     SentBytesVector.setName(x.c_str());
 
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Received Packets");
     RcvdPktsVector.setName(x.c_str());
 
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Received Bytes");
     RcvdBytesVector.setName(x.c_str());
 
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Sent Pkt size");
     SentPktSizeVector.setName(x.c_str());
 
-    x = fullName();
+    x = getFullName();
     x = x+std::string(" Rcvd Pkt size");
     RcvdPktSizeVector.setName(x.c_str());
 
@@ -93,9 +93,10 @@ void IPv6Node::handleMessage(cMessage *msg)
 	return;
     }
     
-    Log(Debug) << "Message " << msg->fullName() << " received." << endl;
+    Log(Debug) << "Message " << msg->getFullName() << " received." << endl;
     RcvdPkts++;
-    long len = msg->byteLength();
+    //long len = msg->getByteLength();
+    long len = (check_and_cast<cPacket *>(msg))->getByteLength();//MiM
     RcvdBytes += len;
     RcvdPktSizeVector.record(len);
     updateStats();
@@ -128,17 +129,20 @@ void IPv6Node::generateTraffic()
  */
 void IPv6Node::trafficTruncNormal()
 {
-    cMessage *m = 0;
+  //cMessage *m = 0;
+    cPacket *m = 0;//MiM
+
     for (int i=0; i<BurstSize; i++) 
     {
-	m = new cMessage("IPv6 packet");
-	
+      //m = new cMessage("IPv6 packet");
+      m = new cPacket("IPv6 packet"); //MiM
 	long len;
 	do {
 	    len = (long)normal(Mean, StdDev);
 	} while (len<MinPacketSize || len>MaxPacketSize);
 
 	m->setByteLength(len);
+	
 	SentPkts++;
 	SentBytes += len;
 	Log(Debug) << "Sending message " << len << " bytes long." << LogEnd;
@@ -162,10 +166,13 @@ void IPv6Node::trafficBeta()
     int span = MaxPacketSize - MinPacketSize;
 
     long len = MinPacketSize + span*beta(8.0,0.5);
-    cMessage *m = 0;
+    //cMessage *m = 0;
+    cPacket *m = 0;//MiM
 
-    m = new cMessage("IPv6 packet");
+    //m = new cMessage("IPv6 packet");
+    m=new cPacket("IPv6 packet"); //MiM
     m->setByteLength(len);
+    
     SentPkts++;
     SentBytes += len;
     Log(Debug) << "Sending message " << len << " bytes long." << LogEnd;
@@ -183,7 +190,7 @@ void IPv6Node::updateStats()
     sprintf(buf, "sent=%u(%u), rcvd=%u(%u)", 
 	    SentPkts, SentBytes, RcvdPkts, RcvdBytes);
     if (ev.isGUI()) 
-	displayString().setTagArg("t",0,buf);
+	getDisplayString().setTagArg("t",0,buf);
 
     SentPktsVector.record(SentPkts);
     SentBytesVector.record(SentBytes);

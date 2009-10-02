@@ -1,5 +1,8 @@
+//package numbat.wimax;
+
 simple MacDummy
+{
     gates:
-        out: phyOut;
-        in: phyIn;
-endsimple
+        output phyOut;
+        input phyIn;
+}

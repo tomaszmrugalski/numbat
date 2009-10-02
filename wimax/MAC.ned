@@ -1,79 +1,94 @@
+//package numbat.wimax;
 
 simple WMaxMacCS
+{
     gates:
-        in: macIn;
-        out: macOut;
-        in: ipIn[];
-        out: ipOut[];
-endsimple
+        input macIn;
+        output macOut;
+        input ipIn[];
+        output ipOut[];
+}
 
 simple WMaxMacSS
+{
     parameters:
-        FrameLength: numeric;
+        volatile double FrameLength;
     gates:
-        in: phyIn;
-        out: phyOut;
-        in: macIn[];
-        out: macOut[];
-endsimple
+        input phyIn;
+        output phyOut;
+        input macIn[];
+        output macOut[];
+}
 
 simple WMaxCtrlSS
+{
     gates:
-        out: macOut;
-        in: macIn;
-        in: eventIn;
-endsimple
+        output macOut;
+        input macIn;
+        input eventIn;
+}
 
 simple WMaxMacBS
+{
     parameters:
-        FrameLength: numeric;
+        volatile double FrameLength;
     gates:
-        in: phyIn;
-        out: phyOut;
-        in: macIn[];
-        out: macOut[];
-endsimple
+        input phyIn;
+        output phyOut;
+        input macIn[];
+        output macOut[];
+}
 
 simple WMaxCtrlBS
+{
     parameters:
-        MinDelayCdma: numeric,
-        MaxDelayCdma: numeric,
-        MinDelayRng: numeric,
-        MaxDelayRng: numeric,
-        MinDelaySbc: numeric,
-        MaxDelaySbc: numeric,
-        MinDelayScn: numeric,
-        MaxDelayScn: numeric,
-        MinDelayReg: numeric,
-        MaxDelayReg: numeric,
-        MinDelayHoRsp: numeric,
-        MaxDelayHoRsp: numeric,
-        MinDelayDsxRvd: numeric,
-        MaxDelayDsxRvd: numeric,
-        MinDelayDsxRsp: numeric,
-        MaxDelayDsxRsp: numeric,
-        MinDelaySaTek: numeric,
-        MaxDelaySaTek: numeric;
+        volatile double MinDelayCdma;
+        volatile double MaxDelayCdma;
+        volatile double MinDelayRng;
+        volatile double MaxDelayRng;
+        volatile double MinDelaySbc;
+        volatile double MaxDelaySbc;
+        volatile double MinDelayScn;
+        volatile double MaxDelayScn;
+        volatile double MinDelayReg;
+        volatile double MaxDelayReg;
+        volatile double MinDelayHoRsp;
+        volatile double MaxDelayHoRsp;
+        volatile double MinDelayDsxRvd;
+        volatile double MaxDelayDsxRvd;
+        volatile double MinDelayDsxRsp;
+        volatile double MaxDelayDsxRsp;
+        volatile double MinDelaySaTek;
+        volatile double MaxDelaySaTek;
     gates:
-        out: macOut;
-        in: macIn;
-endsimple
+        output macOut;
+        input macIn;
+}
 
 
 module ssMAC
+{
+    parameters:
+        @display("bgb=346,162");
     gates:
-        out: phyOut;
-        out: ipOut;
-        in: phyIn;
-        in: ipIn;
+        output phyOut;
+        output ipOut;
+        input phyIn;
+        input ipIn;
     submodules:
-        ssMac: WMaxMacSS;
-            display: "i=block/control,#ce1821;p=160,96;q=SendQueue";
-        WMaxCtrlSS: WMaxCtrlSS;
-            display: "i=block/cogwheel,#ce1821;p=264,80";
-        ssCS: WMaxMacCS;
-            display: "p=64,64;i=block/classifier,#ce1821";
-    connections nocheck:
+        ssMac: WMaxMacSS {
+            parameters:
+                @display("i=block/control,#ce1821;p=160,96;q=SendQueue");
+        }
+        WMaxCtrlSS: WMaxCtrlSS {
+            parameters:
+                @display("i=block/cogwheel,#ce1821;p=264,80");
+        }
+        ssCS: WMaxMacCS {
+            parameters:
+                @display("p=64,64;i=block/classifier,#ce1821");
+        }
+    connections allowunconnected:
         ssMac.phyOut --> phyOut;
         phyIn --> ssMac.phyIn;
 
@@ -86,24 +101,32 @@ module ssMAC
         ssMac.macOut++ --> WMaxCtrlSS.macIn;
         WMaxCtrlSS.macOut --> ssMac.macIn++;
 
-    display: "b=346,162";
-endmodule
+}
 
 
 module bsMAC
+{
+    parameters:
+        @display("bgb=306,162");
     gates:
-        out: phyOut;
-        out: ipOut;
-        in: phyIn;
-        in: ipIn;
+        output phyOut;
+        output ipOut;
+        input phyIn;
+        input ipIn;
     submodules:
-        bsMac: WMaxMacBS;
-            display: "i=block/control,#40e221;p=152,112;q=SendQueue";
-        WMaxCtrlBS: WMaxCtrlBS;
-            display: "i=block/cogwheel,#40e221;p=240,72";
-        bsCS: WMaxMacCS;
-            display: "i=block/classifier,#40e221;p=72,72";
-    connections nocheck:
+        bsMac: WMaxMacBS {
+            parameters:
+                @display("i=block/control,#40e221;p=152,112;q=SendQueue");
+        }
+        WMaxCtrlBS: WMaxCtrlBS {
+            parameters:
+                @display("i=block/cogwheel,#40e221;p=240,72");
+        }
+        bsCS: WMaxMacCS {
+            parameters:
+                @display("i=block/classifier,#40e221;p=72,72");
+        }
+    connections allowunconnected:
 
         bsMac.phyOut --> phyOut;
         phyIn --> bsMac.phyIn;
@@ -117,6 +140,5 @@ module bsMAC
         bsMac.macOut++ --> WMaxCtrlBS.macIn;
         WMaxCtrlBS.macOut --> bsMac.macIn++;
 
-    display: "b=306,162";
-endmodule
+}
 

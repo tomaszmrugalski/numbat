@@ -42,8 +42,8 @@ void IPv6Dispatch::initialize()
     scheduleAt(0.1, timer);
     BS = false;
     
-    cModule * tmp0 = parentModule();
-    if (!strcmp(tmp0->fullName(), "bsIPv6")) {
+    cModule * tmp0 = getParentModule();
+    if (!strcmp(tmp0->getFullName(), "bsIPv6")) {
 	BS = true;
 	handleTraffic = true;
 	routingConfigured = true;
@@ -52,9 +52,9 @@ void IPv6Dispatch::initialize()
     }
 
     // register for MIH events
-    assert(parentModule());
-    assert(parentModule()->parentModule());
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    assert(getParentModule());
+    assert(getParentModule()->getParentModule());
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     if (tmp) {
 	// SS-side
 	assert(tmp);
@@ -64,9 +64,9 @@ void IPv6Dispatch::initialize()
     }
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s[%d]", fullName(), ss->index());
+    sprintf(buf, "%s[%d]", getFullName(), ss->getIndex());
     setName(buf);
 
     updateString();
@@ -76,7 +76,7 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 {
     if (dynamic_cast<IPv6Ra*>(msg)) {
 	if (handleTraffic) {
-	    send(msg, "raOut", 0);
+	  send(msg, "raOut", -1); //was: 0, changed to -1 (MiM)
 	    return;
 	} else {
 	    Log(Warning) << "RA received, but traffic is not supported right now. Message dropped." << LogEnd;
@@ -91,23 +91,24 @@ void IPv6Dispatch::dispatchMessage(cMessage *msg)
 	dynamic_cast<DHCPv6Request*>(msg) ||
 	dynamic_cast<DHCPv6Reply*>(msg) ||
 	dynamic_cast<DHCPv6Confirm*>(msg)) {
-	Log(Debug) << "DHCPv6 message " << msg->fullName() << " received." << LogEnd;
-	send(msg, "dhcpOut", 0);
+	Log(Debug) << "DHCPv6 message " << msg->getFullName() << " received." << LogEnd;
+	send(msg, "dhcpOut", -1);  //was 0, changed to -1 (MiM)
 	return;
     };
 
     if (handleTraffic) {
-	send(msg, "genOut", 0); // send to generator directly
-	Log(Debug) << "Message " << msg->fullName() << " received and sent to upper layer." << endl;
+      send(msg, "genOut"/*, 0*/); // send to generator directly
+      //genOut is scalar gate, 0 should be removed or replaced by -1 (MiM)
+	Log(Debug) << "Message " << msg->getFullName() << " received and sent to upper layer." << endl;
 	return;
     } else {
-	Log(Debug) << "Message " << msg->fullName() << " dropped, traffic is not supported right now." << LogEnd;
+	Log(Debug) << "Message " << msg->getFullName() << " dropped, traffic is not supported right now." << LogEnd;
 	DroppedMsgs++;
 	delete msg;
 	return;
     }
 
-    opp_error("Message not handled by IPv6dispatch: %s", msg->fullName());
+    opp_error("Message not handled by IPv6dispatch: %s", msg->getFullName());
 }
 
 void IPv6Dispatch::handleMihMessage(cMessage *msg)
@@ -175,14 +176,14 @@ void IPv6Dispatch::updateString()
 	    addrConfigured?"addr":"no addr", 
 	    locationUpdated?"loc upd":"no loc upd");
     if (ev.isGUI())
-	displayString().setTagArg("t", 0, buf);
+	getDisplayString().setTagArg("t", 0, buf);
     
-  // displayString().setTagArg("i",1,"yellow");
+  // getDisplayString().setTagArg("i",1,"yellow");
 }
 
 void IPv6Dispatch::handleMessage(cMessage *msg)
 {
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
     
     if (msg==timer)
     {    
@@ -193,68 +194,71 @@ void IPv6Dispatch::handleMessage(cMessage *msg)
 	return; 
     }
 
-    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
+    if (!gate || !strcmp(gate->getFullName(), "eventIn")) {  
         handleMihMessage(msg);
 	delete msg;
         return;
     }
 
     IPv6 * ip = dynamic_cast<IPv6*>(msg);
-    if (!strcmp(gate->fullName(), "dhcpIn")) {
+    if (!strcmp(gate->getFullName(), "dhcpIn")) {
 	if (ip->getDhcpv6Relay() && BS)
 	{
 	    // this is relay, route it via backbone
 	    Log(Info) << "Forwarding outgoing relay message (src=" 
 		      << ip->getSrcIP() << ",dst=" << ip->getDstIP()
 		      << ")" << LogEnd;
-	    send (msg, "genOut", 0);
+	    send (msg, "genOut"/*, 0*/); //MiM
 	    return;
 	} 
 
 	// this is normal message, route it to SS/BS via radio
 	Log(Debug) << "Forwarding outgoing DHCPv6 message." << LogEnd;
-	send(msg, "ipOut",0);
+	send(msg, "ipOut",-1);//was 0, changed to -1 (MiM)
 	return;
     }
 
-    if (!strcmp(gate->fullName(), "genIn") && ip && ip->getDhcpv6Relay()) {
+    if (!strcmp(gate->getFullName(), "genIn") && ip && ip->getDhcpv6Relay()) {
 	Log(Info) << "Forwarding incoming DHCPv6 relay message (src=" 
 		  << ip->getSrcIP() << ",dst=" << ip->getDstIP() << ")" << LogEnd;
-	send(msg, "dhcpOut", 0);
+	send(msg, "dhcpOut", -1); //was 0, changed to -1 (MiM)
 	return;
     }
     
     // relay RAs all the time
-    if (!strcmp(gate->fullName(),"raIn"))
+    if (!strcmp(gate->getFullName(),"raIn"))
     {
-	send(msg, "ipOut", 0);
+      send(msg, "ipOut"/*, -1*//*0*/); //ipOut is scalar gate, use -1 instead of 0 or just delete the gateIndex (== the last argument) (MiM)
 	return;
     }
 
-    if (!strcmp(gate->fullName(),"ipIn")) {
+    if (!strcmp(gate->getFullName(),"ipIn")) {
 	// handle IPv6 data from L2 at any time
-	RcvdBytesPers += msg->length();                                     
+	//RcvdBytesPers += msg->getBitLength(); 
+      RcvdBytesPers += (check_and_cast<cPacket *>(msg))->getBitLength(); //MiM
+                                    
 	dispatchMessage(msg);
 	return;
     } 
 
     if (ip && ip->getBindingUpdate()) { // accept binding update at any time
-	send(msg, "ipOut", 0);
+      send(msg, "ipOut", -1); //was 0, changed to -1 (MiM)
 	return;
     }
 
     if (handleTraffic) { 
 	if (routingConfigured) {
-	    SentBytesPers += msg->length();                 
-	    send(msg, "ipOut", 0);
-	    Log(Debug) << "Message (" << msg->fullName() << ") received and dispatched to ipOut gate." << LogEnd;
+	  //SentBytesPers += msg->getBitLength(); 
+	  SentBytesPers += (check_and_cast<cPacket *>(msg))->getBitLength();//MiM 
+	  send(msg, "ipOut", -1); //MiM -1
+	    Log(Debug) << "Message (" << msg->getFullName() << ") received and dispatched to ipOut gate." << LogEnd;
 	} else {
-	    Log(Notice) << "Message (" << msg->fullName() << ") dropped: no routing configured." << LogEnd;
+	    Log(Notice) << "Message (" << msg->getFullName() << ") dropped: no routing configured." << LogEnd;
 	    DroppedMsgs++;
 	    delete msg;
 	}
     } else {
-	Log(Notice) << "Message (" << msg->fullName() << ") dropped, traffic is not supported right now." << LogEnd;
+	Log(Notice) << "Message (" << msg->getFullName() << ") dropped, traffic is not supported right now." << LogEnd;
 	DroppedMsgs++;
 	delete msg;
     }

@@ -42,21 +42,21 @@ void ssInfo::initialize() {
 
     CLEAR(&hoInfo);
 
-    hoInfo.isMobile = parentModule()->par("wmaxIsMobile");
-    hoInfo.wmax.hoOptim = parentModule()->par("wmaxHoOptim");
+    hoInfo.isMobile = getParentModule()->par("wmaxIsMobile");
+    hoInfo.wmax.hoOptim = getParentModule()->par("wmaxHoOptim");
 
-    hoInfo.dhcp.DadType = (DhcpDadType)(int)parentModule()->par("dadType");
-    hoInfo.dhcp.skipInitialDelay = parentModule()->par("dhcpSkipInitialDelay");
-    hoInfo.dhcp.pref255 = parentModule()->par("dhcpPref255");
-    hoInfo.dhcp.rapidCommit = parentModule()->par("dhcpRapidCommit");
-    hoInfo.dhcp.remoteAutoconf = parentModule()->par("dhcpRemoteAutoconf");
-    hoInfo.dhcp.addrParams = parentModule()->par("dhcpAddrParams");
+    hoInfo.dhcp.DadType = (DhcpDadType)(int)getParentModule()->par("dadType");
+    hoInfo.dhcp.skipInitialDelay = getParentModule()->par("dhcpSkipInitialDelay");
+    hoInfo.dhcp.pref255 = getParentModule()->par("dhcpPref255");
+    hoInfo.dhcp.rapidCommit = getParentModule()->par("dhcpRapidCommit");
+    hoInfo.dhcp.remoteAutoconf = getParentModule()->par("dhcpRemoteAutoconf");
+    hoInfo.dhcp.addrParams = getParentModule()->par("dhcpAddrParams");
 
-    hoInfo.mip.remoteLocUpdate = parentModule()->par("mipRemoteLocUpdate");
+    hoInfo.mip.remoteLocUpdate = getParentModule()->par("mipRemoteLocUpdate");
     
-    int initialBS = parentModule()->par("initialBS");
+    int initialBS = getParentModule()->par("initialBS");
 
-    int index = parentModule()->index();
+    int index = getParentModule()->getIndex();
 
     stringUpdate();
     Log(Notice) << "New SS[" << index << "] [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
@@ -87,13 +87,13 @@ void ssInfo::stringUpdate() {
         displayIt << "macAddr=" << info.getMac() << endl;
         displayIt << "basicCID=" << dec << info.basicCid;
 
-        displayString().setTagArg("t",0, (displayIt.str()).c_str());
+        getDisplayString().setTagArg("t",0, (displayIt.str()).c_str());
     }
 }
 
 void ssInfo::addEventListener(cModule * addMe)
 {
-    Log(Debug) << "Registering new event listener: " << addMe->fullName() << LogEnd;
+    Log(Debug) << "Registering new event listener: " << addMe->getFullName() << LogEnd;
     EventListenersLst.push_back(addMe);
 }
 
@@ -147,8 +147,9 @@ void ssInfo::sendEvent(cMessage * msg)
 
     for (it=EventListenersLst.begin(); it!=EventListenersLst.end(); it++) {
 	cModule * module = *it;
-	Log(Cont) << module->fullName() << " ";
-	sendDirect((cMessage*)msg->dup(), 0.0, module, "eventIn");
+	Log(Cont) << module->getFullName() << " ";
+	//sendDirect((cMessage*)msg->dup(), 0.0, module, "eventIn"); 
+	sendDirect((cMessage *)msg->dup(), module, "eventIn"/*, int gateIndex=-1*/); //MiM
     }
     Log(Cont) << "." << LogEnd;
     delete msg;

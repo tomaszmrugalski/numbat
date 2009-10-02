@@ -1,59 +1,72 @@
-import
-    "common";
-import
-    "IPv6";
-import
-    "MAC";
+import common;
+import IPv6;
+import MAC;
 
 simple WMaxPhySS
+{
     gates:
-        out: rfOut;
-        in: rfIn;
-        in: phyIn;
-        out: phyOut;
-endsimple
+        output rfOut;
+        input rfIn;
+        input phyIn;
+        output phyOut;
+}
 
 simple ssInfo
-endsimple
+{
+}
 
+simple WMaxFlowSS
+{
+//this is created by MiM
+}
 
 module SS //
-          //
+          //some doubles should be integers or booleans... fixed (MiM)
+{
     parameters:
-        wmaxHoOptim: numeric,
-        wmaxIsMobile: numeric,
-        movementType: numeric,
-        x: numeric,
-        y: numeric,
-        initialBS: numeric,
-        NetworkEntryTime: numeric,
-        HandoverTime: numeric,
-        dadType: numeric,
-        dhcpSkipInitialDelay: numeric,
-        dhcpPref255: numeric,
-        dhcpRapidCommit: numeric,
-        dhcpRemoteAutoconf: numeric,
-        dhcpAddrParams: numeric,
-        mipRemoteLocUpdate: numeric,
-        connType: numeric,
-        connMsr: numeric,
-        SStrace_centerx: numeric,
-        SStrace_centery: numeric,
-        SStrace_radius: numeric,
-        SStrace_step: numeric;
+        volatile int wmaxHoOptim;
+        volatile int wmaxIsMobile;
+        volatile int movementType;
+        volatile double x;
+        volatile double y;
+        volatile int initialBS;
+        volatile double NetworkEntryTime;
+        volatile double HandoverTime;
+        volatile int dadType;
+        volatile bool dhcpSkipInitialDelay;
+        volatile bool dhcpPref255;
+        volatile bool dhcpRapidCommit;
+        volatile bool dhcpRemoteAutoconf;
+        volatile bool dhcpAddrParams;
+        volatile bool mipRemoteLocUpdate;
+        volatile int connType;
+        volatile int connMsr;
+        volatile double SStrace_centerx;
+        volatile double SStrace_centery;
+        volatile double SStrace_radius;
+        volatile double SStrace_step;
+        @display("bgb=300,193");
     gates:
-        out: out;
-        in: in;
+        output out;
+        input in;
     submodules:
-        ssPhy: WMaxPhySS;
-            display: "i=abstract/accesspoint,#ce1821;p=248,144;q=SendQueue";
-        ssMac: ssMAC;
-            display: "i=block/control,#ce1821;p=152,144";
-        ssIPv6: IPv6Client;
-            display: "i=block/app,#ce1821;p=56,144;tx=Tx,rx";
-        ssInfo: ssInfo;
-            display: "p=152,80;i=block/blackboard,#ce1821";
-    connections nocheck:
+        ssPhy: WMaxPhySS {
+            parameters:
+                @display("i=abstract/accesspoint,#ce1821;p=248,144;q=SendQueue");
+        }
+        ssMac: ssMAC {
+            parameters:
+                @display("i=block/control,#ce1821;p=152,144");
+        }
+        ssIPv6: IPv6Client {
+            parameters:
+                @display("i=block/app,#ce1821;p=56,144;tx=Tx,rx");
+        }
+        ssInfo: ssInfo {
+            parameters:
+                @display("p=152,80;i=block/blackboard,#ce1821");
+        }
+    connections allowunconnected:
         ssMac.phyOut --> ssPhy.phyIn;
         ssPhy.phyOut --> ssMac.phyIn;
 
@@ -62,6 +75,5 @@ module SS //
 
         ssPhy.rfOut --> out;
         in --> ssPhy.rfIn;
-    display: "b=300,193";
-endmodule
+}
 

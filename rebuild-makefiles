@@ -3,18 +3,20 @@
 ### util/ ###
 cd util
 # -n no-linking
-opp_makemake -f -n
+opp_makemake -f -n -a
 make clean
 cd ..
 
 ### ipv6/ ###
 cd ipv6
-opp_makemake -w -f -I../util
+#opp_makemake -w -f -I../util
+opp_makemake -f -lutil -L../util/out/gcc-debug/ -I../util -a
 make clean
 cd ..
 
 ### wimax/ ###
 cd wimax
 #opp_makemake -w -f -I../util -I../ipv6 -u Cmdenv
-opp_makemake -w -f -I../util -I../ipv6
+#opp_makemake -w -f -I../util -I../ipv6
+opp_makemake -f -lutil -lipv6 -L../util/out/gcc-debug -L../ipv6/out/gcc-debug -I../util -I../ipv6
 cd ..

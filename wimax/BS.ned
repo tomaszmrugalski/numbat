@@ -1,51 +1,63 @@
-import
-    "common";
-import
-    "IPv6";
-import
-    "MAC";
+
+//package numbat.wimax;
+
+import numbat.wimax.common;
+import numbat.ipv6.IPv6;
+import numbat.wimax.MAC;
 
 //ssPhy
 simple WMaxPhyBS
+{
     gates:
-        in: rfIn;
-        out: rfOut;
-        in: phyIn;
-        out: phyOut;
-endsimple
+        input rfIn;
+        output rfOut;
+        input phyIn;
+        output phyOut;
+}
 
 //Simulates transmission between 1 BS and 0..n SSes.
 simple WMaxRadio
+{
     gates:
-        in: phyIn;
-        out: phyOut;
-        out: radioOut[];
-        in: radioIn[];
-endsimple
+        input phyIn;
+        output phyOut;
+        output radioOut[];
+        input radioIn[];
+}
 
 module BS
+{
     parameters:
-        x: numeric,
-        y: numeric;
+        volatile double x;
+        volatile double y;
+        @display("bgb=360,128");
     gates:
-        out: out[];
-        in: in[];
-        in: networkIn;
-        out: networkOut;
+        output out[];
+        input in[];
+        input networkIn;
+        output networkOut;
     submodules:
-        bsPhy: WMaxPhyBS;
-            display: "i=abstract/accesspoint,#40e221;p=232,72;q=SendQueue";
-        bsMac: bsMAC;
-            display: "i=block/control,#40e221;p=144,72;q=SendQueue";
-        radio: WMaxRadio;
-            gatesizes:
-                radioIn[sizeof(in)],
+        bsPhy: WMaxPhyBS {
+            parameters:
+                @display("i=abstract/accesspoint,#40e221;p=232,72;q=SendQueue");
+        }
+        bsMac: bsMAC {
+            parameters:
+                @display("i=block/control,#40e221;p=144,72;q=SendQueue");
+        }
+        radio: WMaxRadio {
+            parameters:
+                @display("p=312,72;i=device/receiverdish,#40e221,30");
+            gates:
+                radioIn[sizeof(in)];
                 radioOut[sizeof(in)]; // use in, for consistency
 
-            display: "p=312,72;i=device/receiverdish,#40e221,30";
-        bsIPv6: IPv6Server;
-            display: "i=block/app,#40e221;p=64,72";
-    connections nocheck:
+        }
+        bsIPv6: IPv6Server {
+            parameters:
+                @display("i=block/app,#40e221;p=64,72");
+        }
+    connections allowunconnected:
 
         bsMac.phyOut --> bsPhy.phyIn;
         bsPhy.phyOut --> bsMac.phyIn;
@@ -58,8 +70,7 @@ module BS
 
         bsIPv6.networkOut --> networkOut;
         networkIn --> bsIPv6.networkIn;
-    display: "b=360,128";
-endmodule
+}
 
 
 

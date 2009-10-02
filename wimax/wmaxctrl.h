@@ -129,11 +129,16 @@ public:
 	EVENT_NUM
     } Event;
 
-    double hoStartTimestamp;   // timestamp of handover start
-    double hoReentryTimestamp; // timestamp of the reentry start
-    double hoReentryCompleteTimestamp; // timestamp of the reentry completion
-    double hoActionTime; //time of handover idle
-    double sendMsg(cMessage * msg, std::string paramName, const std::string &gateName, int cid, double extraDelay = 0.0f);
+    //MiM: double changes to simtime_t
+    //double hoStartTimestamp;   // timestamp of handover start
+    //double hoReentryTimestamp; // timestamp of the reentry start
+    //double hoReentryCompleteTimestamp; // timestamp of the reentry completion
+    //double hoActionTime; //time of handover idle
+    simtime_t hoStartTimestamp;   // timestamp of handover start
+    simtime_t hoReentryTimestamp; // timestamp of the reentry start
+    simtime_t hoReentryCompleteTimestamp; // timestamp of the reentry completion
+    simtime_t hoActionTime; //time of handover idle
+    simtime_t sendMsg(cMessage * msg, std::string paramName, const std::string &gateName, int cid, double extraDelay = 0.0f);
     cStdDev hoActionTimeData;
 protected:
     void fsmInit();
@@ -259,6 +264,8 @@ class WMaxFlowSS : public Fsm
 {
 public:
     WMaxFlowSS(Fsm * fsm);
+    WMaxFlowSS();//MiM
+    void setParentFsm(Fsm *parent);//MiM
     uint16_t cid;
     int gate;
     int transactionID;

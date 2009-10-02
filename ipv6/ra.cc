@@ -31,7 +31,7 @@ void RaRcv::initialize()
     RaRcvCnt = 0;
 
     // register for MIH Events
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     if (tmp) {
 	// SS-side
 	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
@@ -39,9 +39,9 @@ void RaRcv::initialize()
     }
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 
     updateString();
@@ -51,7 +51,7 @@ void RaRcv::handleMessage(cMessage *msg)
 {
     if (dynamic_cast<IPv6Ra*>(msg)) {
 	if (!RaRcvCnt) {
-	    ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->parentModule()->submodule("ssInfo"));
+	    ssInfo * info = dynamic_cast<ssInfo*>(getParentModule()->getParentModule()->getSubmodule("ssInfo"));
 	    Log(Notice) << "Notifying other layers: IPv6 routing configured." << LogEnd;
 	    info->sendEvent(new MihEvent_L3RoutingConfigured());
 	}
@@ -76,7 +76,7 @@ void RaRcv::updateString()
   char buf[80];
   sprintf(buf, "%d RAs rcvd.", RaRcvCnt);
   if (ev.isGUI())
-    displayString().setTagArg("t", 0, buf);
+    getDisplayString().setTagArg("t", 0, buf);
 
 }
 
@@ -95,9 +95,9 @@ void RaGen::initialize()
     scheduleAt(RaInterval, sendTimer);
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 }
 
@@ -109,7 +109,7 @@ void RaGen::handleMessage(cMessage *msg)
 	return;
     }
 
-    Log(Debug) << "Message " << msg->fullName() << " received." << LogEnd;
+    Log(Debug) << "Message " << msg->getFullName() << " received." << LogEnd;
     delete msg;
 }
 

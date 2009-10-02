@@ -33,7 +33,7 @@ Define_Module(WMaxMacCS);
 
 void WMaxMacCS::initialize() {
   WATCH_LIST(csTable);
-  std::string name=fullName();
+  std::string name=getFullName();
   if (!name.find("ss")) {
       BS = false;
   } else {
@@ -41,9 +41,9 @@ void WMaxMacCS::initialize() {
   }
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 }
 
@@ -93,8 +93,8 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
         return;
     }
 
-    cGate * gate = msg->arrivalGate();
-    if(!strcmp(gate->fullName(),"macIn")) {
+    cGate * gate = msg->getArrivalGate();
+    if(!strcmp(gate->getFullName(),"macIn")) {
         handleUlMessage(msg);
         return;
     }
@@ -105,7 +105,7 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
 
 void WMaxMacCS::handleUlMessage(cMessage *msg) {
     // reconstruction
-    cMessage *ipv6packet = msg->decapsulate();
+  cMessage *ipv6packet = check_and_cast<cPacket *>(msg)->decapsulate();//MiM
     delete msg;
     send(ipv6packet, "ipOut", 0);
     Log(Debug) << "Message send to upper layer." << LogEnd;
@@ -118,16 +118,16 @@ IPv6Addr WMaxMacCS::DstAddrGet(cMessage *msg)
       IPv6* ipMsg = dynamic_cast<IPv6*>(msg);
       return ipMsg->getDstIP();
     }
-    opp_error("Non-IPv6 message is trying to sneak thru WMaxMacCS module: %s", fullName());
+    opp_error("Non-IPv6 message is trying to sneak thru WMaxMacCS module: %s", getFullName());
     return IPv6Addr();
 }
 
 void WMaxMacCS::handleDlMessage(cMessage *msg) {
     list<WMaxMacCSRule>::iterator it;
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
     IPv6Addr dstAddr = DstAddrGet(msg);
     uint64_t macAddr = dstAddr.MacAddrFromLinkLocal();
-    Log(Debug) << "Trying to forward DL msg (" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+    Log(Debug) << "Trying to forward DL msg (" << msg->getFullName() << ") to ipv6=" << dstAddr.plain()
 	       << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << LogEnd;
 
     // try to find appropriate route for this dst address
@@ -141,7 +141,7 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 	} else {
 	    Log(Debug);
 	}
-	Log(Cont)  << "Unable to forward message(" << msg->fullName() << "), no CS rules defined." << LogEnd;
+	Log(Cont)  << "Unable to forward message(" << msg->getFullName() << "), no CS rules defined." << LogEnd;
 	delete msg;
 	return;
     }
@@ -180,10 +180,10 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
     if (!dstAddr.isMulticast())
     {
-	Log(Info) << "Unable to find a proper connection for msg(" << msg->fullName() << ") to ipv6=" << dstAddr.plain()
+	Log(Info) << "Unable to find a proper connection for msg(" << msg->getFullName() << ") to ipv6=" << dstAddr.plain()
 		    << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
     } else {
-	Log(Debug) << "Multicast message (" << msg->fullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
+	Log(Debug) << "Multicast message (" << msg->getFullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
     }
     delete msg;
     return;
@@ -191,8 +191,8 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
 void WMaxMacCS::dlMsgSend(cMessage * msg, int cid)
 {
-    cMessage *wmaxmacmsg = new cMessage(msg->fullName());
-    wmaxmacmsg->encapsulate(msg);
+  /*cMessage*/ cPacket *wmaxmacmsg = new cPacket/*Message*/(msg->getFullName());//MiM
+  wmaxmacmsg->encapsulate(check_and_cast<cPacket *>(msg)); //MiM
     
     WMaxMacHeader * hdr = new WMaxMacHeader();
     hdr->cid = cid;

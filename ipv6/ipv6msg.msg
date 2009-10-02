@@ -1,72 +1,69 @@
 cplusplus {{
 #include "ipv6.h"
-}};
+}}
+
 
 struct IPv6Addr;
 
-message IPv6
+//message --> packet due to migration to v4.0 (MiM)
+//In other files: cMessage* pointer replaced by cPacket* (MiM)
+
+//message IPv6
+packet IPv6
 {
-fields:
-  IPv6Addr srcIP;
-  IPv6Addr dstIP;
+    IPv6Addr srcIP;
+    IPv6Addr dstIP;
 
-  bool BindingUpdate;
-  bool BindingAck;
-  bool Dhcpv6Relay;
-};
+    bool BindingUpdate;
+    bool BindingAck;
+    bool Dhcpv6Relay;
+}
 
-message IPv6Ra extends IPv6
+packet IPv6Ra extends IPv6
 {
-
-
-};
+}
 
 
 // ********************************************************************************
-// *** DHCPv6 messages ************************************************************
+// *** DHCPv6 packets ************************************************************
 // ********************************************************************************
 
-message DHCPv6Solicit extends IPv6
+packet DHCPv6Solicit extends IPv6
 {
-fields:
     bool rapidCommit;
     bool addrParams;
 
     bool remoteConf;
-    int  remoteBS;
-};
+    int remoteBS;
+}
 
-message DHCPv6Advertise extends IPv6
+packet DHCPv6Advertise extends IPv6
 {
-fields:
     int preference;
     bool addrParams;
 
     bool remoteConf;
-};
+}
 
-message DHCPv6Request extends IPv6
+packet DHCPv6Request extends IPv6
 {
-fields:
     bool addrParams;
 
     bool remoteConf;
-    int  remoteBS;
-};
+    int remoteBS;
+}
 
-message DHCPv6Reply extends IPv6
+packet DHCPv6Reply extends IPv6
 {
-fields:
     IPv6Addr addr;
     bool addrParams;
     bool remoteConf;
-};
+}
 
-message DHCPv6Confirm extends IPv6
+packet DHCPv6Confirm extends IPv6
 {
-fields:
     bool addrParams;
 
     bool remoteConf;
-    int  remoteBS;
-};
+    int remoteBS;
+}

@@ -37,19 +37,19 @@ void DHCPv6Cli::initialize()
     DhcpCompleteCnt = 0;
 
     // name vectors properly
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     string x;
-    x = ss->fullName() + string(" DHCP errors");
+    x = ss->getFullName() + string(" DHCP errors");
     DhcpErrors.setName(x.c_str());
 
-    x = ss->fullName() + string(" DHCP conf. complete");
+    x = ss->getFullName() + string(" DHCP conf. complete");
     DhcpComplete.setName(x.c_str());
 
-    x = ss->fullName() + string(" DHCP conf. time");
+    x = ss->getFullName() + string(" DHCP conf. time");
     DhcpDuration.setName(x.c_str());
 
     // register for MIH Events
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
     info->addEventListener(this);
 
@@ -59,7 +59,7 @@ void DHCPv6Cli::initialize()
 
     // add number prefix to the module name
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 }
 
@@ -67,7 +67,7 @@ void DHCPv6Cli::handleMessage(cMessage *msg)
 {
     getMyAddr();
 
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
 
     if (dynamic_cast<MihEvent_ReentryEnd*>(msg) ||
@@ -159,11 +159,11 @@ void DHCPv6Cli::fsmInit()
 
 ssInfo * DHCPv6Cli::ssInfoGet(Fsm * fsm)
 {
-    cModule * tmp = fsm->parentModule()->parentModule();
-    ssInfo * info = dynamic_cast<ssInfo*>(tmp->submodule("ssInfo"));
-    if (!info)
-	opp_error("Unable to find ssInfo structure");
-    return info;
+  cModule * tmp = fsm->getParentModule()->getParentModule();
+  ssInfo * info = dynamic_cast<ssInfo*>(tmp->getSubmodule("ssInfo"));
+  if (!info)
+    opp_error("Unable to find ssInfo structure");
+  return info;
 }
 
 void DHCPv6Cli::startTimer(double del)
@@ -184,12 +184,12 @@ void DHCPv6Cli::finish()
 
 IPv6Addr DHCPv6Cli::getMyAddr()
 {
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
   
     IPv6Addr addr;
     addr.LinkLocalFromMAC(info->info.macAddr);
-    uint64_t macAddr = addr.MacAddrFromLinkLocal();
+    //uint64_t macAddr = addr.MacAddrFromLinkLocal(); //unused variable (MiM)
 
     return addr;
 }
@@ -282,7 +282,7 @@ FsmStateType DHCPv6Cli::onEnterState_SendSolicit(Fsm * fsm)
     
     SLog(fsm, Notice) << "Sending SOLICIT " << x << LogEnd;
 
-    fsm->send(sol, "dhcpOut", 0);
+    fsm->send(sol, "dhcpOut");//was 0, changed to -1 (MiM) (removed completely)
 
     if (info->hoInfo.dhcp.rapidCommit) {
 	return STATE_WAIT_REPLY;
@@ -363,7 +363,7 @@ FsmStateType DHCPv6Cli::onEnterState_SendRequest(Fsm * fsm)
     req->setSrcIP(cli->getMyAddr());
 
     SLog(fsm, Notice) << "Sending REQUEST." << LogEnd;
-    fsm->send(req, "dhcpOut", 0);
+    fsm->send(req, "dhcpOut", -1); //was 0, changed to -1 (MiM)
 
     return fsm->State();
 }
@@ -479,7 +479,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 {
     DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
 
-    simtime_t length = cli->simTime() - cli->DhcpStartTime;
+    simtime_t length = simTime() - cli->DhcpStartTime;
     cli->DhcpDuration.record(length);
     cli->DhcpCompleteCnt++;
     cli->DhcpComplete.record(cli->DhcpCompleteCnt);
@@ -494,7 +494,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
     }
     SLog(fsm, Cont) << LogEnd;
 
-    ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
+    ssInfo * info = dynamic_cast<ssInfo*>(fsm->getParentModule()->getParentModule()->getSubmodule("ssInfo"));
 
     MihEvent_L3AddrConfigured * confOK = new MihEvent_L3AddrConfigured();
     confOK->setAddr(cli->Addr);
@@ -508,7 +508,7 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
     info->sendEvent(confOK);
 
     if (info->hoInfo.dhcp.addrParams) {
-	ssInfo * info = dynamic_cast<ssInfo*>(fsm->parentModule()->parentModule()->submodule("ssInfo"));
+	ssInfo * info = dynamic_cast<ssInfo*>(fsm->getParentModule()->getParentModule()->getSubmodule("ssInfo"));
 	SLog(fsm, Notice) << "Notifying other layers: IPv6 routing configured (addrParams used)." << LogEnd;
 	info->sendEvent(new MihEvent_L3RoutingConfigured());
     }
@@ -518,8 +518,8 @@ FsmStateType DHCPv6Cli::onEnterState_Configured(Fsm * fsm)
 
 FsmStateType DHCPv6Cli::onEventState_Configured(Fsm * fsm, FsmEventType e, cMessage * msg)
 {
-    ssInfo * info = ssInfoGet(fsm);
-    DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm);
+  //ssInfo * info = ssInfoGet(fsm); //unused variable (MiM)
+  //DHCPv6Cli * cli = dynamic_cast<DHCPv6Cli*>(fsm); //unused variable (MiM)
 
     switch (e) {
     case EVENT_START:
@@ -543,15 +543,17 @@ void DHCPv6Srv::initialize()
     HandlingRelay = false;
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 }
 
 double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDelay)
 {
-    double delay = 0;
+
+  //double delay = 0;
+  simtime_t delay = 0; //MiM
     if (strlen(paramName)) {
 	char buf[80];
 	sprintf(buf, "Min%s", paramName);
@@ -563,12 +565,13 @@ double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDe
 	delay = uniform(min, max);
     }
 
-    Log(Debug) << "Sending " << msg->name() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
+    Log(Debug) << "Sending " << msg->getName() << " in " << setiosflags(ios::fixed) << setprecision(3) << delay*1000
 	       << "msecs." << LogEnd;
 
     if (HandlingRelay) {
 	IPv6 * ip = new IPv6("DHCPv6 Relay");
-	ip->encapsulate(msg);
+	//ip->encapsulate(msg);
+	ip->encapsulate(check_and_cast<cPacket *>(msg)); //MiM
 	ip->setSrcIP(SrcIP);
 	ip->setDstIP(DstIP);
 	ip->setDhcpv6Relay(true);
@@ -576,9 +579,9 @@ double DHCPv6Srv::sendMsg(cMessage * msg, const char * paramName, double extraDe
 	msg = ip;
     }
 
-    sendDelayed(msg, delay+extraDelay, "dhcpOut");
+    sendDelayed(msg, delay+(simtime_t)extraDelay, "dhcpOut");//simtime_t (MiM)
 
-    return delay+extraDelay;
+    return SIMTIME_DBL(delay+(simtime_t)extraDelay); //SIMTIME_DBL (MiM)
 }
 
 void DHCPv6Srv::sendReply(string x, bool addrParams, bool viaRelays, IPv6Addr cliAddr)
@@ -611,7 +614,7 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 {
     IPv6 * ip = dynamic_cast<IPv6*>(msg);
     if (!msg)
-	opp_error("Received non-IPv6 message in %s module.", fullName());
+	opp_error("Received non-IPv6 message in %s module.", getFullName());
 
     if (ip->getDhcpv6Relay()) {
 	handleRelay(msg);
@@ -673,18 +676,19 @@ void DHCPv6Srv::handleMessage(cMessage *msg)
 	return;
     }
 
-    opp_error("Invalid message %s received in DHCPv6Srv.", msg->fullName());
+    opp_error("Invalid message %s received in DHCPv6Srv.", msg->getFullName());
 }
 
 void DHCPv6Srv::sendRelay(cMessage * msg, int remoteBS)
 {
-    int thisBS = parentModule()->parentModule()->index();
+    int thisBS = getParentModule()->getParentModule()->getIndex();
     
     Log(Notice) << "Relays will be used (this BS[" << thisBS << "], target: BS[" << remoteBS << "])." << LogEnd;
     IPv6 * ip = new IPv6("DHCPv6 relay");
     ip->setSrcIP( getIPofBS(thisBS) );
     ip->setDstIP( getIPofBS(remoteBS) );
-    ip->encapsulate(msg);
+    //ip->encapsulate(msg);
+    ip->encapsulate(check_and_cast<cPacket *>(msg)); //MiM
     ip->setDhcpv6Relay(true);
 
     Log(Notice) << "Transmitting RELAY-FORW: srcIP=" << ip->getSrcIP() << ", dstIP=" << ip->getDstIP() << LogEnd;
@@ -696,7 +700,8 @@ void DHCPv6Srv::sendRelay(cMessage * msg, int remoteBS)
 void DHCPv6Srv::handleRelay(cMessage * msg)
 {
     IPv6 * ip = dynamic_cast<IPv6*>(msg);
-    cMessage * dhcp = msg->decapsulate();
+    //cMessage * dhcp = msg->decapsulate();
+    cMessage * dhcp = (check_and_cast<cPacket *>(msg))->decapsulate(); //MiM
 
     if (dynamic_cast<DHCPv6Advertise*>(dhcp) ||
 	dynamic_cast<DHCPv6Reply*>(dhcp)) {
@@ -722,11 +727,11 @@ IPv6Addr DHCPv6Srv::getIPofBS(int bs)
 {
     char buf[512];
     sprintf(buf, "BS[%d].bsIPv6.mobIPv6ha%d", bs, bs); // mobIPv6ha[%d]
-    cModule *sim = parentModule()->parentModule()->parentModule(); // whole network
-    cModule *ha  = sim->moduleByRelativePath(buf);
+    cModule *sim = getParentModule()->getParentModule()->getParentModule(); // whole network
+    cModule *ha  = sim->getModuleByRelativePath(buf);
 
     if (!ha)
-	opp_error("%s: Unable to find address of BS[%d]: %s module not found.", sim->fullName(), bs, buf);
+	opp_error("%s: Unable to find address of BS[%d]: %s module not found.", sim->getFullName(), bs, buf);
     string x = ha->par("prefix").stringValue();
 
     return IPv6Addr(x.c_str(), true);

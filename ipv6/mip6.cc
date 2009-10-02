@@ -29,17 +29,17 @@ Define_Module(MobIPv6mn);
 void MobIPv6mn::initialize()
 {
     // register for MIH Events
-    cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+    cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
     ssInfo * info = dynamic_cast<ssInfo*>(tmp);
     if (info)
 	info->addEventListener(this);
 
 
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    index = ss->index();
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    index = ss->getIndex();
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 
     connected = false;
@@ -53,7 +53,7 @@ void MobIPv6mn::handleMihMessage(cMessage *msg)
     if (dynamic_cast<MihEvent_L3AddrConfigured *>(msg)) {
 	MihEvent_L3AddrConfigured * conf = dynamic_cast<MihEvent_L3AddrConfigured *>(msg);
 
-	cModule * tmp = parentModule()->parentModule()->submodule("ssInfo");
+	cModule * tmp = getParentModule()->getParentModule()->getSubmodule("ssInfo");
 	ssInfo * info = dynamic_cast<ssInfo*>(tmp);
 
 	if (conf->getRemoteAutoconf() == true) {
@@ -81,7 +81,7 @@ void MobIPv6mn::handleMihMessage(cMessage *msg)
 	locUpdate->setDstIP( *dst );
 	locUpdate->setBindingUpdate(true);
 
-	send(locUpdate, "lowerOut", 0);
+	send(locUpdate, "lowerOut"/*, 0*/); //scalar gate, remove 0 or replace with -1 (MiM)
 	Log(Notice) << "MIPv6: Sending Location update (myIP=" << src->plain() << ", corrIP=" << dst->plain() << ")." << LogEnd;
 
 	delete src;
@@ -97,7 +97,7 @@ void MobIPv6mn::handleBindingAck(cMessage * msg)
     par("corrIP") = ip->getSrcIP().plain().c_str();
     Log(Notice) << "MIPv6: BindingAck received. corrIP=" << ip->getSrcIP().plain() << LogEnd;
 
-    ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->parentModule()->submodule("ssInfo"));
+    ssInfo * info = dynamic_cast<ssInfo*>(getParentModule()->getParentModule()->getSubmodule("ssInfo"));
     if (info) {
 	MihEvent_L3LocationUpdated * locUpd = new MihEvent_L3LocationUpdated();
 	Log(Notice) << "MIH: Location Update complete. Other layers notified." << LogEnd;
@@ -108,20 +108,22 @@ void MobIPv6mn::handleBindingAck(cMessage * msg)
 
 void MobIPv6mn::handleMessage(cMessage *msg)
 {
-    cGate * gate = msg->arrivalGate();
-    if (!gate || !strcmp(gate->fullName(), "eventIn")) {  
+    cGate * gate = msg->getArrivalGate();
+    if (!gate || !strcmp(gate->getFullName(), "eventIn")) {  
         handleMihMessage(msg);
 	delete msg;
         return;
     }
 
     // add addressing
-    cGate * inGate = msg->arrivalGate();
+    cGate * inGate = msg->getArrivalGate();
     string outGate;
-    if (!strcmp(inGate->fullName(),"lowerIn")) {
+    if (!strcmp(inGate->getFullName(),"lowerIn")) {
 	// uplink (receiving data)
 	outGate = "upperOut";
-	cMessage * pkt = msg->decapsulate();
+	//cMessage * pkt = msg->decapsulate();
+	cMessage * pkt = check_and_cast<cPacket *>(msg)->decapsulate(); //MiM
+
 	if (!pkt) {
 	    IPv6 *ip = dynamic_cast<IPv6*>(msg);
 	    if (ip && ip->getBindingAck()) {
@@ -132,7 +134,7 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 		opp_error("Unable to decapsulate message");
 	    }
 	}
-	send(pkt, "upperOut", 0);
+	send(pkt, "upperOut"/*, 0*/); //MiM
 
 	delete msg;
 	return;
@@ -164,14 +166,15 @@ void MobIPv6mn::handleMessage(cMessage *msg)
 	stringstream tmp;
 	tmp << "Data from MN[" << index << "]";
 	IPv6 * ip = new IPv6(tmp.str().c_str());
-	ip->encapsulate(msg);
+	//ip->encapsulate(msg);
+	ip->encapsulate(check_and_cast<cPacket *>(msg)); //MiM
 	ip->setSrcIP( srcAddr );
 	ip->setDstIP( dstAddr );
 
 	outGate = "lowerOut";
-	send(ip, "lowerOut", 0);
+	send(ip, "lowerOut"/*, 0*/); //MiM
     }
-    Log(Debug) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
+    Log(Debug) << "Message " << msg->getFullName() << " received via " << inGate->getFullName() << ", sending to " << outGate <<  LogEnd;
 }
 
 void MobIPv6mn::fsmInit() 
@@ -186,7 +189,7 @@ void MobIPv6mn::updateString()
     const char  * corrIP = par("corrIP").stringValue();
     sprintf(buf, "myIP=%s\ncorrIP=%s", myIP, corrIP);
     if (ev.isGUI())
-	displayString().setTagArg("t",0,buf);
+	getDisplayString().setTagArg("t",0,buf);
 }
 
 
@@ -199,10 +202,10 @@ Define_Module(MobIPv6cn);
 void MobIPv6cn::initialize()
 {
     // add number prefix to the module name
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    index = ss->index();
-    sprintf(buf, "%s%d", fullName(), index);
+    index = ss->getIndex();
+    sprintf(buf, "%s%d", getFullName(), index);
     setName(buf);
 
     connected = false;
@@ -221,7 +224,7 @@ void MobIPv6cn::handleBindingUpdate(cMessage *msg)
     ip->setDstIP(IPv6Addr(par("corrIP").stringValue(), true));
     ip->setBindingAck(true);
 
-    send(ip, "lowerOut", 0);
+    send(ip, "lowerOut"/*, 0*/); //MiM
 
     updateString();
 }
@@ -229,12 +232,14 @@ void MobIPv6cn::handleBindingUpdate(cMessage *msg)
 void MobIPv6cn::handleMessage(cMessage *msg)
 {
     // add addressing
-    cGate * inGate = msg->arrivalGate();
+    cGate * inGate = msg->getArrivalGate();
     string outGate;
-    if (!strcmp(inGate->fullName(),"lowerIn")) {
+    if (!strcmp(inGate->getFullName(),"lowerIn")) {
 	// uplink (receiving data)
 	outGate = "upperOut";
-	cMessage * pkt = msg->decapsulate();
+	//cMessage * pkt = msg->decapsulate();
+	cMessage * pkt = check_and_cast<cPacket *>(msg)->decapsulate();//MiM
+
 	if (!pkt) {
 	    IPv6 * ip = dynamic_cast<IPv6*>(msg);
 	    if (ip && ip->getBindingUpdate()) {
@@ -245,7 +250,7 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 		opp_error("Unable to decapsulate message");
 	    }
 	}
-	send(pkt, "upperOut", 0);
+	send(pkt, "upperOut"/*, 0*/); //MiM
 	delete msg;
 	return;
     } else {
@@ -276,7 +281,8 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 	stringstream tmp;
 	tmp << "Data from CN[" << index << "]";
 	IPv6 * ip = new IPv6(tmp.str().c_str());
-	ip->encapsulate(msg);
+	//ip->encapsulate(msg);
+	ip->encapsulate(check_and_cast<cPacket *>(msg));//MiM
 	ip->setSrcIP(srcAddr);
 	ip->setDstIP(dstAddr);
 
@@ -284,9 +290,9 @@ void MobIPv6cn::handleMessage(cMessage *msg)
 		   << dstAddr.plain() << LogEnd;
 
 	outGate = "lowerOut";
-	send(ip, "lowerOut", 0);
+	send(ip, "lowerOut"/*, 0*/);//MiM
     }
-    Log(Debug) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " << outGate <<  LogEnd;
+    Log(Debug) << "Message " << msg->getFullName() << " received via " << inGate->getFullName() << ", sending to " << outGate <<  LogEnd;
 }
 
 void MobIPv6cn::updateString()
@@ -294,7 +300,7 @@ void MobIPv6cn::updateString()
     char buf[128];
     sprintf(buf, "myIP=%s\ncorrIP=%s", par("myIP").stringValue(), par("corrIP").stringValue());
     if (ev.isGUI())
-	displayString().setTagArg("t",0,buf);
+	getDisplayString().setTagArg("t",0,buf);
 }
 
 
@@ -307,22 +313,22 @@ Define_Module(MobIPv6ha);
 
 void MobIPv6ha::initialize()
 {
-    cModule * ss = parentModule()->parentModule();
+    cModule * ss = getParentModule()->getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), ss->index());
+    sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
 }
 
 void MobIPv6ha::handleMessage(cMessage *msg)
 {
-    cGate *inGate = msg->arrivalGate();
+    cGate *inGate = msg->getArrivalGate();
     string outGate ="";
-    if (!strcmp(inGate->fullName(), "mipIn")) {
+    if (!strcmp(inGate->getFullName(), "mipIn")) {
 	outGate = "networkOut";
     } else {
 	outGate = "mipOut";
     }
-    Log(Debug) << "Message " << msg->fullName() << " received via " << inGate->fullName() << ", sending to " 
+    Log(Debug) << "Message " << msg->getFullName() << " received via " << inGate->getFullName() << ", sending to " 
 	       << outGate << LogEnd;
-    send(msg, outGate.c_str(), 0);
+    send(msg, outGate.c_str()/*, 0*/); //networkOut is scalar gate, 0 -> -1 (MiM)
 }

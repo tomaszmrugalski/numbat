@@ -25,7 +25,7 @@ Define_Module(Internet);
 void Internet::initialize()
 {
     MsgsTransmittedCnt = 0;
-    int logLevel = parentModule()->par("LogLevel");
+    int logLevel = getParentModule()->par("LogLevel");
     if ( (logLevel<1) || (logLevel>8) )
 	opp_error("Invalid LogLevel: %d. Accepted values: 1..8\n", logLevel);
     logger::setLogLevel(logLevel);
@@ -37,21 +37,21 @@ void Internet::initialize()
     
     for (int i=0;i<size;i++) {
 	cGate * g = gate("ipOut", i);
-	cGate * toGate = g->destinationGate();
-	cModule * mod = toGate->ownerModule();
+	cGate * toGate = g->getPathEndGate();
+	cModule * mod = toGate->getOwnerModule();
 	string prefix = mod->par("prefix").stringValue();
-	Log(Notice) << i << ": localGate=" << g->fullName() << ", remote=" << mod->fullName() << ", prefix=" << prefix << LogEnd;
+	Log(Notice) << i << ": localGate=" << g->getFullName() << ", remote=" << mod->getFullName() << ", prefix=" << prefix << LogEnd;
 	RouteEntry * entry = new RouteEntry;
 	entry->prefix = IPv6Addr(prefix.c_str(), true);
 	entry->gateIndex = i;
-	RoutingTable.push_back(*entry);
+	IRoutingTable.push_back(*entry);
     }
 
     MsgsTransmittedVector.setName("TotalMsgsTransmitted");
     DroppedMsgsVector.setName("DroppedMsgs");
     DelayVector.setName("AvgDelayVector");
 
-    WATCH_LIST(RoutingTable);
+    WATCH_LIST(IRoutingTable);
 }
 
 void Internet::finish()
@@ -89,11 +89,11 @@ void Internet::handleMessage(cMessage *msg)
     double delay = calculateDelay(ip);
 
     list<RouteEntry>::iterator it;
-    for (it=RoutingTable.begin(); it!=RoutingTable.end(); it++) 
+    for (it=IRoutingTable.begin(); it!=IRoutingTable.end(); it++) 
     {
 	if (!memcmp(dst.addr, it->prefix.addr, 8)) {
 	    Log(Debug) << "Route for dst addr=" << dst << " found: " << *it << LogEnd;
-	    sendDelayed(msg, delay, "ipOut", it->gateIndex);
+	    sendDelayed(msg, delay, "ipOut", it->gateIndex); 
 	    MsgsTransmittedCnt++;
 	    if ( ( MsgsTransmittedCnt<=1000) || ( (MsgsTransmittedCnt>1000) && (0==MsgsTransmittedCnt%100) ) )
      		MsgsTransmittedVector.record(MsgsTransmittedCnt);

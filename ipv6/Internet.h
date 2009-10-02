@@ -19,7 +19,7 @@ class Internet: public cSimpleModule
     virtual void finish();
  private:
     double calculateDelay(IPv6 *msg);
-    list<RouteEntry> RoutingTable;
+    list<RouteEntry> IRoutingTable;
 
     long int MsgsTransmittedCnt;
     long int DroppedMsgsCnt;

@@ -43,13 +43,13 @@ void WMaxPhyBS::initialize()
 
 void WMaxPhyBS::handleMessage(cMessage *msg)
 {   
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
     // uplink message
-    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
-	       << gate->id() << LogEnd;
+    Log(Debug) << "Message " << msg->getFullName() << " received on gate: " << gate->getFullName() << ", id=" 
+	       << gate->getId() << LogEnd;
     //checks if message is UL - i is the string to compare with the incoming gate
   
-    if (!strcmp("rfIn",gate->fullName())) {
+    if (!strcmp("rfIn",gate->getFullName())) {
 	// deliver message immediately
 	send(msg,"phyOut");
 	return;
@@ -130,7 +130,7 @@ void WMaxPhySS::beginFrame()
 
         if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
             Log(Notice) << "MIH event: Notifying other layers: HO-IND was actually transmitted." << LogEnd;
-	    ssInfo * info = dynamic_cast<ssInfo*>(parentModule()->submodule("ssInfo"));
+	    ssInfo * info = dynamic_cast<ssInfo*>(getParentModule()->getSubmodule("ssInfo"));
             MihEvent_HandoverEnd * x = new MihEvent_HandoverEnd();
             info->sendEvent(x);
         }
@@ -140,11 +140,11 @@ void WMaxPhySS::beginFrame()
 void WMaxPhySS::handleMessage(cMessage *msg)
 {
     static int licz ; // test
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
     // uplink message
-    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << ", id=" 
-               << gate->id() << LogEnd;
-    if (!strcmp(gate->fullName(),"rfIn")) {
+    Log(Debug) << "Message " << msg->getFullName() << " received on gate: " << gate->getFullName() << ", id=" 
+               << gate->getId() << LogEnd;
+    if (!strcmp(gate->getFullName(),"rfIn")) {
         // deliver message immediately
         send(msg, "phyOut");
         licz=licz+1 ; //test

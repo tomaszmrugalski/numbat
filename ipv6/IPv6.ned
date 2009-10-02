@@ -1,116 +1,138 @@
+//package numbat.ipv6;
+
 //A single switch, actually
 simple Internet
+{
     parameters:
-        MinDelay: numeric,
-        MaxDelay: numeric;
+        volatile double MinDelay;
+        volatile double MaxDelay;
     gates:
-        in: ipIn[];
-        out: ipOut[];
-endsimple
+        input ipIn[];
+        output ipOut[];
+}
 
 
 simple IPv6Node
+{
     parameters:
-        BurstInterval: numeric,
-        BurstSize: numeric,
-        BurstPacketSize: numeric,
-        InitialDelay: numeric,
-	TrafficType: numeric;
+        volatile double BurstInterval;
+        volatile double BurstSize;
+        volatile double BurstPacketSize;
+        volatile double InitialDelay;
+        volatile double TrafficType;
     gates:
-        out: ipOut;
-        in: ipIn;
-        in: eventIn;
-endsimple
+        output ipOut;
+        input ipIn;
+        input eventIn;
+}
 
 simple DHCPv6Srv
+{
     parameters:
-        MinDelayAdvertise: numeric,
-        MaxDelayAdvertise: numeric,
-        MinDelayReply: numeric,
-        MaxDelayReply: numeric,
-        preference: numeric,
-        MinDelayRelay: numeric,
-        MaxDelayRelay: numeric,
-        prefix: string;
+        volatile double MinDelayAdvertise;
+        volatile double MaxDelayAdvertise;
+        volatile double MinDelayReply;
+        volatile double MaxDelayReply;
+        volatile double preference;
+        volatile double MinDelayRelay;
+        volatile double MaxDelayRelay;
+        string prefix;
     gates:
-        out: dhcpOut;
-        in: dhcpIn;
-endsimple
+        output dhcpOut;
+        input dhcpIn;
+}
 simple DHCPv6Cli
+{
     parameters:
         //IP address that is going to be used in the next location after handover (if remote autoconf is enabled)
-        nextIP: string;
+        string nextIP;
     gates:
-        out: dhcpOut;
-        in: dhcpIn;
-        in: eventIn;
-endsimple
+        output dhcpOut;
+        input dhcpIn;
+        input eventIn;
+}
 //Mobile IPv6 Mobile Node
 simple MobIPv6mn
+{
     parameters:
-        myIP: string,
-        corrIP: string,
-        prefix: string;
+        string myIP;
+        string corrIP;
+        string prefix;
     gates:
-        out: upperOut;
-        in: upperIn;
-        out: lowerOut;
-        in: lowerIn;
-        in: eventIn;
-endsimple
+        output upperOut;
+        input upperIn;
+        output lowerOut;
+        input lowerIn;
+        input eventIn;
+}
 //Mobile IPv6 Home Agent
 simple MobIPv6ha
+{
     parameters:
-        prefix: string;
+        string prefix;
     gates:
-        out: mipOut;
-        in: mipIn;
-        out: networkOut;
-        in: networkIn;
-endsimple
+        output mipOut;
+        input mipIn;
+        output networkOut;
+        input networkIn;
+}
 //Module used to dispatch incoming IPv6 packets to appropriate module.
 simple IPv6Dispatch
+{
     gates:
-        in: ipIn;
-        out: ipOut;
-        in: dhcpIn;
-        out: dhcpOut;
-        in: raIn;
-        out: raOut;
-        in: genIn;
-        out: genOut;
-        in: eventIn;
-endsimple
+        input ipIn;
+        output ipOut;
+        input dhcpIn;
+        output dhcpOut;
+        input raIn;
+        output raOut;
+        input genIn;
+        output genOut;
+        input eventIn;
+}
 simple RaGen
+{
     parameters:
-        RaInterval: numeric;
+        volatile double RaInterval;
     gates:
-        out: raOut;
-endsimple
+        output raOut;
+}
 //Router Advertisement Receiver
 simple RaRcv
+{
     gates:
-        in: raIn;
-        in: eventIn;
-endsimple
+        input raIn;
+        input eventIn;
+}
 
 module IPv6Server
+{
+    parameters:
+        @display("bgb=323,225");
     gates:
-        in: ipIn;
-        out: ipOut;
-        in: eventIn;
-        in: networkIn;
-        out: networkOut;
+        input ipIn;
+        output ipOut;
+        input eventIn;
+        input networkIn;
+        output networkOut;
     submodules:
-        DispatchBS: IPv6Dispatch;
-            display: "i=abstract/dispatcher;p=168,164";
-        raGen: RaGen;
-            display: "i=block/source;p=272,72";
-        mobIPv6ha: MobIPv6ha;
-            display: "i=misc/house;p=168,72";
-        DHCPv6Srv: DHCPv6Srv;
-            display: "i=device/mainframe;p=72,72";
-    connections nocheck:
+        DispatchBS: IPv6Dispatch {
+            parameters:
+                @display("i=abstract/dispatcher;p=168,164");
+        }
+        raGen: RaGen {
+            parameters:
+                @display("i=block/source;p=272,72");
+        }
+        mobIPv6ha: MobIPv6ha {
+            parameters:
+                @display("i=misc/house;p=168,72");
+        }
+        DHCPv6Srv: DHCPv6Srv {
+            parameters:
+                @display("i=device/mainframe;p=72,72");
+        }
+    connections allowunconnected:
         eventIn --> DispatchBS.eventIn;
         DispatchBS.ipOut --> ipOut;
         ipIn --> DispatchBS.ipIn;
@@ -125,25 +147,36 @@ module IPv6Server
 
         mobIPv6ha.networkOut --> networkOut;
         networkIn --> mobIPv6ha.networkIn;
-    display: "b=323,225";
-endmodule
+}
 module IPv6Client
+{
+    parameters:
+        @display("bgb=309,321");
     gates:
-        in: ipIn;
-        out: ipOut;
+        input ipIn;
+        output ipOut;
     submodules:
-        MNode: IPv6Node;
-            display: "i=block/rxtx;p=168,56";
-        DispatchSS: IPv6Dispatch;
-            display: "i=abstract/dispatcher;p=168,256";
-        DHCPv6Cli: DHCPv6Cli;
-            display: "i=device/laptop;p=72,128";
-        mobIPv6mn: MobIPv6mn;
-            display: "i=block/user;p=264,128";
-        raRcv: RaRcv;
+        MNode: IPv6Node {
             parameters:
-            display: "i=block/sink;p=168,128";
-    connections nocheck:
+                @display("i=block/rxtx;p=168,56");
+        }
+        DispatchSS: IPv6Dispatch {
+            parameters:
+                @display("i=abstract/dispatcher;p=168,256");
+        }
+        DHCPv6Cli: DHCPv6Cli {
+            parameters:
+                @display("i=device/laptop;p=72,128");
+        }
+        mobIPv6mn: MobIPv6mn {
+            parameters:
+                @display("i=block/user;p=264,128");
+        }
+        raRcv: RaRcv {
+            parameters:
+                @display("i=block/sink;p=168,128");
+        }
+    connections allowunconnected:
                          //         IPv6Node.ipOut --> IPv6Dispatch.genIn;
                          //         IPv6Dispatch.genOut --> IPv6Node.ipIn;
 
@@ -159,33 +192,39 @@ module IPv6Client
         DispatchSS.dhcpOut --> DHCPv6Cli.dhcpIn;
         DispatchSS.ipOut --> ipOut;
         ipIn --> DispatchSS.ipIn;
-    display: "b=309,321";
-endmodule
+}
 simple MobIPv6cn
+{
     parameters:
-        myIP: string,
-        corrIP: string,
-        prefix: string;
+        string myIP;
+        string corrIP;
+        string prefix;
     gates:
-        in: lowerIn;
-        out: lowerOut;
-        in: upperIn;
-        out: upperOut;
-endsimple
+        input lowerIn;
+        output lowerOut;
+        input upperIn;
+        output upperOut;
+}
 module CorrNode
+{
+    parameters:
+        @display("bgb=244,162");
     gates:
-        in: ipIn;
-        out: ipOut;
+        input ipIn;
+        output ipOut;
     submodules:
-        CNode: IPv6Node;
-            display: "i=block/rxtx;p=176,88";
-        mobIPv6cn: MobIPv6cn;
-            display: "i=block/user;p=80,88";
-    connections nocheck:
+        CNode: IPv6Node {
+            parameters:
+                @display("i=block/rxtx;p=176,88");
+        }
+        mobIPv6cn: MobIPv6cn {
+            parameters:
+                @display("i=block/user;p=80,88");
+        }
+    connections allowunconnected:
         CNode.ipOut --> mobIPv6cn.upperIn;
         mobIPv6cn.upperOut --> CNode.ipIn;
         mobIPv6cn.lowerOut --> ipOut;
         ipIn --> mobIPv6cn.lowerIn;
-    display: "b=244,162";
-endmodule
+}
 

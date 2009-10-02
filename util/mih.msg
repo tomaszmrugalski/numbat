@@ -1,6 +1,7 @@
 cplusplus {{
 #include "ipv6.h"
-}};
+}}
+
 
 struct IPv6Addr;
 
@@ -8,59 +9,50 @@ struct IPv6Addr;
 // *** Media Independent Handover: messages used to notify other layers ***********
 // ********************************************************************************
 
+//message -> packet changes (MiM)
 // used to report that L2 entry started
-message MihEvent_EntryStart
+packet MihEvent_EntryStart
 {
-
-};
+}
 
 // used to report that L2 entry finished
-message MihEvent_EntryEnd
+packet MihEvent_EntryEnd
 {
-
-};
+}
 
 // used to report that L2 handover started
-message MihEvent_HandoverStart
+packet MihEvent_HandoverStart
 {
- fields:
-  int targetBS;
-};
+    int targetBS;
+}
 
 // used to report by WMaxPhySS to WMaxCtrlSS that HO-IND was actually transmitted
-message MihEvent_HandoverEnd
+packet MihEvent_HandoverEnd
 {
-
-};
+}
 
 // used to report that L2 reentry started
-message MihEvent_ReentryStart
+packet MihEvent_ReentryStart
 {
-
-
-};
+}
 
 // used to report that L2 reentry finished
-message MihEvent_ReentryEnd
+packet MihEvent_ReentryEnd
 {
-
-};
+}
 
 // used to report that IPv6 address has been obtained
-message MihEvent_L3AddrConfigured
+packet MihEvent_L3AddrConfigured
 {
-fields:
-  IPv6Addr Addr;
-  bool RemoteAutoconf;
-};
+    IPv6Addr Addr;
+    bool RemoteAutoconf;
+}
 
-message MihEvent_L3RoutingConfigured
+packet MihEvent_L3RoutingConfigured
 {
-
-};
+}
 
 // support for this is not implemented yet
-message MihEvent_L3LocationUpdated
+packet MihEvent_L3LocationUpdated
 {
-
-};
+}

@@ -26,16 +26,16 @@ void WMaxRadio::initialize()
 void WMaxRadio::handleMessage(cMessage *msg)
 {
     // radioOut, radioIn, phyOut, phyIn
-    cGate * g = msg->arrivalGate();
-    if (!strcmp(g->fullName(),"phyIn")) {
+    cGate * g = msg->getArrivalGate();
+    if (!strcmp(g->getFullName(),"phyIn")) {
 	// Broadcast transmission (BS->all SSes)
 	g = gate("radioIn", 0);
 	for (int i=0; i<g->size(); i++) {
 	    g = gate("radioOut", i);
 	    if (g->isConnected()) {
 		cMessage * copy = (cMessage*)msg->dup();
-		if (msg->controlInfo()) {
-		    cPolymorphic * hdr = msg->controlInfo();
+		if (msg->getControlInfo()) {
+		    cPolymorphic * hdr = msg->getControlInfo();
 		    cPolymorphic * hdr2 = hdr->dup();
 		    copy->setControlInfo(hdr2);
 		}
@@ -52,10 +52,10 @@ void WMaxRadio::handleMessage(cMessage *msg)
 
 void WMaxRadio::connect(cModule * ss)
 {
-    Log(Debug) << "Connecting SS " << ss->fullName() << " to this radio." << LogEnd;
+    Log(Debug) << "Connecting SS " << ss->getFullName() << " to this radio." << LogEnd;
     int maxSS = gate("radioOut",0)->size();
     
-    cModule * bs = parentModule();
+    cModule * bs = getParentModule();
 
     for (int i=0; i < maxSS; i++) {
 	cGate * g = gate("radioOut", i);
@@ -89,13 +89,13 @@ void WMaxRadio::disconnect(cModule * ss)
 	return;
     }
     
-    cGate * bsGate = ss->gate("out")->toGate();
-    cModule * bs = bsGate->ownerModule();
-    Log(Debug) << "Disconnecting SS " << ss->fullName() << " from BS[" << bs->index() << "." << LogEnd;
-    if (bs!=parentModule()) {
+    cGate * bsGate = ss->gate("out")->getNextGate();
+    cModule * bs = bsGate->getOwnerModule();
+    Log(Debug) << "Disconnecting SS " << ss->getFullName() << " from BS[" << bs->getIndex() << "." << LogEnd;
+    if (bs!=getParentModule()) {
 	opp_error("Attempted to disconnect from the wrong BS.\n");
     }
-    int ind = bsGate->index();
+    int ind = bsGate->getIndex();
     
     gate("radioOut", ind)->disconnect();
     gate("radioIn", ind)->disconnect();

@@ -47,12 +47,12 @@ using namespace std;
        onEvent(event, msg);
 
 #define STATIC_TIMER_START(obj, name) \
-    obj->scheduleAt(obj->simTime() + obj->Timer##name##Value, obj->Timer##name);
+    obj->scheduleAt(simTime() + obj->Timer##name##Value, obj->Timer##name);
 
 #define CASE_IGNORE(fsm,e)					       \
-    SLog(fsm, Debug) << fsm->fullName() << ": event "		       \
-	   << fsm->Events[e].fullName() << " ignored in state " \
- 	   << fsm->CurrentStateGet()->fullName() << LogEnd; \
+    SLog(fsm, Debug) << fsm->getFullName() << ": event "		       \
+	   << fsm->Events[e].getFullName() << " ignored in state " \
+ 	   << fsm->CurrentStateGet()->getFullName() << LogEnd; \
         return fsm->State();
 
 #define FSM_MAX_TRANSITIONS 64
@@ -72,7 +72,7 @@ typedef FsmStateType onExitFunc (Fsm *fsm);
 class FsmEvent
 {
 public:
-    std::string fullName();
+    std::string getFullName();
     FsmEventType type;
     std::string name;
     bool inited;
@@ -88,12 +88,12 @@ public:
     onEventFunc *onEvent;
     onEnterFunc *onEnter;
     onExitFunc  *onExit;
-    std::string fullName();
+    std::string getFullName();
     bool transitive;
     FsmStateType transitiveTo;
 };
 
-class Fsm : public cSimpleModule {
+class Fsm : public cSimpleModule { 
 public:
     Fsm();
     FsmStateType State() { return CurrentState; }

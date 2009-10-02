@@ -54,21 +54,21 @@ void ssMAC::updateString() {
 
     if (!ev.isGUI()) 
 	return;
-    cModule *SS = parentModule();
-    cModule *macSS = submodule("ssMac");
+    cModule *SS = getParentModule();
+    cModule *macSS = getSubmodule("ssMac");
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), SS->index());
-    cModule *ctrlSS = submodule(buf);
+    sprintf(buf, "%s%d", getFullName(), SS->getIndex());
+    cModule *ctrlSS = getSubmodule(buf);
     char buf1[80];
-    sprintf(buf1, "%s\n%s", (macSS->displayString()).getTagArg("t",0), (ctrlSS->displayString()).getTagArg("t",0));
-    displayString().setTagArg("t",0, buf1);
+    sprintf(buf1, "%s\n%s", (macSS->getDisplayString()).getTagArg("t",0), (ctrlSS->getDisplayString()).getTagArg("t",0));
+    getDisplayString().setTagArg("t",0, buf1);
 }
 
 void ssMAC::initialize()
 {
-    cModule *SS = parentModule();
+    cModule *SS = getParentModule();
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), SS->index());
+    sprintf(buf, "%s%d", getFullName(), SS->getIndex());
     setName(buf);
 }
 
@@ -90,7 +90,7 @@ void WMaxMac::stringUpdate() {
 
         stringstream displayIt;
         displayIt << queuedMsgsCnt << "msgs in " << (int)Conns.size() << " queues.";
-        displayString().setTagArg("t",0, (displayIt.str()).c_str());
+        getDisplayString().setTagArg("t",0, (displayIt.str()).c_str());
     }
 }
 
@@ -122,8 +122,8 @@ bool WMaxMac::addConn(WMaxConn conn)
 	break;
     }
     cGate *target = gate("macOut", conn.gateIndex);
-    target = target->toGate();
-    cModule * owner = target->ownerModule();
+    target = target->getNextGate();
+    cModule * owner = target->getOwnerModule();
 
     if (dynamic_cast<WMaxCtrlSS*>(owner)) {
 	conn.controlConn = true;
@@ -136,7 +136,7 @@ bool WMaxMac::addConn(WMaxConn conn)
 
     Log(Notice) << "Adding connection: sfid=" << conn.sfid << ", cid=" << conn.cid << ", type="
 		<< tmp.str() << ", controlConn=" << (conn.controlConn?"YES":"NO") 
-		<< ", connected to: " << owner->fullName() << LogEnd;
+		<< ", connected to: " << owner->getFullName() << LogEnd;
 
     /// @todo - check if CID and sfid are unique
     Conns.push_back(conn);
@@ -227,7 +227,7 @@ void WMaxMac::printUlMap(WMaxMsgUlMap * ulmap)
 Define_Module(WMaxMacBS);
 
 void WMaxMacBS::setInitialPosition() {
-    cDisplayString dispstr = BS->displayString();
+    cDisplayString dispstr = BS->getDisplayString();
     long int x = BS->par("x");
     long int y = BS->par("y");
     dispstr.setTagArg("p", 0, x);
@@ -235,13 +235,13 @@ void WMaxMacBS::setInitialPosition() {
     BS->setDisplayString(dispstr);
 
     char buf[80];
-    sprintf(buf, "(%s,%s)", (BS->displayString()).getTagArg("p",0), (BS->displayString()).getTagArg("p",1));
-    BS->displayString().setTagArg("t",0, buf);
+    sprintf(buf, "(%s,%s)", (BS->getDisplayString()).getTagArg("p",0), (BS->getDisplayString()).getTagArg("p",1));
+    BS->getDisplayString().setTagArg("t",0, buf);
 }
 
 void WMaxMacBS::initialize()
 {
-    BS = parentModule()->parentModule();
+    BS = getParentModule()->getParentModule();
 
     setInitialPosition();
 
@@ -268,7 +268,7 @@ void WMaxMacBS::initialize()
     schedUcdCnt          = 0;
 
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), BS->index());
+    sprintf(buf, "%s%d", getFullName(), BS->getIndex());
     setName(buf);
 
     // Create permanent INITIAL-RANGING connection
@@ -316,8 +316,8 @@ void WMaxMacBS::handleMessage(cMessage *msg)
 	return;
     }
 
-    cGate * gate = msg->arrivalGate();
-    if (!strcmp(gate->fullName(),"phyIn")) {
+    cGate * gate = msg->getArrivalGate();
+    if (!strcmp(gate->getFullName(),"phyIn")) {
 	handleRxMessage(msg);
 	return;
     }
@@ -424,12 +424,14 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	if (symbols <=0)
 	    break;
 
-	msg = (cMessage*) SendQueue.tail();
+	msg = (cMessage*) SendQueue.front();
+	
+	//msg does not have getByteLenght() so cast it to cPacket.... (MiM)
 
-	if (msg->byteLength() > symbols*bytesPerPS) {
+	if (check_and_cast<cPacket *>(msg)->getByteLength() > symbols*bytesPerPS) {
 	    // message won't fit in this frame. What should we do in such case?
 
-	    Log(Debug) << "Tried to schedule message (len=" << msg->byteLength() << "), but there are only "
+	  Log(Debug) << "Tried to schedule message (len=" << check_and_cast<cPacket *>(msg)->getByteLength() << "), but there are only "
 		       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	    if (ieCnt) // something has been scheduled - ok, end scheduling
@@ -446,14 +448,14 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
             // currently used: c)
             msg = (cMessage*) SendQueue.pop();
 	    queuedMsgsCnt--;
-            Log(Error) << "Unable to send " << msg->byteLength() << "-byte message(" << msg->fullName() 
+            Log(Error) << "Unable to send " << check_and_cast<cPacket *>(msg)->getByteLength() << "-byte message(" << msg->getFullName() 
 		       << "), because it won't fit in DL subframe. Message is dropped." << endl;
             delete msg;
             continue;
 
 	    // currently used: d)
 	    /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in DL subframe (%d symbols *%dB/PS=%d bytes)",
-		      msg->byteLength(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
+		      msg->getByteLength(), msg->getFullName(), symbols, bytesPerPS, symbols*bytesPerPS);
 	    break;*/
 	}
 	
@@ -466,14 +468,14 @@ WMaxMsgDlMap * WMaxMacBS::scheduleDL(int symbols)
 	msg = (cMessage*)SendQueue.pop();
 	queuedMsgsCnt--;
 
-	lengthInPS = (int)ceil(double(msg->byteLength())/bytesPerPS);
+	lengthInPS = (int)ceil(double(check_and_cast<cPacket *>(msg)->getByteLength())/bytesPerPS);
 	symbols -= lengthInPS;
 	
-	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->getControlInfo());
 	if (!hdr)
-	    opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
+	    opp_error("Unable to obtain header information for message: %s\n", msg->getFullName());
 	CLEAR(&ie);
-	ie.length  = msg->byteLength();
+	ie.length  = check_and_cast<cPacket *>(msg)->getByteLength();
 	ie.cid     = hdr->cid;
 	ie.symbols = lengthInPS;
 	dlmap->setIE(ieCnt-1,ie);
@@ -677,8 +679,8 @@ void WMaxMac::handleRxMessage(cMessage *msg)
 {
     int cid = -1;
     int gateIndex = -1;
-    if (dynamic_cast<WMaxMacHeader*>(msg->controlInfo())) {
-	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+    if (dynamic_cast<WMaxMacHeader*>(msg->getControlInfo())) {
+	WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->getControlInfo());
 	cid = hdr->cid;
 
         // bandwidth request
@@ -696,7 +698,7 @@ void WMaxMac::handleRxMessage(cMessage *msg)
             return;
         }
     } else {
-	Log(Error) << "Malformed message received: " << msg->fullName() 
+	Log(Error) << "Malformed message received: " << msg->getFullName() 
 		   << ". WMaxMacHeader structure missing." << LogEnd;
 	return;
     }
@@ -730,7 +732,7 @@ Define_Module(WMaxMacSS);
 
 void WMaxMacSS::initialize()
 {
-    SS = parentModule()->parentModule();
+    SS = getParentModule()->getParentModule();
     BEpoint = 0;
     SendQueue.setName("SendQueue");
     CLEAR(&Stats);
@@ -746,7 +748,7 @@ void WMaxMacSS::initialize()
 
     int isMobile = (int)SS->par("wmaxIsMobile");
     if (isMobile>0) {
-        SS->displayString().setTagArg("i",0,"device/laptop_s");
+        SS->getDisplayString().setTagArg("i",0,"device/laptop_s");
 
         if(isMobile==2) { // 2 = SS movement
           ChangePosition = new cMessage("ChangePosition");
@@ -755,25 +757,25 @@ void WMaxMacSS::initialize()
     }
 
     char buf[80];
-    sprintf(buf, "%s%d", fullName(), SS->index());
+    sprintf(buf, "%s%d", getFullName(), SS->getIndex());
     setName(buf);
 }
 
 void WMaxMacSS::setInitialPosition() {
-    cDisplayString dispstr = SS->displayString();
+    cDisplayString dispstr = SS->getDisplayString();
     long int x,y;
     if ((long int)SS->par("x")) {
         x = (long int)SS->par("x");
     } else {
 	// expand 50,50,p,300 in physim.ned
-	int multi = atoi(SS->displayString().getTagArg("p",3));
-        x = atoi(SS->displayString().getTagArg("p", 0));
-	x = x + multi*SS->index();
+	int multi = atoi(SS->getDisplayString().getTagArg("p",3));
+        x = atoi(SS->getDisplayString().getTagArg("p", 0));
+	x = x + multi*SS->getIndex();
     }
     if ((long int)SS->par("y")) {
         y = (long int)SS->par("y");
     } else {
-        y = atoi(SS->displayString().getTagArg("p", 1));
+        y = atoi(SS->getDisplayString().getTagArg("p", 1));
     }
     dispstr.setTagArg("p", 0, x);
     dispstr.setTagArg("p", 1, y);
@@ -784,7 +786,7 @@ void WMaxMacSS::setInitialPosition() {
     char buf[80];
     sprintf(buf, "(%ld,%ld)", x, y );
 
-    SS->displayString().setTagArg("t",0, buf);
+    SS->getDisplayString().setTagArg("t",0, buf);
 
 }
 
@@ -826,8 +828,8 @@ void WMaxMac::addManagementConn(uint16_t cid)
 void WMaxMacSS::handleMessage(cMessage *msg)
 {
     stringstream tmp;
-    tmp << "ssMac[" << SS->index() << "]";
-    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->submodule(tmp.str().c_str())))
+    tmp << "ssMac[" << SS->getIndex() << "]";
+    if (ssMAC *mac = dynamic_cast<ssMAC*>(SS->getSubmodule(tmp.str().c_str())))
 	mac->updateString();
 
     if (msg==ChangePosition) {
@@ -836,7 +838,7 @@ void WMaxMacSS::handleMessage(cMessage *msg)
 	return;
     }
 
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
 
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
         Log(Notice) << "All connections terminated." << LogEnd;
@@ -844,8 +846,8 @@ void WMaxMacSS::handleMessage(cMessage *msg)
 	int droppedCnt = 0;
         list<WMaxConn>::iterator it;
         for (it = Conns.begin(); it!=Conns.end(); it++) {
-	    if (it->queue->fullName()) {
-		Log(Warning) << it->queue->length() << " msg(s) dropped in queue " << it->queue->fullName() << " during handover." << LogEnd;
+	    if (it->queue->getFullName()) {
+		Log(Warning) << it->queue->length() << " msg(s) dropped in queue " << it->queue->getFullName() << " during handover." << LogEnd;
 		droppedCnt += it->queue->length();
 	    }
             it->queue->clear();
@@ -891,8 +893,8 @@ void WMaxMacSS::handleMessage(cMessage *msg)
         return;
     }
 
-    Log(Debug) << "Message " << msg->fullName() << " received on gate: " << gate->fullName() << LogEnd;
-    if (strcmp(gate->fullName(),"phyIn")) {
+    Log(Debug) << "Message " << msg->getFullName() << " received on gate: " << gate->getFullName() << LogEnd;
+    if (strcmp(gate->getFullName(),"phyIn")) {
         //"phyIn gate: downlink (BS->SS)
 	handleTxMessage(msg);
 	return;
@@ -910,13 +912,13 @@ void WMaxMacSS::handleMessage(cMessage *msg)
  */
 void WMaxMac::handleTxMessage(cMessage *msg)
 {
-    cGate * gate = msg->arrivalGate();
+    cGate * gate = msg->getArrivalGate();
     list<WMaxConn>::iterator it;
     
     // message from WMaxCtrl - add header
-     if (!msg->controlInfo()) {
+     if (!msg->getControlInfo()) {
 	 for (it = Conns.begin(); it!=Conns.end(); it++) {
-	     if ((it->gateIndex == gate->index()) && (it->controlConn == true)) {
+	     if ((it->gateIndex == gate->getIndex()) && (it->controlConn == true)) {
 		 WMaxMacHeader * hdr = new WMaxMacHeader();
 		 hdr->cid = it->cid;
 		 msg->setControlInfo(hdr);
@@ -926,9 +928,9 @@ void WMaxMac::handleTxMessage(cMessage *msg)
      }
      
      WMaxMacHeader * hdr = 0;
-     hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+     hdr = dynamic_cast<WMaxMacHeader*>(msg->getControlInfo());
      if (!hdr)
-	 opp_error("Unable to handle %s message: no header included", msg->fullName());
+	 opp_error("Unable to handle %s message: no header included", msg->getFullName());
      // find proper connection, not just get first one
      for (it = Conns.begin(); it!=Conns.end(); it++) {
 	 if (it->cid == hdr->cid) {
@@ -945,10 +947,10 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 	 switch(it->type) {
 	 case WMAX_CONN_TYPE_BE:
 	 {
-	     Log(Debug) << "Received BE message (CID=" << it->cid << ", len=" << msg->byteLength() << ") ";
-	     int symbolLength = (int)ceil(double(msg->byteLength())/WMAX_BYTES_PER_SYMBOL);
+	   Log(Debug) << "Received BE message (CID=" << it->cid << ", len=" << check_and_cast<cPacket *>(msg)->getByteLength() << ") ";
+	   int symbolLength = (int)ceil(double(check_and_cast<cPacket *>(msg)->getByteLength())/WMAX_BYTES_PER_SYMBOL);
 	     it->qos.be.reqbw += symbolLength*WMAX_BYTES_PER_SYMBOL;
-	     if(msg->byteLength() == 0) { /// @todo sending messages with length == 0
+	     if(check_and_cast<cPacket *>(msg)->getByteLength() == 0) { /// @todo sending messages with length == 0
 		 it->qos.be.reqbw += 12;
 	     }
 	     Log(Cont) << "CID=" << it->cid << " Required bandwidth: " << symbolLength << " (" << symbolLength*WMAX_BYTES_PER_SYMBOL << ")" 
@@ -957,14 +959,14 @@ void WMaxMac::handleTxMessage(cMessage *msg)
 	     break;
 	 }
 	 case WMAX_CONN_TYPE_UGS:
-	     Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
+	   Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->getIndex() << ", length=" << check_and_cast<cPacket *>(msg)->getByteLength() << ")." << LogEnd;
 	     SendQueue.insert(msg);
 	     break;
 	 default:
 	     opp_error("Unsupported traffic type: %d", it->type);
 	 }
      } else {
-	 Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->index() << ", length=" << msg->byteLength() << ")." << LogEnd;
+       Log(Debug) << "Queueing message (CID=" << it->cid << ", gateIndex=" << gate->getIndex() << ", length=" << check_and_cast<cPacket *>(msg)->getByteLength() << ")." << LogEnd;
 	 SendQueue.insert(msg);
      }
      queuedMsgsCnt++;
@@ -994,7 +996,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 	list<WMaxConn>::iterator it;
 	for (it = Conns.begin(); it!=Conns.end(); it++) {
 	    if (it->controlConn) {
-		// ev << fullName() << "Dispatching " << msg->fullName() << " to gate " << it->gateIndex 
+		// ev << getFullName() << "Dispatching " << msg->getFullName() << " to gate " << it->gateIndex 
 		// << ", ctrl=" << ((int)(it->controlConn)) << endl;
 		cMessage * copy = (cMessage*)msg->dup();
 		send(copy, "macOut", it->gateIndex);
@@ -1031,7 +1033,7 @@ void WMaxMacSS::handleRxMessage(cMessage *msg)
 }
 
 void WMaxMacSS::changePosition() {
-    cDisplayString dispstr = SS->displayString();
+    cDisplayString dispstr = SS->getDisplayString();
     long int x = atoi(dispstr.getTagArg("p",0));
     long int y = atoi(dispstr.getTagArg("p",1));
 
@@ -1055,8 +1057,8 @@ void WMaxMacSS::changePosition() {
     SS->setDisplayString(dispstr);
 
     char buf[80];
-    sprintf(buf, "(%s,%s)", (SS->displayString()).getTagArg("p",0), (SS->displayString()).getTagArg("p",1));
-    SS->displayString().setTagArg("t",0, buf);
+    sprintf(buf, "(%s,%s)", (SS->getDisplayString()).getTagArg("p",0), (SS->getDisplayString()).getTagArg("p",1));
+    SS->getDisplayString().setTagArg("t",0, buf);
 }
 
 void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
@@ -1089,11 +1091,11 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 	                 if (symbols <=0)
 	                 break;
 
-	                 msg = (cMessage*) it->queue->tail();
+	                 msg = (cMessage*) it->queue->front();
 
-	                 if (msg->byteLength() > symbols*bytesPerPS) {
+	                 if (check_and_cast<cPacket *>(msg)->getByteLength() > symbols*bytesPerPS) {
 	                 // message won't fit in this frame. What should we do in such case?
-	                     Log(Debug) << "Tried to schedule message (len=" << msg->byteLength() << "), but there are only " 
+			   Log(Debug) << "Tried to schedule message (len=" << check_and_cast<cPacket *>(msg)->getByteLength() << "), but there are only " 
 				       << symbols*bytesPerPS << " bytes left." << LogEnd;
 
 	                     if (ieCnt) // something has been scheduled - ok, end scheduling
@@ -1101,7 +1103,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
                              // currently used: c)
                              msg = (cMessage*) it->queue->pop();
-                             Log(Error) << "Unable to send " << msg->byteLength() << "-byte message(" << msg->fullName() 
+                             Log(Error) << "Unable to send " << check_and_cast<cPacket *>(msg)->getByteLength() << "-byte message(" << msg->getFullName() 
 					<<"), because it won't fit in UL subframe. Message is dropped." << LogEnd;
 			     queuedMsgsCnt--;
                              delete msg;
@@ -1109,7 +1111,7 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
 
                              // currently used: d)
 	                     /*opp_error("Unable to send %d-byte long message(%s), because it won't fit in UL subframe (%d symbols *%dB/PS=%d bytes)",
-		             msg->byteLength(), msg->fullName(), symbols, bytesPerPS, symbols*bytesPerPS);
+		             msg->getByteLength(), msg->getFullName(), symbols, bytesPerPS, symbols*bytesPerPS);
 	                     break;*/
 	                 }
 
@@ -1119,15 +1121,15 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                          msg = (cMessage*)it->queue->pop();
 			 queuedMsgsCnt--;
 
-                         lengthInPS = (int)ceil(double(msg->byteLength())/bytesPerPS);
+                         lengthInPS = (int)ceil(double(check_and_cast<cPacket *>(msg)->getByteLength())/bytesPerPS);
 	
                          symbols -= lengthInPS;
 	
-                         WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->controlInfo());
+                         WMaxMacHeader * hdr = dynamic_cast<WMaxMacHeader*>(msg->getControlInfo());
 	                 if (!hdr)
-	                      opp_error("Unable to obtain header information for message: %s\n", msg->fullName());
+	                      opp_error("Unable to obtain header information for message: %s\n", msg->getFullName());
 
-	                 Log(Debug) << "Sent msg: length=" << msg->byteLength() << ", used " << lengthInPS << " symbols, " 
+	                 Log(Debug) << "Sent msg: length=" << check_and_cast<cPacket *>(msg)->getByteLength() << ", used " << lengthInPS << " symbols, " 
 				    << symbols << " symbol(s) left" << LogEnd;
 	
 	                 send(msg, "phyOut");
@@ -1193,9 +1195,9 @@ void WMaxMacSS::schedule(WMaxMsgUlMap * ulmap)
                    for (list<WMaxConn>::iterator it2=Conns.begin(); it2!=Conns.end(); it2++) {
                        if (it2->cid == it->cid){
                            if (!it2->queue->empty()) {
-                               cMessage * msg = (cMessage*) it2->queue->tail();
-                               if(hdr->bwr < msg->byteLength())
-                                   hdr->bwr = msg->byteLength();
+                               cMessage * msg = (cMessage*) it2->queue->front();
+                               if(hdr->bwr < check_and_cast<cPacket *>(msg)->getByteLength())
+				 hdr->bwr = check_and_cast<cPacket *>(msg)->getByteLength();
                            }
                        }
                    }

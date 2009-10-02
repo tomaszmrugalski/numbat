@@ -11,7 +11,7 @@ Fsm::Fsm()
 {
 }
 
-std::string FsmEvent::fullName() {
+std::string FsmEvent::getFullName() {
     std::ostringstream x;
     x << type;
     return std::string(name) 
@@ -20,7 +20,7 @@ std::string FsmEvent::fullName() {
 	+ ")";
 }
 
-std::string FsmState::fullName() {
+std::string FsmState::getFullName() {
     std::ostringstream x;
     x << type;
     return std::string(name) 
@@ -105,7 +105,7 @@ bool Fsm::stateVerify() {
 	}
     }
     if (error)
-	opp_error("%s: Not all states have been inited properly.", fullName() );
+	opp_error("%s: Not all states have been inited properly.", getFullName() );
     return true;
 }
 
@@ -118,7 +118,7 @@ bool Fsm::eventVerify() {
 	}
     }
     if (error)
-	opp_error("%s: Not all events have been inited properly.", fullName() );
+	opp_error("%s: Not all events have been inited properly.", getFullName() );
 
     return true;
 }
@@ -126,22 +126,21 @@ bool Fsm::eventVerify() {
 void Fsm::onEvent(FsmEventType e, cMessage *msg)
 {
     if ( (e<0) || (e>EventsCnt) ) {
-	opp_error("%s: Invalid event type %d specified (0..%d allowed).\n", fullName(), e, StatesCnt);
+	opp_error("%s: Invalid event type %d specified (0..%d allowed).\n", getFullName(), e, StatesCnt);
     }
     FsmStateType newState;
 
-    Log(Debug) << "Event " << Events[e].fullName() << " received." << LogEnd;
+    Log(Debug) << "Event " << Events[e].getFullName() << " received." << LogEnd;
 
     newState = States[CurrentState].onEvent(this, e, msg);
     if ((unsigned)newState>(unsigned)StatesCnt) {
-	opp_error("%s: Invalid state (%d) returned duing %s event processing in state %s.", fullName(),
-		  newState, Events[e].fullName().c_str(), States[CurrentState].fullName().c_str() );
+	opp_error("%s: Invalid state (%d) returned duing %s event processing in state %s.", getFullName(),
+		  newState, Events[e].getFullName().c_str(), States[CurrentState].getFullName().c_str() );
     }
 
     if (newState != CurrentState) {
-	Log(Debug) << "State change: " << States[CurrentState].fullName() << "->" << States[newState].fullName() 
-		   << ", triggered by the " << Events[e].fullName() << " event." << LogEnd;
-	stateSet(newState);
+      Log(Debug) << "State change: " << States[CurrentState].getFullName() << "->" << States[newState].getFullName() << ", triggered by the " << Events[e].getFullName() << " event." << LogEnd;
+      stateSet(newState);
     }
 }
 
@@ -164,7 +163,7 @@ void Fsm::stateSet(FsmStateType newState)
 	override = false;
 	if (transitionsCnt > FSM_MAX_TRANSITIONS)
 	    opp_error("%s: probably state transitions loop detected: %d transitions occured without stationary state.\n", 
-		      fullName(), transitionsCnt);
+		      getFullName(), transitionsCnt);
 
 	from = &States[State()];
 	to   = &States[newState];
@@ -173,19 +172,21 @@ void Fsm::stateSet(FsmStateType newState)
 	    from->onExit(this);
 	
 	CurrentState = newState;
+	if(!parametersFinalized())
+	  finalizeParameters(); //MiM
 	stringUpdate();
 
 	if (to->onEnter) {
 	    tmp = to->onEnter(this);
 
 	    if ( (tmp<0) || (tmp>StatesCnt) ) {
-	    opp_error("%s: Invalid state type %d returned in %s::onEnter() (0..%d allowed).\n", fullName(), tmp, 
-		      to->fullName().c_str(), StatesCnt);
+	    opp_error("%s: Invalid state type %d returned in %s::onEnter() (0..%d allowed).\n", getFullName(), tmp, 
+		      to->getFullName().c_str(), StatesCnt);
 	    }
 	    
 	    if (tmp != newState) {
-		Log(Debug) << to->fullName() << "::onEnter override: switching to "
-			   << States[tmp].fullName() << " instead of " << to->fullName() << LogEnd;
+		Log(Debug) << to->getFullName() << "::onEnter override: switching to "
+			   << States[tmp].getFullName() << " instead of " << to->getFullName() << LogEnd;
 		transitionsCnt++;
 		newState = tmp;
 		override = true;
@@ -195,8 +196,8 @@ void Fsm::stateSet(FsmStateType newState)
 
 	if (to->transitive) {
 	    newState = to->transitiveTo;
-	    Log(Debug) << "State change: " << States[State()].fullName() << "->" << States[newState].fullName() 
-		       << ", because " << States[State()].fullName() << " is transitive." << LogEnd;
+	    Log(Debug) << "State change: " << States[State()].getFullName() << "->" << States[newState].getFullName() 
+		       << ", because " << States[State()].getFullName() << " is transitive." << LogEnd;
 	}
 	transitionsCnt++;
     } while (to->transitive || override);
@@ -205,9 +206,11 @@ void Fsm::stateSet(FsmStateType newState)
 void Fsm::stringUpdate()
 {
     char buf[80];
-    sprintf(buf, "%s", States[CurrentState].fullName().c_str());
+    sprintf(buf, "%s", States[CurrentState].getFullName().c_str());
+       
     if (ev.isGUI()) 
-	displayString().setTagArg("t",0,buf);
+      getDisplayString().setTagArg("t",0,buf);
+ 
 }
 
 Fsm::~Fsm()

@@ -19,7 +19,7 @@
 extern const IPv6Addr dhcpv6Multicast;
 
 class DHCPv6Cli : public Fsm
-{
+{ 
  public:
     int AdvCount;
  protected:
