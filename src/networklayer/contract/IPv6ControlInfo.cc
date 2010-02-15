@@ -20,7 +20,11 @@
 
 IPv6ControlInfo::~IPv6ControlInfo()
 {
-    delete dgram;
+    if (dgram)
+    {
+    	drop(dgram);
+    	delete dgram;
+    }
 
     while ( ! extensionHeaders.empty() )
     {
@@ -35,6 +39,7 @@ void IPv6ControlInfo::setOrigDatagram(IPv6Datagram *d)
     if (dgram)
         opp_error("IPv6ControlInfo::setOrigDatagram(): a datagram is already attached");
     dgram = d;
+    take(dgram);
 }
 
 IPv6Datagram *IPv6ControlInfo::removeOrigDatagram()
@@ -44,6 +49,7 @@ IPv6Datagram *IPv6ControlInfo::removeOrigDatagram()
                   "(already removed, or maybe this IPv6ControlInfo does not come "
                   "from the IPv6 module?)");
     IPv6Datagram *ret = dgram;
+	drop(dgram);
     dgram = NULL;
     return ret;
 }

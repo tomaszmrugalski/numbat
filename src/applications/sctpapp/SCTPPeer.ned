@@ -30,7 +30,7 @@ simple SCTPPeer like SCTPApp
 		int requestLength = default(1452); // length of a request (bytes)
 		double thinkTime @unit(s) = default(0s); // time gap between requests
 		double waitToClose @unit(s) = default(0s); //time to wait between last message sent and abort
-		bool ordered = default(true);		
+		bool ordered = default(true);
 		int outboundStreams = default(1);
 		int queueSize = default(0);
 		string connectAddress;  // server address (may be symbolic)
@@ -38,8 +38,9 @@ simple SCTPPeer like SCTPApp
 		double startTime @unit(s) = default(1s); // time first session begins
 		int numRequestsPerSession = default(1);  // number of requests sent per session
 		int numPacketsToReceive = default(0);
-	gates:
-		input sctpIn;
-		output sctpOut;
+        @display("i=block/app");
+    gates:
+        input sctpIn @labels(SCTPCommand/up);
+        output sctpOut @labels(SCTPCommand/down);
 }
 
