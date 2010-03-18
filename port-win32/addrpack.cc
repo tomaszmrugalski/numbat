@@ -44,11 +44,11 @@ static int inet_pton4(const char * src, char * dst)
 	while ((ch = *src++) != '\0') {
 
 		if (ch >= '0' && ch <= '9') {
-			u_int new = *tp * 10 + (ch - '0');
+			u_int new_ = *tp * 10 + (ch - '0');
 
-			if (new > 255)
+			if (new_ > 255)
 				return (0);
-			*tp = new;
+			*tp = new_;
 			if (! saw_digit) {
 				if (++octets > 4)
 					return (0);
@@ -160,7 +160,7 @@ char * inet_ntop4(const char * src, char * dst)
 	return strcpy(dst, tmp);
 }
 
-char * inet_ntop6(const char * s, char * dst, int dstSize)
+const char * inet_ntop6(const char * s, char * dst, int dstSize)
 {
     unsigned char * src = (unsigned char *)s;
 
