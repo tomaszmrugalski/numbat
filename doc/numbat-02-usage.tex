@@ -36,69 +36,14 @@ cd wimax
 \end{lstlisting}
 
 \subsection{Windows compilation}
-Note: This section is based on document ``Omnet++ installation and
-configuration guide in Windows® environment.'' by Andrzej Bojarski.
+Note: Windows compilation has been greatly simplified since migration
+to Omnet-4.0. Currently it is quite straightforward process.
 
-This guide shows how to install and configure Omnet++ in Windows
-environment. This guide is mainly based on official Omnet++ manual,
-but also contains some knowledge based on author's own experiences. It
-does not cover all possible installation scenarios. Though it should
-be treated as helpful source rather than complete guide.
+\begin{enumerate}
+\item Run omnet shell (double click on mingwenc.cmd from Omnetpp-4.0 directory)
+\item Change directory to numbat (cd path/to/numbat)
+\item Rebuild makefiles (use command: rebuild-makefiles)
+\item Build Numbat (make)
+\item Run Numbat (omnet)
+\end{enumerate}
 
-First thing to consider is that Windows version of Omnet++ is
-optimized for and should be used with Visual C++. As full version it
-is a commercial product. However there are free versions like Visual
-Studio 2005 Express Edition which are fully sufficient for Omnet++
-uses. Also installing Platform SDK, which is available free too, is
-necessary.
-
-Omnet++ comes as an ordinary .exe installation file so it is obvious
-for every windows user how to make use of it. Only thing that needs
-explanation is environment selection. You have to choose VC++ release
-you are using. If it's Visual C++ 2003 (7.1) you choose vc-71m, if
-it's Visual C++ 2005 (8.1) you choose vc-81. It is not recommended to
-use Visual Studio 6.0 because some of Omnet++ extensions have problem
-to compile with it.
-
-Installation directory should not have blank spaces as it may cause
-compilation problems.
-
-\subsubsection{Pre-compilation setup}
-Before making any operations using Omnet++ it is obligatory to set
-right system variables. They must be set for every new command line
-window used for compilation. In other words, first thing You have to
-do after opening the command line window is setting the system
-variables. It is done by executing vcvarsall.bat or vcvars32.bat files
-from VC++ installation directories. These files can usually found in
-\texttt{C:$\backslash$Program Files$\backslash$Microsoft Visual Studio
-8$\backslash$VC} or similar (depending on VC++ release) directory. It
-is a good practice to make a .bat file executing system variables
-setting to save time wasted for walking through directories.
-
-On this stage Omnet++ should be fully functional, however sometimes
-there is a compilation and/or linker problem with libraries
-placement. That was my case. Moving all VC++ libraries to Omnet++
-include and lib directories turned out to be helpful. However there
-are other problems with configuration based on library compatibility
-issues. If you get such errors, visit
-http://www.omnetpp.org/pmwiki/index.php?n=Main.OmnetppInstallation to
-get latest istallation tips. Main advice for such incompatibility is
-to change version of VC++ as some versions tend to work incorrectly
-with Omnet++.
-
-\subsubsection{Actual compilation}
-To create Makefile.vc which is VC++ file used for further compilation
-run following command:
-
-\begin{lstlisting}
-\your\working\directory>opp_nmakemake -f
-\end{lstlisting}
- 
-This will create new Makefile.vc, overwriting previous existing. Next,
-compile files into executable:
-
-\begin{lstlisting}
-\your\working\directory>nmake -f Makefile.vc
-\end{lstlisting}
-
-Assuming you won't get any errors, .exe file should be made.
