@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#ifndef WIN32
+#if 0
 int inet_pton6(const char *plain, char *dst)
 {
     return inet_pton(AF_INET6, plain, dst);
