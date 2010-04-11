@@ -2,6 +2,9 @@
  Numbat Changelog
 ------------------
 
+2010-04-11 
+- OMNeT++ 4.0 compilation fixed under Windows and Linux.
+
 2009-09-29
 - Migration to OMNeT++ 4.0 by Mikko Majanen, VTT Technical Research Centre of Finland
 - Fixed one bug that happened when BS sent two different kind of RNG-RSP messages (anonymous ho RNG-RSP and normal RNG-RSP) in the same frame --> SS received the wrong one and started messing up with CIDs, i.e. sent SBC-REQ with CID=0. This bug happened also sometimes in the original v3. (MiM)
