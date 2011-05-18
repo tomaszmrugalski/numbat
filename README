@@ -1,0 +1,25 @@
+
+  NUMBAT - Mobile WiMax/IPv6 extenstions for OMNeT++
+ ----------------------------------------------------
+
+ Project homepage: http://klub.com.pl/numbat
+
+ GIT repository: https://github.com/tomaszmrugalski/numbat
+ 
+ Original author: Tomasz Mrugalski <thomson(at)klub(dot)com(dot)pl>
+                  (inactive since 2010-04)
+ 
+ Contributors: Maciej Jureko
+               Andrzej Bojarski
+
+ Migration to OMNeT++ 4.0: Mikko Majanen, VTT, Finland
+ 
+ Published under GNU GPL v2 (or later) licence.
+
+ By commiting any source code to this repository, you allow its 
+ maintainers or other users to redistribute it under GPL v2 (or 
+ later, when newer license version will become available).
+
+ The code uses OMNeT++ 4.0 as a base.
+
+ Please use meaningful commit comments. 
