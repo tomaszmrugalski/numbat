@@ -3,9 +3,6 @@
 	<name>numbat</name>
 	<comment></comment>
 	<projects>
-		<project>inetmanet</project>
-		<project>PON</project>
-		<project>Vlans</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

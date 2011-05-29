@@ -42,7 +42,10 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ipv6"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="wimax"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="util"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="port-win32"/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -368,7 +371,10 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ipv6"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="wimax"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="util"/>
+<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="port-win32"/>
 </sourceEntries>
 </configuration>
 </storageModule>
