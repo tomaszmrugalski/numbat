@@ -1,2 +1,2 @@
 #!/bin/bash
-opp_makemake -f --deep -X results -X scripts -X doc -X out -O numbat
+opp_makemake -f --deep -X obsolete -X xMIPv6/obsolete -X xMIPv6/doc -X xMIPv6/examples -X xMIPv6/tests -X results -X scripts -X doc -X out -O numbat
