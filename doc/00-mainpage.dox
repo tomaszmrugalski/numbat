@@ -1,0 +1,37 @@
+/**
+ * @mainpage Numbat Developer's Guide
+ *
+ * @section homepage Numbat Homepage
+ * http://klub.com.pl/numbat/
+ *
+ *
+ * @section toc Table Of Contents
+ * - @ref toc
+ * - @ref intro
+ * - @subpage overview
+ * - @subpage install
+ * - @subpage mailinglist
+ * - @subpage features
+ * - @subpage ack
+ *
+ * @section intro About this documentation
+ *
+ * Numbat is a WiMAX/Mobile IPv6 simulation environment. See \ref overview section
+ * for more detailed description.
+ *
+ * Welcome to the Numbat Developer's Guide.  This document describes various aspects 
+ * of the compilation and installation of Numbat simulation software,
+ * detailed description of the internal architecture, common coding practice
+ * and many more. People with programming background can find useful
+ * informations here. Main purpose of this document is to help
+ * contributors to quickly know Dibbler from the inside.
+ * 
+ * This document is intended just as its title states -- a guide. It is
+ * not a thorough code description. Numbat code is under development since 
+ * 2005, but unfortunately providing clear documentation was never priority.
+ * As of 2010, its main developer Tomek Mrugalski is no longer actively
+ * involved in development, so he became part-time maintainer. Tomek does
+ * not intend to develop or fix anything on its own. Patches are more
+ * than welcome, though.
+ *
+ */

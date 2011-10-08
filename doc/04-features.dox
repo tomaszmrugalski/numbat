@@ -1,42 +1,40 @@
-\section{Features HOWTO}
+/**
+ * @page features Features
 This section describes various aspects of the Numbat implementation.
 
-\subsection{Finite State Machine}
+@section Finite State Machine
 Numbat does not use FSM framework provided by the Omnet++
 environment. Decision to go ahead with own FSM implementation was
 based on several factors: 
 
-\begin{itemize}
-\item Omnet's FSM are does not allow to stay in the same
+\li Omnet's FSM are does not allow to stay in the same
   state. Existing workaround to exit and enter the same state is not
   sufficient.
-\item There are no clearly defined events in Omnet's FSM.
-\item Omnet's FSM must be implemented as object instantiated inside
+\li There are no clearly defined events in Omnet's FSM.
+\li Omnet's FSM must be implemented as object instantiated inside
   another object, which is derived from cSimpleModule.
-\item There are not useful timer support.
-\end{itemize}
+\li There are not useful timer support.
 
 There are several things that must be done in the header (.h) file:
-\begin{itemize}
-\item Declare class (e.g. WMaxCtrlSS) derived from a Fsm class.
-\item Define list of states (as an enum).
-\item For each stationary state define onEventState, which will decide
+
+\li Declare class (e.g. WMaxCtrlSS) derived from a Fsm class.
+\li Define list of states (as an enum).
+\li For each stationary state define onEventState, which will decide
   what to do, when FSM is in a particular state.
-\item It is possible to define 2 additional functions: onEnterState
+\li It is possible to define 2 additional functions: onEnterState
   and onExitState.
-\item If the state is transitive (i.e. FSM does not end in this state,
+\li If the state is transitive (i.e. FSM does not end in this state,
   but rather does some action and then switches to another state
   immediately), onEnterState and onExitState is mandatory.
-\item Define list of events (also a enum).
-\item (optional) Define timers. Each defined timer can be started,
+\li Define list of events (also a enum).
+\li (optional) Define timers. Each defined timer can be started,
   when certain conditions are met (e.g. frame is sent and something
   must be done after some time). When timeout is reached, self message
   will be sent. Timers can also be stopped at any time.
-\end{itemize}
 
 Below an example of a simple FSM machine implementation is presented. 
 
-\begin{lstlisting}
+\code
 // WMaxCtrlSs.h file
 #include "fsm.h"
 
@@ -80,47 +78,45 @@ protected:
     // --- TIMERS ---
     TIMER_DEF(Handover);
 };
-\end{lstlisting}
+\endcode
 
 When the class declaration is complete, several things must be
 specified in the .cc file:
 
-\begin{itemize}
-\item In the fsmInit() method: \verb+statesEventsInit(X, Y, Z)+ must be
+\li In the fsmInit() method: statesEventsInit(X, Y, Z) must be
   called. X denotes maximum number of states, Y number of events and Z
   is a initial state of the state machine.
-\item Initialize all defined states. There are 2 possible state types:
+\li Initialize all defined states. There are 2 possible state types:
   stationary and transitive.
-\item For each stationary state, name and onEventState function must
+\li For each stationary state, name and onEventState function must
   be defined. That function will decide what to do when certain event
   has been received.
-\item For each transitive state, it is necessary to define name and
-  target state. Also \verb+onEnterState+ and \verb+onExitState+
+\li For each transitive state, it is necessary to define name and
+  target state. Also onEnterState and onExitState
   functions must be defined (those function are optional for
   stationary states).
-\item Timers can also be initialized here.
-\item handleMessage() method contains a ,,dispatcher''. It translates
+\li Timers can also be initialized here.
+\li handleMessage() method contains a ,,dispatcher''. It translates
   received messages into events, e.g. if received frame is of type
-  \verb+WMaxMsgBSHORSP+, then execute
-  \verb+onEvent(EVENT_BSHO_RSP_RECEIVED)+.
-\item initialize() method should call fsmInit() and also may contain
+  \verbatim WMaxMsgBSHORSP \endverbatim then execute
+  \verbatim onEvent(EVENT_BSHO_RSP_RECEIVED) \endverbatim
+\li initialize() method should call fsmInit() and also may contain
   additonal initialization code, e.g. timers can be started here.
-\item For each stationary state, there should be method called
+\li For each stationary state, there should be method called
   onEventState. It defines what exactly should be done when some event
   has occured. That method returns a newState. If no state change is
   necessary, it must contain following entry:
-  \verb+return fsm->State();+
-\item In the switch() command in the onEventState method, it seems
-  reasonable to add \verb+default: CASE_IGNORE(e)+ line, which will
+  \verbatim return fsm->State(); \endverbatim
+\li In the switch() command in the onEventState method, it seems
+  reasonable to add \verbatim default: CASE_IGNORE(e) \endverbatim line, which will
   print appropriate information in case of reception of an event,
   which is not supported in that state.
-\item It is possible to defined, what actions should be performed when
+\li It is possible to defined, what actions should be performed when
   entering (onEnter) or leaving (onExit) particular state.
-\item At any moment, \verb+TIMER_START()+ or \verb+TIMER_STOP()+ can
+\li At any moment, TIMER_START() or TIMER_STOP() can
   be executed to start or stop timer.
-\end{itemize}
 
-\begin{lstlisting}
+\code
 Define_Module(WMaxCtrlSS);
 
 WMaxCtrlSS::WMaxCtrlSS()
@@ -222,4 +218,5 @@ FsmStateType WMaxCtrlSS::onEventState_HandoverComplete(Fsm * fsm, FsmEventType s
     return fsm->State();
 }
 
-\end{lstlisting}
+\endcode
+ */

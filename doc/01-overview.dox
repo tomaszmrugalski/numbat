@@ -1,0 +1,54 @@
+/**
+ * @page overview Overview
+ *
+ * Numbat is a simulation model for IEEE 802.16e-2005 networks, better
+ * known under its commercial name Mobile WiMax. It was originally developed
+ * with IPv6 and mobility in mind, so don't expect too much support for legacy
+ * technologies, like IPv4.
+ *
+ * Support for IPv6 mobility is provided by xMIPv6 project. xMIPv6 used by Numbat
+ * was extended with Mobile IPv6 Fast Handover support by Adam Jastrzebski.
+ *
+ * @section WiMAX Features
+ * 
+ * Following features are supported in the WiMAX layer:
+ * 
+ * \li based on IEEE 802.16-2005 (aka 802.16e)
+ * \li Simple radio/PHY layer - unicast (SS to BS) and multicast (BS to SS) transmissions
+ * \li OFDMA transmission (including CDMA codes, radio frame slots/symbols)
+ * \li Bandwidth management: BWR, CDMA codes for ranging and BWR transmission)
+ * \li Supported traffic classes: Best Effort (BE) and Unsolicited Grant Service (UGS)
+ * \li Control plane: Network entry(RNG-REQ, RNG-RSP, SBC-REQ, SBC-RSP, PKM-REQ, PKM-RSP, REG-REQ, REG-RSP messages)
+ * \li Control plane: Service flow creation/mgmt (DSA-REQ, DSA-RSP, DSA-ACK)
+ * \li Control plane: Scanning (SCN-REQ, SCN-RSP)
+ * \li Control plane: Handover (BSHO-REQ, MSHO-RSP, HO-IND)
+ * \li Several traffic models: fixed, handover after timeout, distance based handover
+ * \li Simple event signalling, so you don't have to understand whole
+ *   stack operation to get some notification (similar to MIH
+ *   802.21-style events, but easier)
+ * \li Several optimization allowed by 802.16-2005 standard are
+ *   configurable (you can enable or disable them)
+ * \li multiple SSes support (optimizations can be enabled on a per SS basis)
+ * \li Connection management and queuing
+ * \li multiple BSes support
+ * \li Handover between BSes can be simulated easily
+ * 
+ * On top of WiMAX layer, there is a working IPv6 stack. It is provided by xMIPv6
+ * framework that in turn is an extension to INET framework.
+ * 
+ * To better model complex environment, this simulation also provides
+ * event based FSM (Finite State Machine) implementation. For each state,
+ * there are up to 3 functions: onEnter(), onEvent() and onExit(). States
+ * can be transitive or stationary. Also there's a well defined list of
+ * inputs for each FSM.
+ * 
+ * Numbat code is available under GNU GPL (version 2 or later)
+ * licence. It means that it can be downloaded, compiled, used, 
+ * modified and even redistributed by all users, including commercial
+ * purposes. Numbat uses the OMNeT++ 4.0 or later as simulation environment.
+ * 
+ * See README file for information about author and contributors.
+ * 
+ * See ChangeLog file latest changes.
+ *
+ */

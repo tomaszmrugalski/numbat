@@ -14,7 +14,14 @@
 
  Migration to OMNeT++ 4.0: Mikko Majanen, VTT, Finland
 
- Integration with xMIPv6: Adam Jastrzebski
+ Integration with xMIPv6, Fast Handovers: Adam Jastrzebski
+
+
+ This code uses OMNeT++ 4.0 as a base.
+
+ This code uses xMIPv6 (https://github.com/zarrar/xMIPv6).
+
+ To generate documentation, use doxygen: doxygen doxygen.cfg
 
  Published under GNU GPL v2 (or later) licence.
 
@@ -22,9 +29,3 @@
  maintainers or other users to redistribute it under GPL v2 or
  later (when newer license version will becomes available and
  someone decides to move to that newer version).
-
- This code uses OMNeT++ 4.0 as a base.
-
- This code uses xMIPv6 (https://github.com/zarrar/xMIPv6).
-
- Please use meaningful commit comments.

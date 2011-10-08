@@ -1,0 +1,51 @@
+/**
+ * @page install Installation and usage
+
+Numbat can be used in Windows and Linux systems. Ways of installation
+are different. As Numbat is not a end user software, but rather
+research environment, you need to gain a bit of expertise to use
+it. Do not expect to have download and ready to use product anytime
+soon.
+
+Numbat is currently known to work with OMNeT++ 4.1 under Linux and Windows.
+Older and newer versions may work as well. Other operating systems were
+not checked.
+
+  @section linux Linux compilation
+
+To compile and run Numbat you will need properly installed OMNeT++
+(tested with version 4.0 and 4.1). OMNeT++ packages and installation notes are
+available on the OMNeT community website: http://omnetpp.org.
+
+Make sure that you compile OMNeT and set your variable correctly before
+attempting Numbat compilation.
+
+After your OMNeT installation is successful, you need to obtain Numbat sources. 
+Go to project homepage located at http://klub.com.pl/numbat/. It will point you 
+to github repository:
+
+\verbatim
+git@github.com:tomaszmrugalski/numbat.git
+\endverbatim
+
+Your exact compilation may look a bit different, but in general it should look
+somewhat similar to this:
+
+\verbatim
+git clone git@github.com:tomaszmrugalski/numbat.git numbat
+cd numbat
+./rebuild-makefiles
+make
+\endverbatim
+
+@section windows Windows compilation
+Note: Windows compilation has been greatly simplified since migration
+to Omnet-4.0. Currently it is quite straightforward process.
+
+\li Run omnet shell (double click on mingwenc.cmd from Omnetpp-4.0 directory)
+\li Change directory to numbat (cd path/to/numbat)
+\li Rebuild makefiles (use command: rebuild-makefiles)
+\li Build Numbat (make)
+\li Run Numbat (./omnet)
+
+ */
