@@ -18,36 +18,39 @@
 /********************************************************************************/
 
 Define_Module(WMaxRadio);
-
+using namespace std;
 void WMaxRadio::initialize()
 {
 }
 
 void WMaxRadio::handleMessage(cMessage *msg)
 {
+    Log(Debug) << "WMaxRadio::handleMessage_start" << LogEnd;
     // radioOut, radioIn, phyOut, phyIn
     cGate * g = msg->getArrivalGate();
     if (!strcmp(g->getFullName(),"phyIn")) {
-	// Broadcast transmission (BS->all SSes)
-	g = gate("radioIn", 0);
-	for (int i=0; i<g->size(); i++) {
-	    g = gate("radioOut", i);
-	    if (g->isConnected()) {
-		cMessage * copy = (cMessage*)msg->dup();
-		if (msg->getControlInfo()) {
-		    cPolymorphic * hdr = msg->getControlInfo();
-		    cPolymorphic * hdr2 = hdr->dup();
-		    copy->setControlInfo(hdr2);
-		}
-		send(copy, "radioOut", i);
-	    }
-	}
-	delete msg;
-	return;
+        // Broadcast transmission (BS->all SSes)
+        g = gate("radioIn", 0);
+        for (int i=0; i<g->size(); i++) {
+            g = gate("radioOut", i);
+            if (g->isConnected()) {
+            cMessage * copy = (cMessage*)msg->dup();
+            if (msg->getControlInfo()) {
+                cPolymorphic * hdr = msg->getControlInfo();
+                cPolymorphic * hdr2 = hdr->dup();
+                copy->setControlInfo(hdr2);
+            }
+            send(copy, "radioOut", i);
+            }
+        }
+        delete msg;
+        Log(Debug) << "WMaxRadio::handleMessage_stop1" << LogEnd;
+        return;
     }
 
     // unicast transmission (SS -> BS)
     send(msg, "phyOut");	
+    Log(Debug) << "WMaxRadio::handleMessage_stop2" << LogEnd;
 }
 
 void WMaxRadio::connect(cModule * ss)
@@ -58,33 +61,36 @@ void WMaxRadio::connect(cModule * ss)
     cModule * bs = getParentModule();
 
     for (int i=0; i < maxSS; i++) {
-	cGate * g = gate("radioOut", i);
-	Log(Debug) << "Checking gate: radioOut[" << i << "]: " << (g->isConnected()?"CONNECTED":"NOT CONN") << LogEnd;
-	if (!g->isConnected()) {
+        cGate * g = gate("radioOut", i);
+        Log(Debug) << "Checking gate: radioOut[" << i << "]: " << (g->isConnected()?"CONNECTED":"NOT CONN") << LogEnd;
+        if (!g->isConnected()) {
 
-	    // BS->SS
-	    cGate * bsGate = bs->gate("out",i);
-	    bsGate->disconnect();
-	    g->connectTo(bsGate);
-	    bsGate->connectTo(ss->gate("in"));
+            // BS->SS
+            cGate * bsGate = bs->gate("out",i);
+            bsGate->disconnect();
+			// radioOut --> BS out
+            g->connectTo(bsGate);
+			// BS out --> SS radioIn
+            bsGate->connectTo(ss->gate("in"));
 
-	    // SS->BS
-	    bsGate = bs->gate("in", i);
-	    bsGate->disconnect();
-	    g = gate("radioIn", i);
-	    ss->gate("out")->disconnect();
-	    ss->gate("out")->connectTo(bsGate);
-	    bsGate->connectTo(g);
-	    return;
-				       
-	} else {
-
-	}
+            // SS->BS
+            bsGate = bs->gate("in", i);
+			// radioIn <-- BS in
+            bsGate->disconnect();
+            g = gate("radioIn", i);
+            ss->gate("out")->disconnect();
+            ss->gate("out")->connectTo(bsGate);
+            bsGate->connectTo(g);
+            Log(Debug) << "WMaxRadio::connect_stop1" << LogEnd;
+            return;
+        }
     }
+    Log(Debug) << "WMaxRadio::connect_stop2" << LogEnd;
 }
 
 void WMaxRadio::disconnect(cModule * ss)
 {
+    Log(Debug) << "WMaxRadio::disconnect_start" << LogEnd;
     if (!ss->gate("out")->isConnected()) {
 	return;
     }
@@ -102,5 +108,5 @@ void WMaxRadio::disconnect(cModule * ss)
 
     bs->gate("in", ind)->disconnect();
     bs->gate("out", ind)->disconnect();
-
+    Log(Debug) << "WMaxRadio::disconnect_stop" << LogEnd;
 }

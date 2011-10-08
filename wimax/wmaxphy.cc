@@ -82,21 +82,25 @@ void WMaxPhyBS::beginFrame()
     Log(Debug) << "Frame number: " << FrameCnt << ", " << SendQueue.length() << " message(s) to send. " << LogEnd;
 
     if (this->DlMap) {
-	send(DlMap,"rfOut");
-	this->DlMap = 0;
+        Log(Debug) << "Frame is DL-MAP" << LogEnd;
+        send(DlMap,"rfOut");
+        this->DlMap = 0;
+        Log(Debug) << "Frame DL-MAP is sent" << LogEnd;
     } else {
-	Log(Debug) << "DL-MAP not set. Send skipped." << LogEnd;
+        Log(Debug) << "DL-MAP not set. Send skipped." << LogEnd;
     }
     if (this->UlMap) {
-	send(UlMap,"rfOut");
-	this->UlMap = 0;
+        send(UlMap,"rfOut");
+        this->UlMap = 0;
     } else {
-	Log(Debug) << "UL-MAP not set. Send skipped" << LogEnd;
+        Log(Debug) << "UL-MAP not set. Send skipped" << LogEnd;
     }
     
     while (!SendQueue.empty()) {
-	cMessage * msg = (cMessage*)SendQueue.pop();
-	send(msg, "rfOut");
+        Log(Debug) << "!SendQueue.empty()" << LogEnd;
+        cMessage * msg = (cMessage*)SendQueue.pop();
+        send(msg, "rfOut");
+        Log(Debug) << "send msg while queue is not empty" << LogEnd;
     }
 }
 
@@ -124,21 +128,24 @@ void WMaxPhySS::initialize()
 
 void WMaxPhySS::beginFrame()
 {
+    Log(Debug) << "WMaxPhySS::beginFrame_start" << LogEnd;
     while (!SendQueue.empty()) {
         cMessage * msg = (cMessage*)SendQueue.pop();
         send(msg, "rfOut");
 
         if (dynamic_cast<WMaxMsgHOIND*>(msg)) {
             Log(Notice) << "MIH event: Notifying other layers: HO-IND was actually transmitted." << LogEnd;
-	    ssInfo * info = dynamic_cast<ssInfo*>(getParentModule()->getSubmodule("ssInfo"));
+            ssInfo * info = dynamic_cast<ssInfo*>(getParentModule()->getSubmodule("ssInfo"));
             MihEvent_HandoverEnd * x = new MihEvent_HandoverEnd();
             info->sendEvent(x);
         }
     }
+    Log(Debug) << "WMaxPhySS::beginFrame_stop" << LogEnd;
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
 {
+    Log(Debug) << "WMaxPhySS::handleMessage_start" << LogEnd;
     static int licz ; // test
     cGate * gate = msg->getArrivalGate();
     // uplink message
@@ -148,15 +155,18 @@ void WMaxPhySS::handleMessage(cMessage *msg)
         // deliver message immediately
         send(msg, "phyOut");
         licz=licz+1 ; //test
+        Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;
         return;
     }
 
     if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
         beginFrame();
         delete msg;
+        Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;
         return;
     }
 
     // downlink message
     SendQueue.insert(msg);
+    Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;    
 }

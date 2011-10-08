@@ -1,6 +1,12 @@
 import common;
-import IPv6;
+//import IPv6;
 import MAC;
+import inet.nodes.xmipv6.MobileIPLayer6;
+import inet.networklayer.common.InterfaceTable;
+import inet.networklayer.xmipv6.BindingUpdateList;
+import inet.networklayer.ipv6.RoutingTable6;
+import inet.base.NotificationBoard;
+import inet.applications.pingapp.PingApp;
 
 simple WMaxPhySS
 {
@@ -24,6 +30,7 @@ module SS //
           //some doubles should be integers or booleans... fixed (MiM)
 {
     parameters:
+        @node();    
         volatile int wmaxHoOptim;
         volatile int wmaxIsMobile;
         volatile int movementType;
@@ -45,35 +52,62 @@ module SS //
         volatile double SStrace_centery;
         volatile double SStrace_radius;
         volatile double SStrace_step;
-        @display("bgb=300,193");
+        @display("bgb=400,400");
     gates:
         output out;
         input in;
     submodules:
+        notificationBoard: NotificationBoard {
+            parameters:
+                @display("p=60,60");
+        }
+        interfaceTable: InterfaceTable {
+            parameters:
+                @display("p=60,150");
+        }
+        routingTable6: RoutingTable6 {
+            parameters:
+                isRouter = false;
+                @display("p=60,240");
+        }
+        buList: BindingUpdateList {
+            parameters:
+                @display("p=60,300;i=old/harddisk");
+        }    
+    
         ssPhy: WMaxPhySS {
             parameters:
-                @display("i=abstract/accesspoint,#ce1821;p=248,144;q=SendQueue");
+                @display("i=abstract/accesspoint,#ce1821;p=350,144;q=SendQueue");
         }
         ssMac: ssMAC {
             parameters:
-                @display("i=block/control,#ce1821;p=152,144");
+                @display("i=block/control,#ce1821;p=270,144");
         }
-        ssIPv6: IPv6Client {
+        networkLayer: MobileIPLayer6 {
             parameters:
-                @display("i=block/app,#ce1821;p=56,144;tx=Tx,rx");
+                @display("i=block/app,#ce1821;p=160,144;tx=Tx,rx");
         }
         ssInfo: ssInfo {
             parameters:
                 @display("p=152,80;i=block/blackboard,#ce1821");
         }
+        pingApp: PingApp {
+            parameters:
+                @display("i=block/app;p=343,248");
+        }
+        
     connections allowunconnected:
         ssMac.phyOut --> ssPhy.phyIn;
         ssPhy.phyOut --> ssMac.phyIn;
 
-        ssMac.ipOut --> ssIPv6.ipIn;
-        ssIPv6.ipOut --> ssMac.ipIn;
+        ssMac.ipOut --> networkLayer.ifIn++;	
+        networkLayer.ifOut++ --> ssMac.ipIn;
 
         ssPhy.rfOut --> out;
         in --> ssPhy.rfIn;
+        
+        networkLayer.pingOut --> pingApp.pingv6In;
+        networkLayer.pingIn <-- pingApp.pingv6Out;
+        
 }
 

@@ -14,7 +14,8 @@
 #include <omnetpp.h>
 #include <string>
 #include "Portable.h"
-#include "ipv6msg_m.h"
+//#include "ipv6msg_m.h"	//Adam
+#include "IPv6Address.h"	//Adam
 
 using namespace std;
 
@@ -27,17 +28,17 @@ typedef struct {
      //int gateIndex; 
      /// @todo IPv6 source and destination addr
      uint64_t macAddr;
-     IPv6Addr dstAddr;
+     IPv6Address dstAddr;	//Adam
 } WMaxMacCSRule;
 
 
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
+uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr);	
 
 class WMaxMacCS : public cSimpleModule {
 public:
-
 protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
@@ -46,7 +47,7 @@ protected:
     virtual void updateLog();
 
     void dlMsgSend(cMessage * msg, int cid);
-    IPv6Addr DstAddrGet(cMessage *msg);
+    // IPv6Address DstAddrGet(cMessage *msg);	//Adam 
     list<WMaxMacCSRule> csTable;
     bool BS;
 };

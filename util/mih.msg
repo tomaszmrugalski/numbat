@@ -1,9 +1,10 @@
 cplusplus {{
-#include "ipv6.h"
+//#include "ipv6.h"
+#include "IPv6Address.h"	//Adam
 }}
 
 
-struct IPv6Addr;
+struct IPv6Address;
 
 // ********************************************************************************
 // *** Media Independent Handover: messages used to notify other layers ***********
@@ -44,7 +45,7 @@ packet MihEvent_ReentryEnd
 // used to report that IPv6 address has been obtained
 packet MihEvent_L3AddrConfigured
 {
-    IPv6Addr Addr;
+    IPv6Address Addr;
     bool RemoteAutoconf;
 }
 

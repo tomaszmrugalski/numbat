@@ -39,7 +39,7 @@ Define_Module(ssInfo);
 void ssInfo::initialize() {
     info.macAddr = ((uint64_t)0x0018de << 24) + (rand()%(((uint64_t)1 << 24) - 1));
     info.basicCid = 0;
-
+    
     CLEAR(&hoInfo);
 
     hoInfo.isMobile = getParentModule()->par("wmaxIsMobile");

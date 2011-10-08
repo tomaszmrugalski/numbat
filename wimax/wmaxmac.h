@@ -217,7 +217,7 @@ class WMaxMacBS: public WMaxMac
     virtual void handleMessage(cMessage *msg);
     //void handleUlMessage(cMessage* msg);
     void handleRxMessage(cMessage* msg);
-
+    virtual void registerInterface(double txrate);
     void schedule();
     void scheduleBcastMessages(); // prepare broadcast messages sent periodically (DCD, UCD, Neighbor-Advertisements)
     WMaxMsgDlMap * scheduleDL(int symbols);
@@ -256,7 +256,8 @@ class WMaxMacSS: public WMaxMac
     virtual void initialize();
     virtual void handleMessage(cMessage* msg);
     virtual void finish();
-
+    
+    virtual void registerInterface(double txrate);
     list<WMaxMacCDMA> CDMAlist; //WMaxMac::cdmaQueue is used instead
     int BEpoint;
     float radian;

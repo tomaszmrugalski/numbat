@@ -34,7 +34,7 @@ namespace logger {
     Elogmode logmode = LOGMODE_DEFAULT; /* default logmode */
     ofstream logFile;    // file where wanted msgs are stored
     bool logFileMode = false;
-    bool echo = true; // print copy of the message to the console
+    bool echo = false; // print copy of the message to the console
     int curLogEntry = 8; // 8 - debug 
   
   double simTime = -1.0f;
@@ -47,7 +47,8 @@ namespace logger {
 	if (curLogEntry <= logLevel) {
 	    // log on the console
 	    if (echo)
-		std::cout << buffer.str() << std::endl;
+        // EV << buffer.str() << endl;
+		std::cout << buffer.str() << std::endl; // Adam
 
 	    // log to the file
 	    if (logFileMode)

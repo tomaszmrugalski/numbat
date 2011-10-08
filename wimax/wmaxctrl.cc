@@ -20,7 +20,12 @@
 #include "wmaxmac.h"
 #include "ssinfo.h"
 #include "mih_m.h"
-#include "ipv6.h"
+//#include "ipv6.h"		//Adam
+#include "IPv6Address.h"//Adam
+#include "InterfaceTableAccess.h" // Adam
+#define MK_HANDOVER_NOTIFY_ACK      101 // Adam
+#include "xMIPv6Access.h"
+// #include "IPv6NeighbourDiscovery.h"
 
 static uint32_t transactionID = 1;
 
@@ -88,7 +93,9 @@ void WMaxCtrlSS::fsmInit() {
 
     stateInit(STATE_SEND_MOB_SCN_REQ,     "Sending MOB_SCN-REQ", STATE_WAIT_MOB_SCN_RSP, onEnterState_SendMobScnReq);
     stateInit(STATE_WAIT_MOB_SCN_RSP,     "Waiting for MOB_SCN-RSP", onEventState_WaitForMobScnRsp);
-
+//============= Adam 10-09-2011 =====================
+    stateInit(STATE_WAIT_HANDOVER_ACK,     "Waiting for HANDOVER_ACK", onEventState_WaitForHandoverAck);
+//============= Adam, end  10-09-2011==================s    
     stateInit(STATE_SEND_MSHO_REQ,     "Sending MSHO-REQ", STATE_WAIT_BSHO_RSP, onEnterState_SendMshoReq);
     stateInit(STATE_WAIT_BSHO_RSP,     "Waiting for BSHO-RSP", onEventState_WaitForBshoRsp);
     stateInit(STATE_WAIT_L3_DETACH_READY,"Waiting for L3 detach", onEventState_WaitForL3Detach);
@@ -117,6 +124,9 @@ void WMaxCtrlSS::fsmInit() {
     eventInit(EVENT_REG_RSP_RECEIVED, "REG-RSP received.");
     eventInit(EVENT_CDMA_CODE, "(Initial ranging) CDMA opportunity received");
     eventInit(EVENT_MOB_SCN_RSP_RECEIVED, "MOB_SCN-RSP received");
+    //============= Adam 10-09-2011 =====================
+    eventInit(EVENT_HANDOVER_ACK_RECEIVED, "HANDOVER_ACK received");
+    //============= Adam, end  10-09-2011==================s
     eventInit(EVENT_BSHO_RSP_RECEIVED, "BSHO-RSP received");
     eventInit(EVENT_HO_CDMA_CODE, "(Handover ranging) CDMA opportunity received");
     eventInit(EVENT_SERVICE_FLOW_COMPLETE, "Service Flow complete");
@@ -131,7 +141,6 @@ void WMaxCtrlSS::fsmInit() {
     TIMER(Handover,     ho, "Start handover");
     TIMER(Reentry,      0.1, "Network reentry");
     Log(Notice) << "Timers: NetworkEntry=" << ne << ", Handover=" << ho << LogEnd;
-
     stringUpdate();
 }
 
@@ -152,7 +161,10 @@ void WMaxCtrlSS::initialize() {
     hoInfo = &tmp2->hoInfo;
 
     int initialBS = SS->par("initialBS");
-
+//============= Adam 11-09-2011 =====================
+    ift2 = InterfaceTableAccess2().get();
+    Handover = 0;
+//============= Adam, end  11-09-2011==================    
     Log(Notice) << "Attaching to initial BS: " << initialBS << LogEnd;
     connectBS(initialBS);
 
@@ -173,14 +185,14 @@ simtime_t /*double*/ WMaxCtrlSS::sendMsg(cMessage * msg, std::string paramName, 
 {
     double delay = 0;
     if (strlen(paramName.c_str())) {
-	char buf[80];
-	sprintf(buf, "Min%s", paramName.c_str());
-	double min = (double)par(buf);
-	
-	sprintf(buf, "Max%s", paramName.c_str());
-	double max = (double)par(buf);
-	
-	delay = uniform(min, max);
+        char buf[80];
+        sprintf(buf, "Min%s", paramName.c_str());
+        double min = (double)par(buf);
+        
+        sprintf(buf, "Max%s", paramName.c_str());
+        double max = (double)par(buf);
+        
+        delay = uniform(min, max);
     }
     delay += extraDelay;
 
@@ -269,9 +281,9 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<WMaxMsgRegRsp*>(msg)) {
-	onEvent(EVENT_REG_RSP_RECEIVED, msg);
-	delete msg;
-	return;
+        onEvent(EVENT_REG_RSP_RECEIVED, msg);
+        delete msg;
+        return;
     }
 
     if (dynamic_cast<WMaxMsgMobScnRsp*>(msg)) {
@@ -332,11 +344,42 @@ void WMaxCtrlSS::handleMessage(cMessage *msg)
     }
 
     if (dynamic_cast<MihEvent_HandoverEnd*>(msg)) {
+//============= Adam 11-09-2011 =====================
+// wstawienie NCoA jako CoA
+        logger::EchoOn();
+        Log(Notice) << endl << endl << "Handover end" << LogEnd;
+        InterfaceEntry *ie = ift2 -> getInterface(1);    // WiMAX MN
+        
+        if( ie -> ipv6Data() -> getNumAddresses() < 3 ){ // jesli jest tylko link-local i HoA
+            IPv6Address removeCoA = ie ->ipv6Data() -> getAddress(0);
+            // powinno sie usunac wczesniejszy CoA, POPRAWIC
+            // ie->ipv6Data()->removeAddress( removeCoA );       // poprawic, nie bedzie dzialalo dla wiecej niz 2 ARow, a moze i bedzie ?    
+            // IPv6Address CoA = ie->ipv6Data()->removeAddress( removeCoA );       // poprawic, nie bedzie dzialalo dla wiecej niz 2 ARow, a moze i bedzie ?
+            ASSERT( !removeCoA.isUnspecified() );
+
+            EV << "Handover End removing CoA = " << removeCoA.str() << "new CoA = " << ift2->getHandover_NCoA().str() << endl;
+
+            IPv6Address linkLocalAddress = ie->ipv6Data()->getLinkLocalAddress();
+            bool isLinkLocalTentative = ie->ipv6Data()->isTentativeAddress( linkLocalAddress );
+            // if the link local address is tentative, then we make the global unicast address tentative as well
+            ie->ipv6Data()->assignAddress( ift2->getHandover_NCoA(), isLinkLocalTentative, simTime(), simTime()+10, false);   // poprawic, nie wiem czy dobrze zrobione
+        }else{  // jesli jest link-local, HoA i CoA to usunac CoA
+            EV << "Usuwanie adresu CoA  -  NIC NIE ROBIE" << endl;
+        }
+        Handover = 1;
+//============= Adam, end  11-09-2011==================
         onEvent(EVENT_HO_IND_SENT, msg);
         delete msg;
         return;
     }
-
+    
+//============= Adam 10-09-2011 =====================
+    if ( msg->getKind() == MK_HANDOVER_NOTIFY_ACK ){
+        onEvent(EVENT_HANDOVER_ACK_RECEIVED, msg);
+        delete msg;
+        return;
+    }
+//============= Adam, end  10-09-2011==================s    
     delete msg;
 }
 
@@ -406,18 +449,20 @@ FsmStateType WMaxCtrlSS::onEnterState_SendRngReq(Fsm * fsm)
 	
 	if (ssinfo->hoInfo.dhcp.remoteAutoconf)
 	{
+        // cout << "FsmStateType WMaxCtrlSS::onEnterState_SendRngReq " << endl << "dhcp"  << endl;
 	    cModule * ss = fsm->getParentModule()->getParentModule();
 	    stringstream tmp;
 	    tmp << "ssIPv6.DHCPv6Cli" << ss->getIndex();
 	    cModule * dhcp = ss->getModuleByRelativePath(tmp.str().c_str());
 	    if (!dhcp)
 		opp_error("Failed to find DHCPv6 client: relative path:%s from module %s", tmp.str().c_str(), ss->getFullName());
-	    IPv6Addr addr = IPv6Addr(dhcp->par("nextIP"), true);
-	    SLog(fsm, Info) << "Remote AutoConf enabled, sending my next IP:" << addr.plain() << LogEnd;
+	    IPv6Address addr = IPv6Address(dhcp->par("nextIP"));	// Adam zmieniony kontruktor, przedtem byl z ipv6.h -> inet_pton
+	    SLog(fsm, Info) << "Remote AutoConf enabled, sending my next IP:" << addr.str() << LogEnd;
 	    rng->setMyIP(addr);
-	} else
-	    rng->setMyIP(IPv6Addr("::",true));
-
+	} else{
+        // cout << "FsmStateType WMaxCtrlSS::onEnterState_SendRngReq " << endl << "nie dhcp" << endl;
+	    rng->setMyIP(IPv6Address());//rng->setMyIP(IPv6Address("::",true));		//Adam prawdopodobnie wpisuje adres 0
+    }
 	if (ss->hoInfo->wmax.hoOptim & WMAX_HO_OPTIM_FULL_STATE_TRANSFER) {
 	    int cnt = 0;
 	    for (list<WMaxFlowSS*>::iterator it = ss->serviceFlows.begin(); 
@@ -609,6 +654,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SvcFlowCreation(Fsm * fsm) {
     //WMaxFlowSS *flow = new WMaxFlowSS(fsm); //here the WMaxFlowSS is created... not using the cModuleType::create() (MiM)
     //MiM ........................
     cModuleType *mtype = cModuleType::get("WMaxFlowSS");
+    
     cModule *flowmodule = mtype->create("WMaxFlowSS", fsm);
     WMaxFlowSS *flow = dynamic_cast<WMaxFlowSS*>(flowmodule);
     flow->setParentFsm(fsm);
@@ -675,7 +721,7 @@ FsmStateType WMaxCtrlSS::onEventState_Operational(Fsm * fsm, FsmEventType e, cMe
 {
     WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
     int isMobile = (int)ss->SS->par("wmaxIsMobile");
-
+    
     switch (e) {
       case EVENT_HANDOVER_START:
 	  switch (isMobile)
@@ -704,7 +750,20 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMobScnReq(Fsm *fsm)
     return fsm->State();
 }
 
-// wait for MOB_SCN-REQ state
+//============= Adam 10-09-2011 =====================
+FsmStateType WMaxCtrlSS::onEventState_WaitForHandoverAck(Fsm * fsm, FsmEventType e, cMessage *msg)
+{
+    // WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS *>(fsm);
+    
+    switch (e) {
+      case EVENT_HANDOVER_ACK_RECEIVED:
+	      return STATE_SEND_MSHO_REQ; 
+      default:
+        CASE_IGNORE(fsm, e);
+    }
+}
+//============= Adam, end  10-09-2011==================
+// wait for MOB_SCN-RSP state
 FsmStateType WMaxCtrlSS::onEventState_WaitForMobScnRsp(Fsm * fsm, FsmEventType e, cMessage *msg)
 {
 WMaxCtrlSS * ss = dynamic_cast<WMaxCtrlSS*>(fsm);
@@ -749,13 +808,110 @@ cModule *physim, *BS;
             return STATE_OPERATIONAL;
         } else {
             ss->hoInfo->wmax.nextBS = nearestBS;
-	    return STATE_SEND_MSHO_REQ;
+        //============= Adam 10-09-2011 =====================
+            ss->CreateAndSendHandoverNotify(nearestBS,ss);
+            return STATE_WAIT_HANDOVER_ACK;
+        //============= Adam, end  10-09-2011==================s
+//            return STATE_SEND_MSHO_REQ;   // Adam
         }
 
     default:
 	CASE_IGNORE(fsm, e);
     }
 }
+//===== Adam 07-09-2011 =========================================================================
+// sending msg to xMIPv6 about handover
+void  WMaxCtrlSS::CreateAndSendHandoverNotify(int nearestBS, WMaxCtrlSS *ss)
+{
+    IInterfaceTable* ift = InterfaceTableAccess().get();
+
+    // WMaxCtrlSS * ss = new WMaxCtrlSS();
+    // xMIPv6 *temp_xmipv6 = new xMIPv6();
+    HandoverNotify *HoNotify = new HandoverNotify("Handover Notify");
+    
+//======= tworzenie msg, najpierw warstwa xMIPv6 IP ========
+    HoNotify -> setMobilityHeaderType( 8 ); // 8 = HANDOVER_NOTIFY
+    HoNotify -> setBS_index(nearestBS);
+    
+    InterfaceEntry *ie = ift->getInterface(1);  // 0 jest loopback, 1 to interface WiMAX w SS
+
+    IPv6Address linkLocalAddr = ie->ipv6Data()->getLinkLocalAddress();
+    if (linkLocalAddr.isUnspecified()){
+        error("LinkLocal address is unspecified!");
+    }else{
+        EV << endl << linkLocalAddr.str() << endl;
+    }
+
+    Log(Notice) << endl <<"Informing L3 about handover wanted by SS" << endl << LogEnd;
+    
+	EV <<"Appending ControlInfo to mobility message\n";
+    IPv6ControlInfo *controlInfo_xmipv6 = new IPv6ControlInfo();
+    controlInfo_xmipv6->setProtocol(IP_PROT_IPv6EXT_MOB); // specifies the next header value for the Mobility Header (=135)
+    controlInfo_xmipv6->setDestAddr(linkLocalAddr);
+    controlInfo_xmipv6->setSrcAddr(linkLocalAddr);
+    controlInfo_xmipv6->setHopLimit(255);
+    controlInfo_xmipv6->setInterfaceId(ie->getInterfaceId());
+    HoNotify->setControlInfo(controlInfo_xmipv6);
+
+    EV <<"ControlInfo appended successfully. Sending mobility message to IPv6 module\n";
+
+    EV << "controlInfo: DestAddr=" << controlInfo_xmipv6->getDestAddr()
+       << "SrcAddr=" << controlInfo_xmipv6->getSrcAddr()
+       << "InterfaceId=" << controlInfo_xmipv6->getInterfaceId() << endl;
+
+//========= koniec tworzenia warstwy xMIPv6 IP ===========================
+//======= tworzenie msg, warstwa IP ========
+    IPv6ControlInfo *controlInfo = check_and_cast<IPv6ControlInfo*>(HoNotify->removeControlInfo());
+
+    IPv6Datagram *datagram = new IPv6Datagram(HoNotify->getName());
+    // -- moved the following two lines below, as otherwise the size of the extension headers would
+    // not be taken into account, 30.08.07 - CB
+    //datagram->setByteLength(datagram->calculateHeaderByteLength());
+    //datagram->encapsulate(transportPacket);
+
+    // set source and destination address
+    IPv6Address dest = controlInfo->getDestAddr();
+    datagram->setDestAddress(dest);
+    IPv6Address src = controlInfo->getSrcAddr();
+
+    // when source address was given, use it; otherwise it'll get the address
+    // of the outgoing interface after routing
+    datagram->setSrcAddress(src);
+
+    // set other fields
+    datagram->setHopLimit(controlInfo->getHopLimit()>0 ? controlInfo->getHopLimit() : 32); //FIXME use iface hop limit instead of 32?
+    datagram->setTransportProtocol(controlInfo->getProtocol());
+
+    // #### copy routing headers from ctrlInfo to datagram if present, 29.08.07 - CB ####
+	// FIXME this is a nasty way of copying the extension headers
+    for (int i = 0; i < controlInfo->extensionHeaderArraySize(); i++)
+	{
+    	IPv6ExtensionHeader* extHeader = controlInfo->extensionHeader(i);
+    	datagram->addExtensionHeader( (IPv6ExtensionHeader*) extHeader->dup() );
+    	EV << "Copied extension header to datagram." << endl;
+	}
+
+    delete controlInfo;
+
+	datagram->setByteLength(datagram->calculateHeaderByteLength()); // 30.08.07 - CB
+	datagram->encapsulate(HoNotify); // 30.08.07 - CB
+//========= koniec tworzenia warstwy IP ===========================
+    // /*cMessage*/ cPacket *wmaxmacmsg = new cPacket("Handover Notify");/*Message*///MiM
+    WMaxHandoverNotify * WmaxHoNotify = new WMaxHandoverNotify("HandoverNotify");  // wstawic nowy rodzaj wiadomosci
+    WmaxHoNotify->setName("HandoverNotify"); // dodanie w HandoverNotify id BSa
+    
+    WmaxHoNotify->encapsulate(check_and_cast<cPacket *>(datagram)); //MiM
+    
+    ss->sendMsg(WmaxHoNotify, "", "macOut", 1025);  // 1025 is for sending to L3 layer
+    
+    // temp_xmipv6->sendMobilityMessageToIPv6Module( HoNotify , linkLocalAddr, linkLocalAddr, ie->getInterfaceId() );
+    // mobilityHeaderType
+    // WMaxHandoverNotify * HoNotify = new WMaxHandoverNotify("HandoverNotify");  // wstawic nowy rodzaj wiadomosci
+    // HoNotify->setName("HandoverNotify"); // dodanie w HandoverNotify id BSa
+    // SLog(fsm, Notice) << endl <<"Informing L3 about handover wanted by SS" << endl << LogEnd;
+    // ss->sendMsg(HoNotify, "", "macOut", 1025);  // 1025 is for sending to L3 layer
+}
+//===== end Adam =====================================================================================
 
 // send MSHO-REQ state
 FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
@@ -769,7 +925,7 @@ FsmStateType WMaxCtrlSS::onEnterState_SendMshoReq(Fsm *fsm)
 
     if (isMobile == 1) // mobility model 1: time based handover
       ctrlSS->hoInfo->wmax.nextBS = (actBS+1)%(BS->size());
-    if (isMobile == 3) // mobility model 3: time based, random target
+    else if (isMobile == 3) // mobility model 3: time based, random target
     {
 	do {
 	    ctrlSS->hoInfo->wmax.nextBS = uniform(0,BS->size());
@@ -930,7 +1086,6 @@ FsmStateType WMaxCtrlSS::onEnterState_HandoverComplete(Fsm * fsm)
     ss->hoReentryTimestamp = simTime();
 
     ss->mihNotify(MIH_EVENT_REENTRY_START);
-
     return fsm->State();
 }
 
@@ -986,6 +1141,7 @@ void WMaxCtrlSS::connectBS(int x) {
     /* sanity checks */
 //     cModule *SS = getParentModule();
     cModule *physim = SS->getParentModule();
+    
     int maxBS = physim->par("numBS");
     if (x> maxBS) {
 	opp_error("Unable to connect to BS[%d]: there are only %d BS(es)\n",
@@ -1064,6 +1220,7 @@ void WMaxCtrlSS::finish()
     }
     serviceFlows.clear();
 }
+
 
 /********************************************************************************/
 /*** WMax Ctrl BS ****************************************************************/
@@ -1614,6 +1771,19 @@ FsmStateType WMaxFlowSS::onEnterState_SendDsaAck(Fsm * fsm) {
 
     ctrlSS->onEvent(WMaxCtrlSS::EVENT_SERVICE_FLOW_COMPLETE, 0);
 
+    //============= Adam 13-09-2011 =====================
+    if( ctrlSS->Handover == 1){
+        // cout << endl << endl << "WMaxMsgRegRsp" << endl << endl;        
+        InterfaceEntry &ie = *ctrlSS->ift2 -> getInterface(1); //    WiMAX SS
+        ctrlSS->IPv6ND = IPv6NeighbourDiscoveryAccess().get();
+        ctrlSS->IPv6ND -> sendUnsolicitedNA(&ie);  
+        ctrlSS->xmipv6 = xMIPv6Access().get();  // WiMAX MN
+        IPv6Address temp = ctrlSS->ift2->getHandover_NCoA();
+        ctrlSS->xmipv6->initiateMIPv6Protocol( &ie, temp );        
+    }
+    ctrlSS->Handover = 0;
+    //============= Adam, end  13-09-2011==================s    
+    
     return fsm->State();
 }
 

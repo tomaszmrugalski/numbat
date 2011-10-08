@@ -1,6 +1,7 @@
 cplusplus {{
 #include "wmaxmsg.h"
-#include "ipv6.h"
+//#include "ipv6.h"
+#include "IPv6Address.h"	//Adam
 }}
 
 
@@ -16,7 +17,7 @@ struct WMaxRngReq;
 
 struct WMaxRngRsp;
 
-struct IPv6Addr;
+struct IPv6Address;
 
 //struct uint64_t;//MiM removed
 
@@ -60,7 +61,7 @@ packet WMaxMsgRngReq
 {
     int purpose;
     WMaxRngReq rngReq;
-    IPv6Addr myIP; // used in remote autoconf
+    IPv6Address myIP; // used in remote autoconf
 
     // used during HO (to perform CID update and recreate connections at target BS)
     WMaxQos SfQos[];
@@ -189,7 +190,7 @@ packet WMaxMacAddConn
     int gateIndex;
     int cid;
     WMaxQos qos[];
-    IPv6Addr dstAddr;
+    IPv6Address dstAddr;
     uint64_t macAddr;
 }
 
@@ -216,4 +217,12 @@ packet WMaxMacTerminateAllConns
 {
 }
 
+packet WMaxHandoverNotify // L2 informing L3 about incoming handover
+{
+    int BS_index;    // should be AP-ID, BSID
+}
+
+packet WMaxHandoverNotifyAcknowledge
+{
+}
 
