@@ -2,7 +2,10 @@
  Numbat Changelog
 ------------------
 
-2010-04-11 
+2011-09-20
+- xMIPv6 integrated with Numbat, by Adam Jastrzebski
+
+2010-04-11
 - OMNeT++ 4.0 compilation fixed under Windows and Linux.
 
 2009-09-29

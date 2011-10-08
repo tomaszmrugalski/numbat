@@ -5,21 +5,26 @@
  Project homepage: http://klub.com.pl/numbat
 
  GIT repository: https://github.com/tomaszmrugalski/numbat
- 
+
  Original author: Tomasz Mrugalski <thomson(at)klub(dot)com(dot)pl>
                   (inactive since 2010-04)
- 
+
  Contributors: Maciej Jureko
                Andrzej Bojarski
 
  Migration to OMNeT++ 4.0: Mikko Majanen, VTT, Finland
- 
+
+ Integration with xMIPv6: Adam Jastrzebski
+
  Published under GNU GPL v2 (or later) licence.
 
- By commiting any source code to this repository, you allow its 
- maintainers or other users to redistribute it under GPL v2 (or 
- later, when newer license version will become available).
+ By commiting any source code to this repository, you allow its
+ maintainers or other users to redistribute it under GPL v2 or
+ later (when newer license version will becomes available and
+ someone decides to move to that newer version).
 
- The code uses OMNeT++ 4.0 as a base.
+ This code uses OMNeT++ 4.0 as a base.
 
- Please use meaningful commit comments. 
+ This code uses xMIPv6 (https://github.com/zarrar/xMIPv6).
+
+ Please use meaningful commit comments.
