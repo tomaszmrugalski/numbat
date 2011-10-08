@@ -23,6 +23,7 @@
 #include <omnetpp.h>
 #include "ModuleAccess.h"
 #include "IInterfaceTable.h"
+#include "InterfaceTable.h"
 
 
 /**
@@ -32,6 +33,15 @@ class INET_API InterfaceTableAccess : public ModuleAccess<IInterfaceTable>
 {
     public:
         InterfaceTableAccess() : ModuleAccess<IInterfaceTable>("interfaceTable") {}
+};
+
+/**
+ * Gives access to InterfaceTable.
+ */
+class INET_API InterfaceTableAccess2 : public ModuleAccess<InterfaceTable>
+{
+    public:
+        InterfaceTableAccess2() : ModuleAccess<InterfaceTable>("interfaceTable") {}
 };
 
 #endif

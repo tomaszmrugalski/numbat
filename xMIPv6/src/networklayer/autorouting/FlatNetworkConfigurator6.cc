@@ -34,7 +34,6 @@ void FlatNetworkConfigurator6::initialize(int stage)
 #ifndef WITHOUT_IPv6
     // FIXME refactor: make routers[] array? (std::vector<cTopology::Node*>)
     // FIXME: spare common beginning for all stages?
-
     cTopology topo("topo");
 
     // extract topology
@@ -173,7 +172,6 @@ void FlatNetworkConfigurator6::addStaticRoutes(cTopology& topo)
     for (int i = 0; i < topo.getNumNodes(); i++)
     {
         cTopology::Node *destNode = topo.getNode(i);
-
         // skip bus types
         if (!isIPNode(destNode))
             continue;
@@ -203,7 +201,6 @@ void FlatNetworkConfigurator6::addStaticRoutes(cTopology& topo)
                 if (destIf->ipv6Data()->getAdvPrefix(y).prefix.isGlobal())
                     destPrefixes.push_back(&destIf->ipv6Data()->getAdvPrefix(y));
         }
-
         std::string destModName = destNode->getModule()->getFullName();
 
         // calculate shortest paths from everywhere towards destNode
@@ -244,14 +241,17 @@ void FlatNetworkConfigurator6::addStaticRoutes(cTopology& topo)
             // ok, the next hop is now just one step away from prevNode
             cGate *remoteGate = prevNode->getPath(0)->getRemoteGate();
             cModule *nextHop = remoteGate->getOwnerModule();
+            
+            
             IInterfaceTable *nextHopIft = IPAddressResolver().interfaceTableOf(nextHop);
+            
             InterfaceEntry *nextHopOnlinkIf = nextHopIft->getInterfaceByNodeInputGateId(remoteGate->getId());
-
+            
             // find link-local address for next hop
             IPv6Address nextHopLinkLocalAddr = nextHopOnlinkIf->ipv6Data()->getLinkLocalAddress();
-
             // traverse through address of each node
             // add to route table
+            
             for (unsigned int k = 0; k < destPrefixes.size(); k++)
             {
                 rt->addStaticRoute(destPrefixes[k]->prefix, destPrefixes[k]->prefixLength,

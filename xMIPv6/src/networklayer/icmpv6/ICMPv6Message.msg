@@ -26,7 +26,6 @@ cplusplus {{
 //# TODO consolidate this file's contents with ICMPMessage.msg
 //
 
-
 enum ICMPv6Type
 {
 
@@ -47,6 +46,7 @@ enum ICMPv6Type
     ICMPv6_REDIRECT = 137;
     ICMPv6_MLDv2_REPORT = 143;
     ICMPv6_EXPERIMENTAL_MOBILITY = 150;  //Zarrar Yousaf 02.08.07 (FMIPv6 Implementation)
+    ICMPv6_ASSIGN_ADDRESS_NOTIFY = 151;
 };
 
 
@@ -152,3 +152,4 @@ packet ICMPv6EchoReplyMsg extends ICMPv6Message
     int identifier; // identifier to aid in matching Echo replies. May be Zero
     int seqNumber; // sequence number to aid in matching Echo replies. May be Zero
 }
+

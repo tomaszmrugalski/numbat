@@ -24,7 +24,7 @@
 #include "IInterfaceTable.h"
 #include "InterfaceEntry.h"
 #include "NotificationBoard.h"
-
+#include "IPv6Address.h"
 
 /**
  * Represents the interface table. This object has one instance per host
@@ -63,11 +63,24 @@
  *
  * @see InterfaceEntry
  */
+//===== Adam =======================================================
+struct AP_Info{
+    int    AP_ID;
+    MACAddress     L2_Addr;
+    IPv6Address    L3_Addr;
+    IPv6Address    Prefix;
+    int            PrefixLength; 
+};
+//===== Adam end ===================================================
+ 
 class INET_API InterfaceTable : public cSimpleModule, public IInterfaceTable, protected INotifiable
 {
   protected:
+    //============= Adam 09-09-2011 =====================
+    AP_Info BS_Info[3];     // info o BSach jak L2 adres L3 adres prefix, potrzebne do Fast Handover
+    IPv6Address Handover_NCoA; // NCoA tworzony z PrRtAdv z AR, potrzebne do Fast Handover
+    //============= Adam, end  09-09-2011==================
     NotificationBoard *nb; // cached pointer
-
     // primary storage for interfaces: vector indexed by id; may contain NULLs;
     // slots are never reused to ensure id uniqueness
     typedef std::vector<InterfaceEntry *> InterfaceVector;
@@ -91,6 +104,15 @@ class INET_API InterfaceTable : public cSimpleModule, public IInterfaceTable, pr
     virtual void invalidateTmpInterfaceList();
 
   public:
+//===== Adam =======================================================
+    virtual void setAP_Info( int AP_ID ,MACAddress L2_Addr ,IPv6Address L3_Addr ,IPv6Address Prefix ,int PrefixLength);
+    MACAddress getL2_Addr(int AP_index);
+    IPv6Address getL3_Addr(int AP_index);
+    IPv6Address getPrefix(int AP_index);
+    int getPrefixLength(int AP_index);
+    void setHandover_NCoA(IPv6Address prefix, int prefixLength ,IPv6Address linkLocal);
+    IPv6Address getHandover_NCoA();
+//===== Adam end ===================================================
     InterfaceTable();
     virtual ~InterfaceTable();
     virtual std::string getFullPath() const {return cSimpleModule::getFullPath();}

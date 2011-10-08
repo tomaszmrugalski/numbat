@@ -31,9 +31,10 @@
 #include "MobilityHeader_m.h"
 #include "IPv6ExtensionHeaders_m.h"
 
-
+#define MK_HANDOVER_NOTIFY_ACK      101 // Adam
 #define FRAGMENT_TIMEOUT 60   // 60 sec, from IPv6 RFC
 
+using std::cout;
 
 Define_Module(IPv6);
 
@@ -649,7 +650,6 @@ IPv6Datagram *IPv6::encapsulate(cPacket *transportPacket, InterfaceEntry *&destI
 {
 EV <<"\n<<=======THIS IS THE IPv6::encapsulate() FUNCTION=========>>\n";
     IPv6ControlInfo *controlInfo = check_and_cast<IPv6ControlInfo*>(transportPacket->removeControlInfo());
-
     IPv6Datagram *datagram = new IPv6Datagram(transportPacket->getName());
     // -- moved the following two lines below, as otherwise the size of the extension headers would
     // not be taken into account, 30.08.07 - CB
@@ -667,7 +667,8 @@ EV <<"\n<<=======THIS IS THE IPv6::encapsulate() FUNCTION=========>>\n";
 
     // when source address was given, use it; otherwise it'll get the address
     // of the outgoing interface after routing
-    if (!src.isUnspecified())
+    // if (!src.isUnspecified())    // Adam komentarz
+    if (!src.isUnspecified() && transportPacket->getKind() != MK_HANDOVER_NOTIFY_ACK )
     {
         // if interface parameter does not match existing interface, do not send datagram
         if (rt->getInterfaceByAddress(src)==NULL)
@@ -695,6 +696,12 @@ EV <<"\n<<=======THIS IS THE IPv6::encapsulate() FUNCTION=========>>\n";
 
     delete controlInfo;
 
+    //============= Adam 10-09-2011 =====================
+    if( transportPacket->getKind() == MK_HANDOVER_NOTIFY_ACK )
+        datagram -> setKind(MK_HANDOVER_NOTIFY_ACK);
+    //============= Adam, end  10-09-2011==================s
+    
+    
 	datagram->setByteLength(datagram->calculateHeaderByteLength()); // 30.08.07 - CB
 	datagram->encapsulate(transportPacket); // 30.08.07 - CB
     return datagram;

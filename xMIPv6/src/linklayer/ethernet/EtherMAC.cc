@@ -22,7 +22,7 @@
 #include "Ieee802Ctrl_m.h"
 #include "IPassiveQueue.h"
 
-
+using namespace std;
 
 static std::ostream& operator<< (std::ostream& out, cMessage *msg)
 {
@@ -50,7 +50,6 @@ EtherMAC::~EtherMAC()
 void EtherMAC::initialize()
 {
     EtherMACBase::initialize();
-
     endRxMsg = new cMessage("EndReception", ENDRECEPTION);
     endBackoffMsg = new cMessage("EndBackoff", ENDBACKOFF);
     endJammingMsg = new cMessage("EndJamming", ENDJAMMING);

@@ -29,6 +29,7 @@
 // secret key used in RR by CN
 #define KCN	1
 
+using std::cout;
 
 Define_Module(BindingUpdateList);
 
@@ -418,7 +419,8 @@ bool BindingUpdateList::recentlySentCOTI(const IPv6Address& dest, InterfaceEntry
 	BindingUpdateList::BindingUpdateListEntry* entry = lookup(dest);
 
 	ASSERT(entry!=NULL);
-
+    cout << endl << "sentCoTI = " << entry->sentCoTI <<endl;
+    cout << endl << "ie->ipv6Data()->_maxTokenLifeTime() = " << ie->ipv6Data()->_maxTokenLifeTime() <<endl;
 	return entry->sentCoTI + ie->ipv6Data()->_maxTokenLifeTime() / 3 > simTime();
 }
 
@@ -428,7 +430,8 @@ bool BindingUpdateList::recentlySentHOTI(const IPv6Address& dest, InterfaceEntry
 	BindingUpdateList::BindingUpdateListEntry* entry = lookup(dest);
 
 	ASSERT(entry!=NULL);
-
+    cout << endl << "sentHoTI = " << entry->sentHoTI <<endl;
+    cout << endl << "ie->ipv6Data()->_maxTokenLifeTime() = " << ie->ipv6Data()->_maxTokenLifeTime() <<endl;
 	return entry->sentHoTI + ie->ipv6Data()->_maxTokenLifeTime() / 3 > simTime();
 }
 

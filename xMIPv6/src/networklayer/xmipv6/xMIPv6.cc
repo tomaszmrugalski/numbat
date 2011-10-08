@@ -22,6 +22,7 @@
 
 #include "xMIPv6.h"
 #include <algorithm>
+#include "IPAddressResolver.h"  // Adam
 
 #define MK_SEND_PERIODIC_BU			1
 // 18.09.07 - CB
@@ -35,7 +36,7 @@
 #define MAX_TOKEN_LIFETIME			500		//210  // maximum valid lifetime for the tokens used in RR
 #define MAX_RR_BINDING_LIFETIME		4000	//420  // maximum valid lifetime of a binding for CNs
 #define TEST_INIT_RETRANS_FACTOR	8	 	// HoTI and CoTI will be retransmitted every MAX_RR_BINDING_LIFETIME * TEST_INIT_RETRANS_FACTOR seconds
-
+#define MK_HANDOVER_NOTIFY_ACK      101 // Adam
 
 // sizes of mobility messages and headers in bytes
 #define SIZE_MOBILITY_HEADER	6	// 6.1.1 mobility header = 48 bit
@@ -51,10 +52,7 @@
 #define	SIZE_BE					18	// 6.1.9 BE message = 144 bit
 #define	SIZE_BRR				2	// 6.1.2 BRR reserved = 16 bit
 
-
 Define_Module(xMIPv6);
-
-
 /**
  * Destructur
  *
@@ -124,8 +122,8 @@ void xMIPv6::initialize(int stage)
 	else if (stage==3)
     {
         ift = InterfaceTableAccess().get();
+        ift2 = InterfaceTableAccess2().get();
         ipv6nd = IPv6NeighbourDiscoveryAccess().get(); //Zarrar Yousaf 17.07.07
-
         if ( rt6->isMobileNode() )
         {
 			bul = BindingUpdateListAccess().get();  // Zarrar Yousaf 31.07.07
@@ -212,7 +210,6 @@ void xMIPv6::handleMessage(cMessage *msg)
 void xMIPv6::processMobilityMessage(MobilityHeader* mipv6Msg, IPv6ControlInfo* ctrlInfo)
 {
 	EV <<"Processing of MIPv6 related mobility message" << endl;
-
 	if ( dynamic_cast<BindingUpdate*>(mipv6Msg) )
 	{
 		EV <<"Message recognised as BINDING UPDATE (BU)" << endl;
@@ -253,6 +250,43 @@ void xMIPv6::processMobilityMessage(MobilityHeader* mipv6Msg, IPv6ControlInfo* c
 		EV <<"Message recognised as Binding Refresh Request" << endl;
 		processBRRMessage( (BindingRefreshRequest*) mipv6Msg, ctrlInfo );
 	}
+//====== Adam 08-09-2011 =============================================
+	else if ( dynamic_cast<HandoverNotify*>(mipv6Msg) )
+	{
+		EV <<"Message recognised as Handover Notify" << endl;
+        CreateAndSendRtSolPr( (HandoverNotify*) mipv6Msg );
+	}
+	else if ( dynamic_cast<RouterSolicitationForProxyAdvertisement*>(mipv6Msg) )
+	{
+        EV <<"Message recognised as Router Solicitation For Proxy Advertisement" << endl;
+        CreateAndSendPrRtAdv( (RouterSolicitationForProxyAdvertisement*) mipv6Msg, ctrlInfo );
+	}
+	else if ( dynamic_cast<ProxyRouterAdvertisement*>(mipv6Msg) )
+	{
+        EV <<"Message recognised as Proxy Router Advertisement" << endl;
+        processPrRtAdvMessage( (ProxyRouterAdvertisement*) mipv6Msg, ctrlInfo );
+	}
+	else if ( dynamic_cast<FastBindingUpdate*>(mipv6Msg) )
+	{
+		EV <<"Message recognised as Fast Binding Update" << endl;
+        processFBUMessage( (FastBindingUpdate*) mipv6Msg, ctrlInfo );
+	}
+	else if ( dynamic_cast<HandoverInitiate*>(mipv6Msg) )
+	{
+		EV <<"Message recognised as Handover Initiate" << endl;
+        processHIMessage( (HandoverInitiate*) mipv6Msg, ctrlInfo );
+	}
+	else if ( dynamic_cast<HandoverAcknowledge*>(mipv6Msg) )
+	{
+		EV <<"Message recognised as Handover Acknowledge" << endl;
+        processHAckMessage( (HandoverAcknowledge*) mipv6Msg, ctrlInfo );
+	}
+	else if ( dynamic_cast<FastBindingAcknowledge*>(mipv6Msg) )
+	{
+		EV <<"Message recognised as Fast Binding Acknowledge" << endl;
+        processFBAMessage( (FastBindingAcknowledge*) mipv6Msg, ctrlInfo );
+	}
+//===== end Adam ======================================================
 	else
 	{
 		EV <<"Unrecognised mobility message... Dropping" << endl;
@@ -261,6 +295,175 @@ void xMIPv6::processMobilityMessage(MobilityHeader* mipv6Msg, IPv6ControlInfo* c
 	}
 }
 
+//====== Adam 08-09-2011 =============================================
+
+void xMIPv6::CreateAndSendRtSolPr( HandoverNotify* mipv6Msg) 
+{
+    RouterSolicitationForProxyAdvertisement *RtSolPr = new RouterSolicitationForProxyAdvertisement("RtSolPr");
+
+    InterfaceEntry *ie = ift->getInterface(1);   // interface WiMAX SS
+    // dziala tylko gdy SS jest w pierwotnej sieci, gdy bedzie chcial przejsc z sieci nr.2
+    // do sieci nr.3 musi wyjsc do biezacego AR a nie do HA
+    IPv6Address destAddrIP = ie->ipv6Data()->getHomeAgentAddress(); // POPRAWIC
+    IPv6Address srcAddrIP = ie->ipv6Data()->getGlobalAddress();
+    RtSolPr->setAP_ID(  mipv6Msg->getBS_index()  );
+    EV << "Sending RtSolPr to destAddr = " << destAddrIP << "  srcAddr = " << srcAddrIP.str() << endl;
+    sendMobilityMessageToIPv6Module( RtSolPr, destAddrIP, srcAddrIP, ie->getInterfaceId() );
+    delete mipv6Msg;
+}    
+
+void xMIPv6::CreateAndSendPrRtAdv( RouterSolicitationForProxyAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{
+    int AP_ID = mipv6Msg->getAP_ID();
+    InterfaceEntry *ie = ift->getInterface(1); // interface WiMAX BS
+    ProxyRouterAdvertisement *PrRtAdv = new ProxyRouterAdvertisement("ProxyRouterAdvertisement");
+    PrRtAdv -> setAP_ID( AP_ID );   // dodac zabezpieczenie przed brakiem info o AP w APInfoTable
+    PrRtAdv -> setL2_Addr( ift2->getL2_Addr(AP_ID) );
+    PrRtAdv -> setL3_Addr( ift2->getL3_Addr(AP_ID) );
+    PrRtAdv -> setPrefix( ift2->getPrefix(AP_ID) );
+    PrRtAdv -> setPrefixLength( ift2->getPrefixLength(AP_ID) );
+    
+    IPv6Address srcAddr = ie -> ipv6Data() -> getPreferredAddress();
+    IPv6Address destAddr = ctrlInfo -> getSrcAddr(); // odsylam spowrotem
+    EV << "Sending PrRtAdv to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr<< endl;
+    sendMobilityMessageToIPv6Module( PrRtAdv, destAddr, srcAddr, ie->getInterfaceId() );
+    delete mipv6Msg;
+    delete ctrlInfo;
+}
+
+void xMIPv6::processPrRtAdvMessage( ProxyRouterAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{
+    EV << "xMIPv6::processPrRtAdvMessage" << endl;
+    EV << "mipv6Msg->getAP_ID() = " << mipv6Msg->getAP_ID() << endl;
+    EV << "mipv6Msg->getL2_Addr() = " << mipv6Msg->getL2_Addr().str() << endl;
+    EV << "mipv6Msg->getL3_Addr() = " << mipv6Msg->getL3_Addr().str() << endl;
+    EV << "mipv6Msg->getPrefix() = " << mipv6Msg->getPrefix().str() << endl;
+    EV << "mipv6Msg->getPrefixLength() = " << mipv6Msg->getPrefixLength() << endl;
+
+    // ustawienie AP_Info po stronie SS
+    ift2 -> setAP_Info( mipv6Msg->getAP_ID() ,mipv6Msg->getL2_Addr() ,mipv6Msg->getL3_Addr() ,mipv6Msg->getPrefix() ,mipv6Msg->getPrefixLength() );
+    // ustalic NCoA
+    InterfaceEntry *ie = ift->getInterface(1); // interface WiMAX SS
+    IPv6Address linkLocal = ie -> ipv6Data() -> getLinkLocalAddress();  // WiMAX SS
+    ift2 -> setHandover_NCoA( mipv6Msg->getPrefix() ,mipv6Msg->getPrefixLength() ,linkLocal);
+    EV << "Handover NCoA = " << ift2->getHandover_NCoA() << endl;
+
+    FastBindingUpdate *FBU = new FastBindingUpdate("FastBindingUpdate");
+    
+    FBU -> setAP_ID( mipv6Msg -> getAP_ID() );
+    FBU -> setNCoA( ift2->getHandover_NCoA() );
+    FBU -> setPCoA( ie->ipv6Data()->getGlobalAddress() );
+    FBU -> setMN_Mac( ie->getMacAddress() );
+    
+    IPv6Address srcAddr = ie -> ipv6Data() -> getGlobalAddress();
+    IPv6Address destAddr = ctrlInfo->getSrcAddr(); // odsylam spowrotem
+    EV << "Sending FBU to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr<< endl;
+    sendMobilityMessageToIPv6Module( FBU, destAddr, srcAddr, ie->getInterfaceId() );
+    delete mipv6Msg;
+    delete ctrlInfo;    
+}
+
+void xMIPv6::processFBUMessage( FastBindingUpdate* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{   // przekazuje FBU do NAR pod postacia HI
+    EV << "xMIPv6::processFBUMessage" << endl;
+    InterfaceEntry *ie = ift->getInterface(2); // interface eth BS
+    HandoverInitiate *HI = new HandoverInitiate("HandoverInitiate");
+    
+    HI -> setNCoA( mipv6Msg->getNCoA() );
+    HI -> setPCoA( mipv6Msg->getPCoA() );
+    HI -> setMN_Mac( mipv6Msg->getMN_Mac() );
+    
+    IPv6Address srcAddr = ie -> ipv6Data() -> getPreferredAddress();
+    IPv6Address destAddr = ift2 -> getL3_Addr( mipv6Msg->getAP_ID() ); // wysyla do NAR ( BS[1] )
+    
+    EV << "Sending HI to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr.str()<< endl;
+    sendMobilityMessageToIPv6Module( HI, destAddr, srcAddr, ie->getInterfaceId() );
+    delete mipv6Msg;
+    delete ctrlInfo;    
+}
+
+void xMIPv6::processHIMessage( HandoverInitiate* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{
+    HandoverAcknowledge *HAck = new HandoverAcknowledge("HandoverAcknowledge");
+    InterfaceEntry *ie = ift->getInterface(2); // interface eth BS
+    
+    HAck -> setHandover_accepted(1);    // zakladam, ze BS nie wywoluje DAD dla NCoA, od razu przyjmuje za poprawny ... dodac sprawdzanie
+    HAck -> setNCoA( mipv6Msg->getNCoA() );
+    HAck -> setPCoA( mipv6Msg->getPCoA() );
+    IPv6Address srcAddr = ie -> ipv6Data() -> getPreferredAddress();
+    IPv6Address destAddr = ctrlInfo->getSrcAddr(); // odsylam spowrotem
+    EV << "Sending HI to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr.str()<< endl;
+    sendMobilityMessageToIPv6Module( HAck, destAddr, srcAddr, ie->getInterfaceId() );
+    delete mipv6Msg;
+    delete ctrlInfo;    
+}
+
+void xMIPv6::processHAckMessage( HandoverAcknowledge* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{
+    FastBindingAcknowledge *FBack = new FastBindingAcknowledge("FastBindingAcknowledge");
+    InterfaceEntry *ie = ift->getInterface(1); // interface WiMAX BS[0]
+    
+    FBack -> setNCoA( mipv6Msg->getNCoA() );
+    FBack -> setPCoA( mipv6Msg->getPCoA() );
+    FBack -> setHandover_accepted( mipv6Msg->getHandover_accepted() );
+    
+    IPv6Address srcAddr = ie -> ipv6Data() -> getPreferredAddress();
+    IPv6Address destAddr = IPAddressResolver().resolve("SS[0]").get6(); // adres PCoA WiMAX SS
+    EV << "Sending HI to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr.str()<< endl;
+    sendMobilityMessageToIPv6Module( FBack, destAddr, srcAddr, ie->getInterfaceId() );
+    
+    FastBindingAcknowledge *FBack2 = new FastBindingAcknowledge("FastBindingAcknowledge");   // dodac duplikate msg a nei nowa
+    InterfaceEntry *ie2 = ift->getInterface(2); // interface eth BS
+    
+    FBack2 -> setNCoA( mipv6Msg->getNCoA() );
+    FBack2 -> setPCoA( mipv6Msg->getPCoA() );
+    FBack2 -> setHandover_accepted( mipv6Msg->getHandover_accepted() );
+    
+    IPv6Address srcAddr2 = ie2 -> ipv6Data() -> getPreferredAddress();
+    IPv6Address destAddr2 = ctrlInfo->getSrcAddr(); // odsylam spowrotem do BS[1]
+    EV << "Sending HI to destAddr = " << destAddr2.str() << "  srcAddr = " << srcAddr2.str()<< endl;
+    sendMobilityMessageToIPv6Module( FBack2, destAddr2, srcAddr2, ie2->getInterfaceId() );
+    
+    // obsluga handover w PAR, ustalenie tunelu PCoA -> NCoA
+    tunneling->createTunnel(IPv6Tunneling::NORMAL ,ie->ipv6Data()->getPreferredAddress() ,mipv6Msg->getNCoA() ,mipv6Msg->getPCoA());
+    // Adam powinnien tutaj chyba BS[0] dodawac sobie BindingCacheEntry
+    
+    delete mipv6Msg;
+    delete ctrlInfo;    
+}
+
+void xMIPv6::processFBAMessage( FastBindingAcknowledge* mipv6Msg, IPv6ControlInfo* ctrlInfo )
+{
+    if( mipv6Msg->getHandover_accepted() == 1 ){    // jesli handover przyjety przez NAR
+        // inna obsluga przez MN i NAR    
+        if( this->getParentModule()->getParentModule()->getSubmodule("ssInfo") ){    // obluga MN
+            EV << "obluga MN" << endl;
+            HandoverNotifyAcknowledge *HNAck = new HandoverNotifyAcknowledge("HandoverNotifyAcknowledge");
+            HNAck->setKind(MK_HANDOVER_NOTIFY_ACK);
+      // HNAck wyslane z xMIPv6 do WMaxCtrl 
+            sendMobilityMessageToIPv6Module( HNAck, ctrlInfo->getDestAddr(), ctrlInfo->getSrcAddr(), ctrlInfo->getInterfaceId() );
+            // ustala swoj nowy adres CoA = NCoA, tworzy binding cache entry?
+            tunneling->createTunnel(IPv6Tunneling::NORMAL ,mipv6Msg->getNCoA() ,ctrlInfo->getSrcAddr() ,IPv6Address::UNSPECIFIED_ADDRESS );
+
+            // stworzenie reverse tunnel, czyli NCoA -> HA, jesli dostanie pakiet z destAddr = PCoA, czyli od MN, ktory jeszcze nie wie, ze MN zmienil PCoA na NCoA
+        }
+        if( this->getParentModule()->getParentModule()->getSubmodule("bsIPv6") ){    // obluga NAR
+            EV << "BS[0] ROZPOCZAL TUNELOWANIE PCOA->NCOA" << endl;     // POPRAWIC
+            // ustawiac DupAddrDetectTransmits na 0 aby nie rozpoczynac DAD na tym interface
+            ift -> getInterface(1) -> ipv6Data() -> setDupAddrDetectTransmits(0); // WiMAX BS[1] , NAR
+
+            // dodaje INCOMPLETE Neighbour Cache Entry, NCoA na interface WiMAX BS[1]
+            // ipv6nd->neighbourCache.addNeighbour(mipv6Msg -> getNCoA(), ift -> getInterface(1) -> getInterfaceId() );
+            //.addNeighbour(mipv6Msg -> getNCoA(), ift -> getInterface(1) );
+            // proxy neighbor cache entry
+            
+        }
+    }
+    delete mipv6Msg;
+    delete ctrlInfo;    
+}
+
+//===== end Adam ======================================================
 
 void xMIPv6::initiateMIPv6Protocol(InterfaceEntry *ie, IPv6Address& CoA)
 {
@@ -272,7 +475,7 @@ void xMIPv6::initiateMIPv6Protocol(InterfaceEntry *ie, IPv6Address& CoA)
 
 		// The MN is supposed to send a BU to the HA after forming a CoA
 		IPv6Address haDest = ie->ipv6Data()->getHomeAgentAddress(); // HA address for use in the BU for Home Registration
-
+        EV << "createBUTimer" << endl;
 		createBUTimer(haDest, ie);
 
 		// RO with CNs is triggered after receiving a valid BA from the HA
@@ -718,7 +921,7 @@ EV <<"\n<<======THIS IS THE (SMALL) ROUTINE FOR APPENDING CONTROL INFO TO MOBILI
 	EV << "controlInfo: DestAddr=" << controlInfo->destAddr()
 	   << "SrcAddr=" << controlInfo->srcAddr()
 	   << "InterfaceId=" << controlInfo->interfaceId() << endl;
-	/*
+	
 	// TODO solve the HA DAD problem in a different way
 	if( dynamic_cast<BindingAcknowledgement*>(msg) && rt6->isHomeAgent() )
 	{
@@ -1542,7 +1745,7 @@ void xMIPv6::initReturnRoutability(const IPv6Address& cnDest, InterfaceEntry* ie
 		}
 		//else
 		//	delete CoTI;
-
+        EV << "sendHoTI = " << sendHoTI << "   sendCoTI = " << sendCoTI << endl;
 		if ( !sendHoTI && !sendCoTI ) // cnEntry can not be NULL as a consequence of the other two flag's values
 		{
 			// we already had a valid home and care-of token
@@ -1554,13 +1757,14 @@ void xMIPv6::initReturnRoutability(const IPv6Address& cnDest, InterfaceEntry* ie
 		}
 	//}
 
-
+    EV << "recentlySentHOTI = " << bul->recentlySentHOTI(cnDest, ie) << endl;
 	if ( sendHoTI && !bul->recentlySentHOTI(cnDest, ie) )
 	{
 		// no entry for this CN available: create Home Test Init message to be sent via HA
 		createAndSendHoTIMessage(cnDest, ie);
 	}
 
+    EV << "recentlySentCOTI = " << bul->recentlySentCOTI(cnDest, ie) << endl;
 	if ( sendCoTI && !bul->recentlySentCOTI(cnDest, ie) )
 	{
 		/*A Care-of Test Init message MUST be created as described in Section

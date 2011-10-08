@@ -438,7 +438,8 @@ std::ostream& operator<<(std::ostream& os, const IPv6InterfaceData::HomeNetworkI
 
 void IPv6InterfaceData::updateHomeNetworkInfo(const IPv6Address& hoa, const IPv6Address& ha, const IPv6Address& prefix, const int prefixLength)
 {
-	EV<< "\n++++++ Updating the Home Network Information \n";
+	EV << "\n++++++ Updating the Home Network Information \n IPv6InterfaceData::updateHomeNetworkInfo \n";
+    // EV << "HoA = "<< hoa.str();
 	homeInfo.HoA = hoa;
 	homeInfo.homeAgentAddr = ha;
 	homeInfo.prefix = prefix;

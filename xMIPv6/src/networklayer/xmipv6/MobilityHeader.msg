@@ -27,8 +27,11 @@ cplusplus {{
 #include "IPv6Address.h"
 #include "IPv6Datagram.h" // added by CB
 #include "IPv6ExtensionHeaders.h" // 17.10.07 - CB
+#include "MACAddress.h" // Adam
 }}
 
+
+class noncobject MACAddress;
 
 class noncobject IPv6Address;
 
@@ -47,6 +50,12 @@ enum MobilityHeaderType
     BINDING_UPDATE = 5;
     BINDING_ACKNOWLEDGEMENT = 6;
     BINDING_ERROR = 7;
+    HANDOVER_NOTIFY = 8;
+    ROUTER_SOLICITATION_FOR_PROXY_ADVERTISEMENT = 9;
+    FAST_BINDING_UPDATE = 10;
+    FAST_BINDING_ACKNOWLEDGE = 11;
+    HANDOVER_INITIATE = 12;
+    HANDOVER_ACKNOWLEDGE = 13;
 }
 
 packet MobilityHeader // extends IPv6ExtensionHeader // TODO check how to define MobilityHeader as subclass of IPv6ExtensionHeader
@@ -174,3 +183,57 @@ packet HomeAddressOption extends IPv6DestinationOptionsHeader
     @customize(true);
     IPv6Address homeAddress;
 }
+//==== Adam 07-09-2011 ======================================================
+packet HandoverNotify extends MobilityHeader
+{
+    int BS_index;    // should be AP-ID, BSID
+}
+
+packet HandoverNotifyAcknowledge extends MobilityHeader
+{
+}
+
+packet RouterSolicitationForProxyAdvertisement extends MobilityHeader
+{
+    int AP_ID;
+}
+
+packet ProxyRouterAdvertisement extends MobilityHeader
+{
+    int    AP_ID;
+    MACAddress     L2_Addr;
+    IPv6Address    L3_Addr;
+    IPv6Address    Prefix;
+    int            PrefixLength;
+}
+
+packet FastBindingUpdate extends MobilityHeader
+{
+    int     AP_ID;
+    IPv6Address NCoA;
+    IPv6Address PCoA;
+    MACAddress MN_Mac;
+}
+
+packet FastBindingAcknowledge extends MobilityHeader
+{
+    IPv6Address NCoA;
+    IPv6Address PCoA;
+    int handover_accepted;
+}
+
+packet HandoverInitiate extends MobilityHeader
+{
+    IPv6Address NCoA;
+    IPv6Address PCoA;
+    MACAddress MN_Mac;
+}
+
+packet HandoverAcknowledge extends MobilityHeader
+{
+    int handover_accepted;   // 0 = no, 1 = yes
+    IPv6Address NCoA;
+    IPv6Address PCoA;    
+}
+//==== end Adam =============================================================
+

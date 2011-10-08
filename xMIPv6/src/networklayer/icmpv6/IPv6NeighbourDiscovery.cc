@@ -18,6 +18,9 @@
 
 #include "IPv6NeighbourDiscovery.h"
 #include "xMIPv6Access.h"
+#include "InterfaceTableAccess.h"
+#include "IPAddressResolver.h"  // Adam
+#include <ModuleAccess.h>
 
 #define MK_ASSIGN_LINKLOCAL_ADDRESS 0
 #define MK_SEND_PERIODIC_RTRADV 1
@@ -27,9 +30,9 @@
 #define MK_RD_TIMEOUT 5
 #define MK_NUD_TIMEOUT 6
 #define MK_AR_TIMEOUT 7
+#define MK_AR_ASSIGN_GLOBAL_ADDRESS_WIMAX 8
 
 Define_Module(IPv6NeighbourDiscovery);
-
 
 IPv6NeighbourDiscovery::IPv6NeighbourDiscovery()
     : neighbourCache(*this)
@@ -57,6 +60,7 @@ void IPv6NeighbourDiscovery::initialize(int stage)
     if (stage==3)
     {
         ift = InterfaceTableAccess().get();
+        ift2 = InterfaceTableAccess2().get();
         rt6 = RoutingTable6Access().get();
         icmpv6 = ICMPv6Access().get();
 
@@ -78,7 +82,6 @@ void IPv6NeighbourDiscovery::initialize(int stage)
         for (int i=0; i < ift->getNumInterfaces(); i++)
         {
             InterfaceEntry *ie = ift->getInterface(i);
-
             if (ie->ipv6Data()->getAdvSendAdvertisements() && !(ie->isLoopback()))
             {
                 createRATimer(ie);
@@ -90,8 +93,13 @@ void IPv6NeighbourDiscovery::initialize(int stage)
         //We want routers to boot up faster!
         if (rt6->isRouter())
             scheduleAt(simTime()+uniform(0,0.3), msg);//Random Router bootup time
-        else
-            scheduleAt(simTime()+uniform(0.4,1), msg);//Random Host bootup time
+        else{
+            if( this->getParentModule()->getParentModule()->findSubmodule("ssInfo") != -1 )
+                scheduleAt(simTime()+uniform(0.4,0.7), msg);//Random Host bootup time
+            else
+                scheduleAt(simTime()+uniform(0.4,1), msg);//Random Host bootup time
+            // scheduleAt(simTime()+uniform(0.4,1), msg);//Random Host bootup time
+        }
 
         statVectorStartDAD.setName("Starting DAD");
     }
@@ -139,9 +147,17 @@ void IPv6NeighbourDiscovery::handleMessage(cMessage *msg)
         }
         else if (msg->getKind()==MK_AR_TIMEOUT)
         {
+        
             EV << "Address Resolution Timeout message received\n";
             processARTimeout(msg);
         }
+        else if (msg->getKind()==MK_AR_ASSIGN_GLOBAL_ADDRESS_WIMAX)
+        {
+        
+            EV << "Address Resolution Timeout message received\n";
+            CreateAndSendAssignAddressNotify();
+            delete msg;
+        }        
         else
             error("Unrecognized Timer");//stops sim w/ error msg.
     }
@@ -170,28 +186,42 @@ void IPv6NeighbourDiscovery::processNDMessage(ICMPv6Message *msg,
     if (dynamic_cast<IPv6RouterSolicitation *>(msg))
     {
         IPv6RouterSolicitation *rs = (IPv6RouterSolicitation *)msg;
+        EV << "processRSPacket" << endl;
         processRSPacket(rs, ctrlInfo);
     }
     else if (dynamic_cast<IPv6RouterAdvertisement *>(msg))
     {
         IPv6RouterAdvertisement *ra = (IPv6RouterAdvertisement *)msg;
+        EV << "processRAPacket" << endl;
         processRAPacket(ra, ctrlInfo);
     }
     else if (dynamic_cast<IPv6NeighbourSolicitation *>(msg))
     {
         IPv6NeighbourSolicitation *ns = (IPv6NeighbourSolicitation *)msg;
+        EV << "processNSPacket" << endl;
         processNSPacket(ns, ctrlInfo);
     }
     else if (dynamic_cast<IPv6NeighbourAdvertisement *>(msg))
     {
         IPv6NeighbourAdvertisement *na = (IPv6NeighbourAdvertisement *)msg;
+        EV << "processNAPacket" << endl;
         processNAPacket(na, ctrlInfo);
     }
     else if (dynamic_cast<IPv6Redirect *>(msg))
     {
         IPv6Redirect *redirect = (IPv6Redirect *)msg;
+        EV << "processRedirectPacket" << endl;
         processRedirectPacket(redirect, ctrlInfo);
     }
+//============= Adam 10-09-2011 =====================
+    else if (dynamic_cast<IPv6AssignAddressNotify *>(msg))
+    {
+    IPv6AssignAddressNotify *notify = (IPv6AssignAddressNotify *)msg;
+    EV << "process Assig nAddress Notify" << endl;
+    setAP_InfoAndCreateMsg( notify->getAP_ID() ,notify->getL2_Addr() ,notify->getL3_Addr() ,notify->getPrefix() ,notify->getPrefixLength() );
+    delete msg;
+    }    
+//============= Adam, end  10-09-2011==================        
     else
     {
         error("Unrecognized ND message!");
@@ -868,8 +898,10 @@ void IPv6NeighbourDiscovery::processDADTimeout(cMessage *msg)
         	// call some appropriate methods
         	if ( rt6->isMobileNode() )
         	{
-		    	if ( entry.hFlag == false ) // if we are not in the home network, send BUs
+		    	if ( entry.hFlag == false ){ // if we are not in the home network, send BUs
+                    EV << endl << endl << ">>>>>>>>>>>>> SEND BU <<<<<<<<<<<<" << endl;
 		  			mipv6->initiateMIPv6Protocol(ie, tentativeAddr);
+                }
 		  		/*
 		    	else if ( entry.returnedHome ) // if we are again in the home network
 		  		{
@@ -886,15 +918,23 @@ void IPv6NeighbourDiscovery::processDADTimeout(cMessage *msg)
 // =================================Start: Zarrar Yousaf 08.07.07 ===============================================
 /* == Calling the routine to assign global scope adddresses to the the routers only. At present during the simulation initialization, the FlatNetworkConfigurator6 assigns a 64 bit prefix to the routers but for xMIPv6 operation, we need full 128bit global scope address, only for routers. The call to  autoConfRouterGlobalScopeAddress() will autoconfigure the full 128 bit global scope address, which will be used by the MN in its BU message destination address, especially for home registeration.
 */
-if (rt6->isRouter() && !(ie->isLoopback()))
- 	{
-	for(int i=0; i< ie->ipv6Data()->getNumAdvPrefixes();i++)
-		{
-		IPv6Address globalAddress = ie->ipv6Data()->autoConfRouterGlobalScopeAddress(i);
-		ie->ipv6Data()->assignAddress(globalAddress, false, 0, 0);
-// 		ie->ipv6Data()->deduceAdvPrefix(); //commented out but the above two statements can be replaced with this single statement. But i am using the above two statements for clarity reasons.
-		}
-	}
+        if (rt6->isRouter() && !(ie->isLoopback())) {
+            for(int i=0; i< ie->ipv6Data()->getNumAdvPrefixes();i++) {
+                IPv6Address globalAddress = ie->ipv6Data()->autoConfRouterGlobalScopeAddress(i);
+                ie->ipv6Data()->assignAddress(globalAddress, false, 0, 0);
+
+        //=== Adam ==================================================================
+                if( this->getParentModule()->getParentModule()->getSubmodule("bsIPv6") && ift->getInterface(1) == ie ){ 
+                // jesli interface to WiMAX BS        
+                    EV << "ie->info = " << ie->info() << endl;
+                    EV << "index BS = " << this->getParentModule()->getParentModule()->getIndex() << endl;
+                    // ustawienie AP_Info dla BSa
+                    setAP_InfoAndCreateMsg( this->getParentModule()->getParentModule()->getIndex() ,ie->getMacAddress() ,globalAddress ,ie->ipv6Data()->getAdvPrefix(i).prefix, ie->ipv6Data()->getAdvPrefix(i).prefixLength   );
+                }
+        //=== Adam end ==============================================================
+        // 		ie->ipv6Data()->deduceAdvPrefix(); //commented out but the above two statements can be replaced with this single statement. But i am using the above two statements for clarity reasons.
+            }
+        }
 // ==================================End: Zarrar Yousaf 08.07.07===========================================
         /*RFC 2461: Section 6.3.7 2nd Paragraph
         Before a host sends an initial solicitation, it SHOULD delay the
@@ -914,6 +954,55 @@ if (rt6->isRouter() && !(ie->isLoopback()))
         }
     }
 }
+
+//=== Adam ,ustawia we wszystkch BSach tablice AP_Info ======================
+void IPv6NeighbourDiscovery::setAP_InfoAndCreateMsg(int BSindex ,MACAddress Macaddr ,IPv6Address IPv6Addr ,IPv6Address prefix ,int prefixLength )
+{
+    EV << "Changing AP_InfoTable" << endl;
+    EV << "MACAddress = " << Macaddr.str() << endl;
+    EV << "IPv6Addr = " << IPv6Addr.str() << endl;
+    EV << "prefix = " << prefix.str() << endl;
+    EV << "prefixLength = " << prefixLength << endl;
+
+    
+    ift2 -> setAP_Info( BSindex ,Macaddr ,IPv6Addr ,prefix ,prefixLength );
+    if( BSindex == this->getParentModule()->getParentModule()->getIndex() ){
+        // jesli AR sam dostal nowy adres to wysyla do innych ARow msg o tym ( u mnie tylko 2 ARy )
+        // wyslac self msg po 5 sek od otrzymania globalnego adresu WiMAX
+        cMessage *assignTimeout = new cMessage("TimeoutAssignAddressNotify", MK_AR_ASSIGN_GLOBAL_ADDRESS_WIMAX);
+        scheduleAt(simTime()+5, assignTimeout);     
+    }
+    
+}
+
+void IPv6NeighbourDiscovery::CreateAndSendAssignAddressNotify()
+{
+    IPv6AssignAddressNotify *assign = new IPv6AssignAddressNotify("IPv6AssignAddressNotify");
+    InterfaceEntry *ie = ift -> getInterface(2);    // eth BS
+    
+    int myIndex = this->getParentModule()->getParentModule()->getIndex();
+    
+    assign -> setAP_ID( myIndex );
+    assign -> setL2_Addr( ift2->getL2_Addr(myIndex) );
+    assign -> setL3_Addr( ift2->getL3_Addr(myIndex) );
+    assign -> setPrefix( ift2->getPrefix(myIndex) );
+    assign -> setPrefixLength( ift2->getPrefixLength(myIndex) );
+
+    IPv6Address myIPv6Address = ie->ipv6Data()->getPreferredAddress();
+    IPv6Address destAddr;
+    
+    if( this->getParentModule()->getParentModule()->getIndex() == 0 ){  // jesli BS[0]
+        destAddr = IPAddressResolver().resolve("BS[1]").get6();
+        ASSERT(!destAddr.isUnspecified());
+    }else{  // jesli BS[1]
+        destAddr = IPAddressResolver().resolve("BS[0]").get6();
+        ASSERT(!destAddr.isUnspecified());
+    }
+    
+    sendPacketToIPv6Module(assign, destAddr, myIPv6Address, ie->getInterfaceId());
+}
+
+//=== Adam end ==============================================================
 
 IPv6RouterSolicitation *IPv6NeighbourDiscovery::createAndSendRSPacket(InterfaceEntry *ie)
 {
@@ -983,6 +1072,7 @@ void IPv6NeighbourDiscovery::cancelRouterDiscovery(InterfaceEntry *ie)
     if (rdEntry != NULL)
     {
         EV << "rdEntry is not NULL, RD cancelled!" << endl;
+        
         cancelEvent(rdEntry->timeoutMsg);
         //rdEntry->timeoutMsg = NULL;  // FIX 18.12.07 - CB
         rdList.erase(rdEntry);
@@ -1192,7 +1282,7 @@ IPv6RouterAdvertisement *IPv6NeighbourDiscovery::createAndSendRAPacket(
         {
             IPv6InterfaceData::AdvPrefix advPrefix = ie->ipv6Data()->getAdvPrefix(i);
             IPv6NDPrefixInformation prefixInfo;
-
+            // EV << "advPrefix" << ie->ipv6Data()->detailedInfo()<< endl;
 			EV<<"\n+=+=+=+= Appendign Prefix Info Option to RA +=+=+=+=\n";
 			EV<<"Prefix Vaue: " <<advPrefix.prefix <<endl;
 			EV<<"Prefix Length: " <<advPrefix.prefixLength <<endl;
@@ -1259,6 +1349,7 @@ void IPv6NeighbourDiscovery::processRAPacket(IPv6RouterAdvertisement *ra,
     		// in case we are currently performing DAD we ignore this RA
     		// TODO improve this procedure in order to allow reinitiating DAD
     		// (which means cancel current DAD, start new DAD)
+            EV << "DAD in progress, ignore RA" << endl;
     		delete ra;
     		return;
     	}
@@ -1282,7 +1373,8 @@ void IPv6NeighbourDiscovery::processRAPacket(IPv6RouterAdvertisement *ra,
             	//if ( ! rt6->isMobileNode() ) // If auto addr conf is set and node is not MN (Zarrar Yousaf 20.07.07)
 	                //processRAPrefixInfoForAddrAutoConf(prefixInfo, ie); // We process prefix Info and form an addr for all nodes except MN
 	            //else // but if the node is a MN
-            		processRAPrefixInfoForAddrAutoConf( prefixInfo, ie, ra->getHomeAgentFlag() ); // then calling the overloaded function for address configuration. The address conf for MN is different from other nodes as it needs to classify the newly formed address as HoA or CoA, depending on the status of the H-Flag. (Zarrar Yousaf 20.07.07)
+                EV << "auto addr conf is set" << endl;
+            	processRAPrefixInfoForAddrAutoConf( prefixInfo, ie, ra->getHomeAgentFlag() ); // then calling the overloaded function for address configuration. The address conf for MN is different from other nodes as it needs to classify the newly formed address as HoA or CoA, depending on the status of the H-Flag. (Zarrar Yousaf 20.07.07)
             }
 
             // When in foreign network(s), the MN needs info about its HA address and its own Home Address (HoA), when sending BU to HA and CN(s). Therefore while in the home network I intialise struct HomeNetworkInfo{} with HoA and HA address, which will eventually be used by the MN while sending BUs from within visit networks. (Zarrar Yousaf 12.07.07)
@@ -1677,6 +1769,7 @@ void IPv6NeighbourDiscovery::createRATimer(InterfaceEntry *ie)
     	ie->ipv6()->setMaxRtrAdvInterval(IPv6NeighbourDiscovery::getMaxRAInterval()); //should be 0.03 for MIPv6 Support
    	}*/
     // update 23.10.07 - CB
+
     if( isConnectedToWirelessAP(ie) )
     {
     	EV<<"This Interface is connected to a WLAN AP, hence using MIPv6 Default Values"<<endl;
@@ -2302,8 +2395,10 @@ void IPv6NeighbourDiscovery::processNAForIncompleteNCEState(
             EV << "Reachability confirmed through successful Addr Resolution.\n";
             nce->reachabilityExpires = simTime() + ie->ipv6Data()->_getReachableTime();
         }
-        else
+        else{
+            EV << "Reachability confirmed : STALE.\n";//============= Adam 13-09-2011 =====================
             nce->reachabilityState = IPv6NeighbourCache::STALE;
+        }
 
         //- It sets the IsRouter flag in the cache entry based on the Router
         //  flag in the received advertisement.
@@ -2485,11 +2580,10 @@ void IPv6NeighbourDiscovery::processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInfo
 
     for (int i = 0; i < ie->ipv6Data()->getNumAddresses(); i++)
 	{
-		//EV << "/// addrInfo: " << ie->ipv6()->address(i) << endl; // CB
-
-    	if ( ie->ipv6Data()->getAddress(i).getScope() == IPv6Address::LINK )
-    		// skip the link local address - it's not relevant for movement detection
+    	if ( ie->ipv6Data()->getAddress(i).getScope() == IPv6Address::LINK ){
+    		EV << "skip the link local address - it's not relevant for movement detection"<<endl;
     		continue;
+        }
 
     	/*RFC 3775, 11.5.4
     	  A mobile node detects that it has returned to its home link through
@@ -2507,6 +2601,7 @@ void IPv6NeighbourDiscovery::processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInfo
         	// returned home
         	// TODO the MN can have several global scope addresses configured from
         	// different prefixes advertised via a RA -> not supported with this code
+            EV << "Mobile Node has moved to different network" << endl; // Adam
         	if ( rt6->isMobileNode() && ie->ipv6Data()->getAddressType(i) == IPv6InterfaceData::HoA && ie->ipv6Data()->getNumAddresses() > 2)
         		returnedHome = true;
         	else
@@ -2542,6 +2637,7 @@ void IPv6NeighbourDiscovery::processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInfo
 			{
 				// we have to remove the CoA before we create a new one
 				EV << "Node returning home - removing CoA...\n";
+                EV << endl << ie->info() << endl;
 				CoA = ie->ipv6Data()->removeAddress(IPv6InterfaceData::CoA);
 
 				// nothing to do more wrt managing addresses, as we are at home and a HoA is
@@ -2635,11 +2731,17 @@ bool IPv6NeighbourDiscovery::isConnectedToWirelessAP(InterfaceEntry *ie)
 {
 	//EV<<"Determination of whether an interface is connected to a WLAN AP or not."<<endl;
 	cModule* node = findContainingNode(this); // FIXME find the node ancestor by @node
-	cGate* gate = node->gate(ie->getNodeOutputGateId());
+    // Adam wyjatek na BS[0] i BS[1]
+    
+    if( node -> findSubmodule("bsMac") != -1  )
+        return true;
+    cGate* gate = node->gate(ie->getNodeOutputGateId());
 	ASSERT(gate!=NULL); //to make sure that the gate exists
 	// TODO generalize
 	cGate* connectedGate = gate->getNextGate();
-	if (connectedGate!=NULL)
+    EV << "connectedGate->getFullName()=" << connectedGate->getFullName() << "  connectedGate->getOwnerModule()=" << connectedGate->getOwnerModule() << endl;
+	EV << "isNode(connectedGate->getOwnerModule())=" << isNode(connectedGate->getOwnerModule());
+    if (connectedGate!=NULL)
 	{
 		ASSERT(isNode(connectedGate->getOwnerModule()));
 		cModule* wlanMAC = connectedGate->getOwnerModule()->getSubmodule("relayUnit");

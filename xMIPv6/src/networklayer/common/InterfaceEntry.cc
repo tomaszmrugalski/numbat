@@ -34,6 +34,7 @@
 #include "IPv6InterfaceData.h"
 #endif
 
+using namespace std;
 
 void InterfaceProtocolData::changed(int category)
 {

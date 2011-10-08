@@ -86,6 +86,7 @@ class INET_API xMIPv6 : public cSimpleModule
 
   protected:
 	IInterfaceTable* ift;
+    InterfaceTable* ift2;
 	RoutingTable6* rt6;
 	BindingUpdateList* bul; //31.07.07
 	BindingCache* bc; //31.07.07
@@ -298,7 +299,6 @@ class INET_API xMIPv6 : public cSimpleModule
 	 * Method to be used when we have moved to a new access network and the new CoA is available for that interface.
 	 */
 	void initiateMIPv6Protocol(InterfaceEntry *ie, IPv6Address& CoA); //27.07.07
-
 
 	/**
 	 * This method destroys all tunnels associated to the previous CoA
@@ -543,6 +543,16 @@ protected:
 	 */
 	void createCareOfTokenEntryExpiryTimer(IPv6Address& cnAddr, InterfaceEntry* ie, simtime_t scheduledTime) { createTokenEntryExpiryTimer(cnAddr, ie, scheduledTime, KEY_CTOKEN_EXP); };
 
+    //====== Adam 08-08-2011 ==================================================
+    void CreateAndSendRtSolPr( HandoverNotify* mipv6Msg);   // beginning of Fast Handover process
+    void CreateAndSendPrRtAdv( RouterSolicitationForProxyAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    void processPrRtAdvMessage( ProxyRouterAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    void processFBUMessage( FastBindingUpdate* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    void processHIMessage( HandoverInitiate* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    void processHAckMessage( HandoverAcknowledge* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    void processFBAMessage( FastBindingAcknowledge* mipv6Msg, IPv6ControlInfo* ctrlInfo );
+    //======= end Adam ========================================================
+    
 private:
 	/**
 	 * Creates or overwrites a timer for {home, care-of} keygen token expiry that fires at provided scheduledTime.

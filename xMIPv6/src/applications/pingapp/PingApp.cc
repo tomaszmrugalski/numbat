@@ -77,6 +77,7 @@ void PingApp::handleMessage(cMessage *msg)
     if (msg->isSelfMessage())
     {
         // on first call we need to initialize
+
         if (destAddr.isUnspecified())
         {
             destAddr = IPAddressResolver().resolve(par("destAddr"));
@@ -113,7 +114,7 @@ void PingApp::sendPing()
     pingTx = sendSeqNo; //Statistics: Zarrar Yousaf
     sentVector.record(pingTx); //Statistics: Zarrar Yousaf
 
-
+    EV << endl << endl << "send ping" << endl << "destAddr = " << destAddr << endl << "srcAddr = " << srcAddr << endl<<endl;
     sendToICMP(msg, destAddr, srcAddr, hopLimit);
 }
 
@@ -154,6 +155,7 @@ void PingApp::sendToICMP(cMessage *msg, const IPvXAddress& destAddr, const IPvXA
 void PingApp::processPingResponse(PingPayload *msg)
 {
     // get src, hopCount etc from packet, and print them
+    EV << "PingApp::processPingResponse_start" << endl;
     IPvXAddress src, dest;
     int msgHopCount = -1;
     if (dynamic_cast<IPControlInfo *>(msg->getControlInfo())!=NULL)
@@ -178,9 +180,8 @@ void PingApp::processPingResponse(PingPayload *msg)
 
 
 
-    if (printPing)
-    {
-        cout << getFullPath() << ": reply of " << std::dec << msg->getByteLength()
+    if (printPing){
+        EV << getFullPath() << ": reply of " << std::dec << msg->getByteLength()
              << " bytes from " << src
              << " icmp_seq=" << msg->getSeqNo() << " ttl=" << msgHopCount
              << " time=" << (rtt * 1000) << " msec"
@@ -245,19 +246,19 @@ void PingApp::finish()
     delayStat.recordAs("Ping roundtrip delays");
 
     // print it to stdout as well
-    cout << "--------------------------------------------------------" << endl;
-    cout << "\t" << getFullPath() << endl;
-    cout << "--------------------------------------------------------" << endl;
+    EV << "--------------------------------------------------------" << endl;
+    EV << "\t" << getFullPath() << endl;
+    EV << "--------------------------------------------------------" << endl;
 
-    cout << "sent: " << sendSeqNo
+    EV << "sent: " << sendSeqNo
          << "   drop rate (%): " << (100 * dropCount / (double)sendSeqNo) << endl;
-    cout << "round-trip min/avg/max (ms): "
+    EV << "round-trip min/avg/max (ms): "
          << (delayStat.getMin()*1000.0) << "/"
          << (delayStat.getMean()*1000.0) << "/"
          << (delayStat.getMax()*1000.0) << endl;
-    cout << "stddev (ms): "<< (delayStat.getStddev()*1000.0)
+    EV << "stddev (ms): "<< (delayStat.getStddev()*1000.0)
          << "   variance:" << delayStat.getVariance() << endl;
-    cout <<"--------------------------------------------------------" << endl;
+    EV <<"--------------------------------------------------------" << endl;
 }
 
 

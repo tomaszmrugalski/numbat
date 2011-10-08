@@ -37,6 +37,7 @@
 #include "IPv6NeighbourCache.h"
 #include "ICMPv6.h"
 #include "ICMPv6Access.h"
+#include "MACAddress.h"
 //#include "xMIPv6Access.h" // 13.9.07 - CB
 
 /**
@@ -88,6 +89,7 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
          * running.
          */
         virtual void reachabilityConfirmed(const IPv6Address& neighbour, int interfaceId);
+        IPv6NeighbourCache neighbourCache; // Adam zmiana z protected na public !!!
 
     protected:
 
@@ -95,11 +97,11 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         cQueue pendingQueue;
 
         IInterfaceTable *ift;
+        InterfaceTable *ift2;
         RoutingTable6 *rt6;
         ICMPv6 *icmpv6;
         class INET_API xMIPv6 *mipv6; // in case the node has MIP support
 
-        IPv6NeighbourCache neighbourCache;
         typedef std::set<cMessage*> RATimerList;
 
         // stores information about a pending Duplicate Address Detection for
@@ -165,7 +167,6 @@ class INET_API IPv6NeighbourDiscovery : public cSimpleModule
         virtual IPv6NeighbourDiscovery::AdvIfEntry *fetchAdvIfEntry(InterfaceEntry *ie);
         virtual IPv6NeighbourDiscovery::RDEntry *fetchRDEntry(InterfaceEntry *ie);
         /************************End of Miscellaneous Stuff********************/
-
         /**
          *  This function accepts the datagram's destination address and attempts
          *  to determine the destination's next hop address and interface ID by:
@@ -375,5 +376,12 @@ protected: // update 12.9.07 - CB
 
 	protected:
 		void routersUnreachabilityDetection(const InterfaceEntry* ie); // 3.9.07 - CB
+//============= Adam 09-09-2011 =====================
+        void setAP_InfoAndCreateMsg(int BSindex ,MACAddress Macaddr ,IPv6Address IPv6Addr ,IPv6Address prefix, int prefixLength);
+        void CreateAndSendAssignAddressNotify();
+
+        cMessage* TimeoutAssignAddressNotify;  // timer aby powiadomic inne ARy o swoim global adresie WiMAX, czekam aby kazdy AR mial swoj adres globalny na eth
+//============= Adam, end  09-09-2011==================
+
 };
 #endif //IPV6NEIGHBOURDISCOVERY_H

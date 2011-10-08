@@ -464,24 +464,18 @@ const IPv6Route *RoutingTable6::doLongestPrefixMatch(const IPv6Address& dest)
 
     // bugfix - CB
     RouteList::iterator it=routeList.begin();
-    while ( it!=routeList.end() )
-    {
-    	if ( dest.matches((*it)->getDestPrefix(),(*it)->getPrefixLength()) )
-    {
-    		if (simTime() > (*it)->getExpiryTime() && (*it)->getExpiryTime() != 0)//since 0 represents infinity.
-        {
-    			if ( (*it)->getSrc()==IPv6Route::FROM_RA )
-            {
+    while ( it!=routeList.end() ){
+    	if ( dest.matches((*it)->getDestPrefix(),(*it)->getPrefixLength()) ){
+    		if (simTime() > (*it)->getExpiryTime() && (*it)->getExpiryTime() != 0){//since 0 represents infinity.
+    			if ( (*it)->getSrc()==IPv6Route::FROM_RA ){
                 EV << "Expired prefix detected!!" << endl;
     				it = routeList.erase(it);
     				//RouteList::iterator oldIt = it++;
     				//removeOnLinkPrefix((*oldIt)->getDestPrefix(), (*oldIt)->getPrefixLength());
-            }
-        }
-    		else
+                }
+            }else
     			return *it;
-    	}
-    	else
+    	}else
     		++it;
     }
     // FIXME todo: if we selected an expired route, throw it out and select again!

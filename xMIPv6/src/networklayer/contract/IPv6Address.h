@@ -97,7 +97,15 @@ class INET_API IPv6Address
         IPv6Address()  {
             d[0]=d[1]=d[2]=d[3]=0;
         }
-
+		// Adam Contructor wziety z Numbata
+		// IPv6Address(const char * a, bool plain)
+		// {
+			// if (!plain)
+				// set(a);
+				// memcpy(addr, a, 16);		//Adam
+			// else
+				// inet_pton6(a, (char*)addr);
+		// }		
         /**
          *  Constructor.
          *  Constructs an IPv6 address based from the 4 given segments.

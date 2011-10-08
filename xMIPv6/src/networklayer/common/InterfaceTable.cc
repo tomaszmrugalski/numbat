@@ -26,10 +26,11 @@
 #include "InterfaceTable.h"
 #include "NotifierConsts.h"
 
-
 Define_Module( InterfaceTable );
 
 #define INTERFACEIDS_START  100
+
+using namespace std;
 
 std::ostream& operator<<(std::ostream& os, const InterfaceEntry& e)
 {
@@ -143,7 +144,6 @@ void InterfaceTable::addInterface(InterfaceEntry *entry, cModule *ifmod)
     // check name is unique
     if (getInterfaceByName(entry->getName())!=NULL)
         opp_error("addInterface(): interface '%s' already registered", entry->getName());
-
     // insert
     entry->setInterfaceId(INTERFACEIDS_START + idToInterface.size());
     entry->setInterfaceTable(this);
@@ -151,20 +151,22 @@ void InterfaceTable::addInterface(InterfaceEntry *entry, cModule *ifmod)
     invalidateTmpInterfaceList();
 
     // fill in networkLayerGateIndex, nodeOutputGateId, nodeInputGateId
-    if (ifmod)
+    if (ifmod){
         discoverConnectingGates(entry, ifmod);
-
+    }
     nb->fireChangeNotification(NF_INTERFACE_CREATED, entry);
 }
 
 void InterfaceTable::discoverConnectingGates(InterfaceEntry *entry, cModule *ifmod)
 {
-    // ifmod is something like "host.eth[1].mac"; climb up to find "host.eth[1]" from it
+    // ifmod is something like "host.eth[1].mac"; climb up to find "host.eth[1]" from it,
     cModule *host = getParentModule();
-    while (ifmod && ifmod->getParentModule()!=host)
+    while (ifmod && ifmod->getParentModule()!=host){
         ifmod = ifmod->getParentModule();
-    if (!ifmod)
+    }
+    if (!ifmod){
         opp_error("addInterface(): specified module is not in this host/router");
+    }
 
     // find gates connected to host / network layer
     cGate *nwlayerInGate=NULL, *nwlayerOutGate=NULL;
@@ -172,25 +174,29 @@ void InterfaceTable::discoverConnectingGates(InterfaceEntry *entry, cModule *ifm
     {
         cGate *g = i();
         if (!g) continue;
-
         // find the host/router's gates that internally connect to this interface
-        if (g->getType()==cGate::OUTPUT && g->getNextGate() && g->getNextGate()->getOwnerModule()==host)
-            entry->setNodeOutputGateId(g->getNextGate()->getId());
-        if (g->getType()==cGate::INPUT && g->getPreviousGate() && g->getPreviousGate()->getOwnerModule()==host)
-            entry->setNodeInputGateId(g->getPreviousGate()->getId());
-
+        if (g->getType()==cGate::OUTPUT && g->getNextGate() && g->getNextGate()->getOwnerModule()==host){
+            entry->setNodeOutputGateId(g->getNextGate()->getId());  
+        }
+        if (g->getType()==cGate::INPUT && g->getPreviousGate() && g->getPreviousGate()->getOwnerModule()==host){
+            entry->setNodeInputGateId(g->getPreviousGate()->getId());  
+        }
         // find the gate index of networkLayer/networkLayer6/mpls that connects to this interface
-        if (g->getType()==cGate::OUTPUT && g->getNextGate() && g->getNextGate()->isName("ifIn"))
-            nwlayerInGate = g->getNextGate();
-        if (g->getType()==cGate::INPUT && g->getPreviousGate() && g->getPreviousGate()->isName("ifOut"))
-            nwlayerOutGate = g->getPreviousGate();
+        if (g->getType()==cGate::OUTPUT && g->getNextGate() && g->getNextGate()->isName("ifIn")){
+            nwlayerInGate = g->getNextGate();  
+        }
+        if (g->getType()==cGate::INPUT && g->getPreviousGate() && g->getPreviousGate()->isName("ifOut")){
+            nwlayerOutGate = g->getPreviousGate();  
+        }
     }
-
     // consistency checks
     // note: we don't check nodeOutputGateId/nodeInputGateId, because wireless interfaces
     // are not connected to the host
-    if (!nwlayerInGate || !nwlayerOutGate || nwlayerInGate->getIndex()!=nwlayerOutGate->getIndex())
-        opp_error("addInterface(): interface must be connected to network layer's ifIn[]/ifOut[] gates of the same index");
+    if (!nwlayerInGate || !nwlayerOutGate ){
+        opp_error("addInterface(): interface must be connected to network layer's ifIn[]/ifOut[]");
+        if(nwlayerInGate->getIndex()!=nwlayerOutGate->getIndex())
+            opp_error("addInterface(): interface must be connected to network layer's ifIn[]/ifOut[] gates of the same index");
+    }
     entry->setNetworkLayerGateIndex(nwlayerInGate->getIndex());
 }
 
@@ -273,4 +279,44 @@ InterfaceEntry *InterfaceTable::getFirstLoopbackInterface()
             return idToInterface[i];
     return NULL;
 }
+//===== Adam =======================================================
+void InterfaceTable::setAP_Info( int AP_ID ,MACAddress L2_Addr ,IPv6Address L3_Addr ,IPv6Address Prefix ,int PrefixLength)
+{
+    this->BS_Info[AP_ID].AP_ID = AP_ID;
+    this->BS_Info[AP_ID].L2_Addr = L2_Addr;
+    this->BS_Info[AP_ID].L3_Addr = L3_Addr;
+    this->BS_Info[AP_ID].Prefix = Prefix;
+    this->BS_Info[AP_ID].PrefixLength = PrefixLength;
+}
 
+MACAddress InterfaceTable::getL2_Addr(int AP_index)
+{
+    return this->BS_Info[AP_index].L2_Addr;
+}
+
+IPv6Address InterfaceTable::getL3_Addr(int AP_index)
+{
+    return this->BS_Info[AP_index].L3_Addr;
+}
+
+IPv6Address InterfaceTable::getPrefix(int AP_index)
+{
+    return this->BS_Info[AP_index].Prefix;
+}
+
+int InterfaceTable::getPrefixLength(int AP_index)
+{
+    return this->BS_Info[AP_index].PrefixLength;
+}
+
+void InterfaceTable::setHandover_NCoA(IPv6Address prefix, int prefixLength, IPv6Address linkLocal)
+{
+    this->Handover_NCoA = linkLocal.setPrefix(prefix, prefixLength);
+}
+
+IPv6Address InterfaceTable::getHandover_NCoA()
+{
+    return this->Handover_NCoA;
+}
+
+//===== Adam end ===================================================
