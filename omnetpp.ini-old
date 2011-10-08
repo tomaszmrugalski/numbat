@@ -1,62 +1,41 @@
 [General]
 #preload-ned-files = *.ned @nedfiles.lst
-ned-path = util;wimax;xMIPv6\src;
+ned-path = ipv6;util;wimax
 
 network = physim
-debug-on-errors = true
-#nu cpu-time-limit = 9600s
-#sim-time-limit = 200s
+cpu-time-limit = 9600s
+sim-time-limit = 200s
 
 # cmdenv-runs-to-execute = 1,2,3,4,5,6,7,8,9,10
 #cmdenv-runs-to-execute = 1
 cmdenv-express-mode = true
-cmdenv-module-messages = true
-cmdenv-event-banners = true
-cmdenv-interactive = true
+cmdenv-module-messages = false
+cmdenv-event-banners = false
+
 # cmdenv-runs-to-execute = 1
-# cmdenv-event-banners = true
+cmdenv-event-banners = true
 
 # General loglevel for the whole sim
-physim.LogLevel = 1
+physim.LogLevel = 6
 
-# **.debug = true
-# **.coreDebug = true
-
-physim.numBS = 2
-physim.numSS = 1
-
-#config SS
 physim.SS[*].NetworkEntryTime = 0.1
 physim.SS[*].HandoverTime = 3
-physim.SS[*].networkLayer.isMN = true
-physim.SS[*].networkLayer.isHA = false
 
-#config adresow MAC
-physim.BS[0].eth[0].address = "10:AE:00:00:00:02"
-physim.CN[0].eth[0].address = "10:AE:00:00:A1:01"
-physim.internet.eth[0].address = "10:AE:00:00:A2:01"
-physim.internet.eth[1].address = "10:AE:00:00:A2:02"
-physim.internet.eth[2].address = "10:AE:00:00:A2:03"
-# xMIPv6 configuration ##############
-**.neighbourDiscovery.minIntervalBetweenRAs = 0.03s 
-**.neighbourDiscovery.maxIntervalBetweenRAs = 0.07s 
-*.playgroundSizeX = 850 
-*.playgroundSizeY = 850 
-# channel physical parameters
-*.channelcontrol.carrierFrequency = 2.4GHz
-*.channelcontrol.pMax = 2.0mW
-*.channelcontrol.sat = -82dBm
-*.channelcontrol.alpha = 2
-**.CNAddress = "CN[0]" 
-**.CNAddress1 = "CN[1]"
+physim.numBS = 3
+physim.numSS = 4
 
-**.routingTableFile = xmldoc("empty.xml")
-**.numUdpApps = 0
-**.udpAppType = "UDPBasicApp"
-# config BS
-physim.BS[*].bsIPv6.isMN = false
-physim.BS[0].bsIPv6.isHA = true
-physim.BS[1].bsIPv6.isHA = false
+physim.BS[*].bsIPv6.raGen.RaInterval = 0.030
+physim.BS[0].bsIPv6.DHCPv6Srv.preference = 0
+physim.BS[1].bsIPv6.DHCPv6Srv.preference = 1
+physim.BS[2].bsIPv6.DHCPv6Srv.preference = 2
+physim.BS[3].bsIPv6.DHCPv6Srv.preference = 3
+physim.BS[4].bsIPv6.DHCPv6Srv.preference = 4
+physim.BS[*].bsIPv6.DHCPv6Srv.MinDelayAdvertise = 0.010
+physim.BS[*].bsIPv6.DHCPv6Srv.MaxDelayAdvertise = 0.050
+physim.BS[*].bsIPv6.DHCPv6Srv.MinDelayReply = 0.030
+physim.BS[*].bsIPv6.DHCPv6Srv.MaxDelayReply = 0.080
+physim.BS[*].bsIPv6.DHCPv6Srv.MinDelayRelay = 0.060
+physim.BS[*].bsIPv6.DHCPv6Srv.MaxDelayRelay = 0.100
 
 physim.BS[*].bsMac.WMaxCtrlBS.MinDelayCdma = 0.005
 physim.BS[*].bsMac.WMaxCtrlBS.MaxDelayCdma = 0.005
@@ -76,62 +55,7 @@ physim.BS[*].bsMac.WMaxCtrlBS.MinDelayDsxRvd = 0.005
 physim.BS[*].bsMac.WMaxCtrlBS.MaxDelayDsxRvd = 0.010
 physim.BS[*].bsMac.WMaxCtrlBS.MinDelayDsxRsp = 0.050
 physim.BS[*].bsMac.WMaxCtrlBS.MaxDelayDsxRsp = 0.100
-# config CN
 
-**.CN*.numTcpApps = 0 						
-**.CN*.tcpAppType = "TCPGenericSrvApp"
-**.CN*.tcpApp[0].address = ""
-**.CN*.tcpApp[0].port = 1000
-**.CN*.tcpApp[0].replyDelay = 0
-# Ethernet NIC configuration
-**.eth[*].queueType = "DropTailQueue" # in routers
-**.eth[*].queue.frameCapacity = 10  # in routers
-**.eth[*].encap.*.scalar-recording = false
-**.eth[*].mac.promiscuous = false
-**.eth[*].mac.address = "auto"
-# nic settings
-**.mac.address = "auto"
-**.mac.maxQueueSize = 14
-**.mac.rtsThresholdBytes = 4000B
-**.mac.bitrate = 2Mbps
-
-# tcp settings.
-**.tcp.mss = 1024
-**.tcp.advertisedWindow = 14336  # 14*mss
-**.tcp.sendQueueClass = "TCPMsgBasedSendQueue"
-**.tcp.receiveQueueClass = "TCPMsgBasedRcvQueue"
-**.tcp.tcpAlgorithmClass = "TCPReno"
-**.tcp.recordStats = true
-
-**.routingTableFile = xmldoc("empty.xml")
-# **.ipv6.procDelay = 10us
-# **.IPForward = false
-# **.routingFile = ""
-
-# = ===============Added this section for the Correspondent Node (CN) PingApp Parameters====================
-**.CN[0].pingApp.destAddr = "SS[0]"
-#**.CN[1].pingApp.destAddr = ""
-**.CN*.pingApp.destAddr = "" #"SS[0]"
-**.CN*.pingApp.srcAddr = ""
-**.CN*.pingApp.packetSize = 56B
-**.CN*.pingApp.interval = 0.2s
-**.CN*.pingApp.hopLimit = 32
-**.CN*.pingApp.count = 0
-**.CN*.pingApp.startTime = 4s
-**.CN*.pingApp.stopTime = 2000s 
-**.CN*.pingApp.printPing = true
-
-**.SS[0].pingApp.destAddr = "" 
-**.SS*.pingApp.destAddr = "" 
-**.SS*.pingApp.srcAddr = ""
-**.SS*.pingApp.packetSize = 56B
-**.SS*.pingApp.interval = 0.01s
-**.SS*.pingApp.hopLimit = 32
-**.SS*.pingApp.count = 0
-**.SS*.pingApp.startTime = 200s
-**.SS*.pingApp.stopTime = 0
-**.SS*.pingApp.printPing = true
-####################################
 physim.SS[*].ssMac.ssMac.FrameLength = 0.005
 physim.BS[*].bsMac.bsMac.FrameLength = 0.005
 
@@ -141,6 +65,20 @@ physim.internet.MaxDelay = 0.200
 # connection type: 2 - BE, 6 - UGS (see TLV 145.11 in 802.16-2004)
 physim.SS[*].connType = 2
 physim.SS[*].connMsr = 10
+
+# 1 - bursted trunc normal, 2 - beta
+physim.SS[*].ssIPv6.MNode.TrafficType = 2
+physim.SS[*].ssIPv6.MNode.BurstInterval = 0.0111
+physim.SS[*].ssIPv6.MNode.BurstSize = 1
+physim.SS[*].ssIPv6.MNode.BurstPacketSize = 1500
+physim.SS[*].ssIPv6.MNode.InitialDelay = 1.5
+
+# 1 - bursted trunc normal, 2 - beta
+physim.CN[*].CNode.TrafficType = 1
+physim.CN[*].CNode.BurstInterval = 0.012
+physim.CN[*].CNode.BurstSize = 3
+physim.CN[*].CNode.BurstPacketSize = 512
+physim.CN[*].CNode.InitialDelay = 1.5
 
 # === BS parameters ===
 physim.BS[0].x = 100
@@ -152,11 +90,21 @@ physim.BS[2].y = 200
 physim.BS[3].x = 250
 physim.BS[3].y = 200
 
-
-# physim.BS[0].eth[0].address = "10:AE:00:00:00:02"
 # "move right" related params:
+# physim.SS[0].x = 50
+# physim.SS[0].y = 50
+# physim.SS[1].x = 150
+# physim.SS[1].y = 50
+# physim.SS[2].x = 250
+# physim.SS[2].y = 50
+# physim.SS[3].x = 350
+# physim.SS[3].y = 50
+# physim.SS[4].x = 450
+# physim.SS[4].y = 50
+# physim.SS[5].x = 800
+# physim.SS[5].y = 50
 physim.SS[*].x = 0
-physim.SS[*].y = 10
+physim.SS[*].y = 50
 
 # "move around circle" related params:
 physim.SS[*].SStrace_centerx = 200
@@ -169,7 +117,7 @@ physim.SS[*].SStrace_step = 0.02
 # 1 - handover executed after certain timeout (next BS)
 # 2 - simulated SS movement
 # 3 - handover executed after certain timeout (random BS)
-physim.SS[0..18].wmaxIsMobile = 2
+physim.SS[0..18].wmaxIsMobile = 3
 physim.SS[19..].wmaxIsMobile = 0
 
 # Fixed stations:
@@ -184,30 +132,187 @@ physim.SS[13..20].initialBS = 3
 # 1 - move around circle
 physim.SS[*].movementType = 0
 
-# physim.SS[*].ssIPv6.DHCPv6Cli.nextIP = ""
+physim.SS[*].ssIPv6.DHCPv6Cli.nextIP = ""
 
-# physim.SS[0].ssIPv6.mobIPv6mn.prefix = ""
-# physim.SS[0].ssIPv6.mobIPv6mn.myIP = "::"
-# physim.SS[0].ssIPv6.mobIPv6mn.corrIP = "3000::1"
+physim.SS[0].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[0].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[0].ssIPv6.mobIPv6mn.corrIP = "3000::1"
 
- physim.CN[0].prefix = "3000::"
- physim.CN[0].myIP = "3000::1"
- physim.CN[0].corrIP = "::"
+physim.SS[1].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[1].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[1].ssIPv6.mobIPv6mn.corrIP = "3001::1"
 
- physim.CN[1].prefix = "3001::"
- physim.CN[1].myIP = "3001::1"
- physim.CN[1].corrIP = "::"
+physim.SS[2].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[2].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[2].ssIPv6.mobIPv6mn.corrIP = "3002::1"
 
- physim.CN[2].prefix = "3002::"
- physim.CN[2].myIP = "3002::1"
- physim.CN[2].corrIP = "::"
+physim.SS[3].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[3].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[3].ssIPv6.mobIPv6mn.corrIP = "3003::1"
 
- physim.BS[0].prefix = "2000::"
- physim.BS[1].prefix = "2001::"
- physim.BS[2].prefix = "2002::"
+physim.SS[4].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[4].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[4].ssIPv6.mobIPv6mn.corrIP = "3004::1"
 
-# physim.BS[0].bsIPv6.mobIPv6ha.prefix = "2000::"
-# physim.BS[0].bsIPv6.DHCPv6Srv.prefix = "2000::"
+physim.SS[5].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[5].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[5].ssIPv6.mobIPv6mn.corrIP = "3005::1"
+
+physim.SS[6].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[6].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[6].ssIPv6.mobIPv6mn.corrIP = "3006::1"
+
+physim.SS[7].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[7].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[7].ssIPv6.mobIPv6mn.corrIP = "3007::1"
+
+physim.SS[8].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[8].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[8].ssIPv6.mobIPv6mn.corrIP = "3008::1"
+
+physim.SS[9].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[9].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[9].ssIPv6.mobIPv6mn.corrIP = "3009::1"
+
+physim.SS[10].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[10].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[10].ssIPv6.mobIPv6mn.corrIP = "300a::1"
+
+physim.SS[11].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[11].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[11].ssIPv6.mobIPv6mn.corrIP = "300b::1"
+
+physim.SS[12].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[12].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[12].ssIPv6.mobIPv6mn.corrIP = "300c::1"
+
+physim.SS[13].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[13].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[13].ssIPv6.mobIPv6mn.corrIP = "300d::1"
+
+physim.SS[14].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[14].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[14].ssIPv6.mobIPv6mn.corrIP = "300e::1"
+
+physim.SS[15].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[15].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[15].ssIPv6.mobIPv6mn.corrIP = "300f::1"
+
+physim.SS[16].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[16].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[16].ssIPv6.mobIPv6mn.corrIP = "3010::1"
+
+physim.SS[17].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[17].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[17].ssIPv6.mobIPv6mn.corrIP = "3011::1"
+
+physim.SS[18].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[18].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[18].ssIPv6.mobIPv6mn.corrIP = "3012::1"
+
+physim.SS[19].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[19].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[19].ssIPv6.mobIPv6mn.corrIP = "3013::1"
+
+physim.SS[20].ssIPv6.mobIPv6mn.prefix = ""
+physim.SS[20].ssIPv6.mobIPv6mn.myIP = "::"
+physim.SS[20].ssIPv6.mobIPv6mn.corrIP = "3014::1"
+
+physim.CN[0].mobIPv6cn.prefix = "3000::"
+physim.CN[0].mobIPv6cn.myIP = "3000::1"
+physim.CN[0].mobIPv6cn.corrIP = "::"
+
+physim.CN[1].mobIPv6cn.prefix = "3001::"
+physim.CN[1].mobIPv6cn.myIP = "3001::1"
+physim.CN[1].mobIPv6cn.corrIP = "::"
+
+physim.CN[2].mobIPv6cn.prefix = "3002::"
+physim.CN[2].mobIPv6cn.myIP = "3002::1"
+physim.CN[2].mobIPv6cn.corrIP = "::"
+
+physim.CN[3].mobIPv6cn.prefix = "3003::"
+physim.CN[3].mobIPv6cn.myIP = "3003::1"
+physim.CN[3].mobIPv6cn.corrIP = "::"
+
+physim.CN[4].mobIPv6cn.prefix = "3004::"
+physim.CN[4].mobIPv6cn.myIP = "3004::1"
+physim.CN[4].mobIPv6cn.corrIP = "::"
+
+physim.CN[5].mobIPv6cn.prefix = "3005::"
+physim.CN[5].mobIPv6cn.myIP = "3005::1"
+physim.CN[5].mobIPv6cn.corrIP = "::"
+
+physim.CN[6].mobIPv6cn.prefix = "3006::"
+physim.CN[6].mobIPv6cn.myIP = "3006::1"
+physim.CN[6].mobIPv6cn.corrIP = "::"
+
+physim.CN[7].mobIPv6cn.prefix = "3007::"
+physim.CN[7].mobIPv6cn.myIP = "3007::1"
+physim.CN[7].mobIPv6cn.corrIP = "::"
+
+physim.CN[8].mobIPv6cn.prefix = "3008::"
+physim.CN[8].mobIPv6cn.myIP = "3008::1"
+physim.CN[8].mobIPv6cn.corrIP = "::"
+
+physim.CN[9].mobIPv6cn.prefix = "3009::"
+physim.CN[9].mobIPv6cn.myIP = "3009::1"
+physim.CN[9].mobIPv6cn.corrIP = "::"
+
+physim.CN[10].mobIPv6cn.prefix = "300a::"
+physim.CN[10].mobIPv6cn.myIP = "300a::1"
+physim.CN[10].mobIPv6cn.corrIP = "::"
+
+physim.CN[11].mobIPv6cn.prefix = "300b::"
+physim.CN[11].mobIPv6cn.myIP = "300b::1"
+physim.CN[11].mobIPv6cn.corrIP = "::"
+
+physim.CN[12].mobIPv6cn.prefix = "300c::"
+physim.CN[12].mobIPv6cn.myIP = "300c::1"
+physim.CN[12].mobIPv6cn.corrIP = "::"
+
+physim.CN[13].mobIPv6cn.prefix = "300d::"
+physim.CN[13].mobIPv6cn.myIP = "300d::1"
+physim.CN[13].mobIPv6cn.corrIP = "::"
+
+physim.CN[14].mobIPv6cn.prefix = "300e::"
+physim.CN[14].mobIPv6cn.myIP = "300e::1"
+physim.CN[14].mobIPv6cn.corrIP = "::"
+
+physim.CN[15].mobIPv6cn.prefix = "300f::"
+physim.CN[15].mobIPv6cn.myIP = "300f::1"
+physim.CN[15].mobIPv6cn.corrIP = "::"
+
+physim.CN[16].mobIPv6cn.prefix = "3010::"
+physim.CN[16].mobIPv6cn.myIP = "3010::1"
+physim.CN[16].mobIPv6cn.corrIP = "::"
+
+physim.CN[17].mobIPv6cn.prefix = "3011::"
+physim.CN[17].mobIPv6cn.myIP = "3011::1"
+physim.CN[17].mobIPv6cn.corrIP = "::"
+
+physim.CN[18].mobIPv6cn.prefix = "3012::"
+physim.CN[18].mobIPv6cn.myIP = "3012::1"
+physim.CN[18].mobIPv6cn.corrIP = "::"
+
+physim.CN[19].mobIPv6cn.prefix = "3013::"
+physim.CN[19].mobIPv6cn.myIP = "3013::1"
+physim.CN[19].mobIPv6cn.corrIP = "::"
+
+physim.BS[0].bsIPv6.mobIPv6ha.prefix = "2000::"
+physim.BS[0].bsIPv6.DHCPv6Srv.prefix = "2000::"
+physim.BS[1].bsIPv6.mobIPv6ha.prefix = "2001::"
+physim.BS[1].bsIPv6.DHCPv6Srv.prefix = "2001::"
+physim.BS[2].bsIPv6.mobIPv6ha.prefix = "2002::"
+physim.BS[2].bsIPv6.DHCPv6Srv.prefix = "2002::"
+physim.BS[3].bsIPv6.mobIPv6ha.prefix = "2003::"
+physim.BS[3].bsIPv6.DHCPv6Srv.prefix = "2003::"
+physim.BS[4].bsIPv6.mobIPv6ha.prefix = "2004::"
+physim.BS[4].bsIPv6.DHCPv6Srv.prefix = "2004::"
+physim.BS[5].bsIPv6.mobIPv6ha.prefix = "2005::"
+physim.BS[5].bsIPv6.DHCPv6Srv.prefix = "2005::"
+physim.BS[6].bsIPv6.mobIPv6ha.prefix = "2006::"
+physim.BS[6].bsIPv6.DHCPv6Srv.prefix = "2006::"
+
 
 # this section defines, if particular values (i.e. vectors) should be logged or not
 #**.*Pkt size.vector-recording = true
