@@ -1,3 +1,4 @@
 *.o
 doc/html
-doc/doxy
+doc/doxygen
+doc/neddoc

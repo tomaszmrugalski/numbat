@@ -19,6 +19,19 @@
  * Numbat is a WiMAX/Mobile IPv6 simulation environment. See \ref overview section
  * for more detailed description.
  *
+ * There are two types of documentation for Numbat available:
+ *
+ * 1. <a href="index.html" target="_parent">Developer's Guide</a> - you are reading its front page. It contains Overview, 
+ * compilation information, running tips, installation and usage, and several other 
+ * chapters. In particular, it also contains detailed C++ documentation of all modules. 
+ * Please use this documentation for everything except description of module 
+ * parameters and module interactions.
+ *
+ * 2. <a href="../neddoc/index.html" target="_parent">NED documentation</a> - It documents defined models: module names, parameters, gates, 
+ * networks, module relationships etc. This documentation is generated with neddoc. You
+ * are currently reading front page of this documentation. Please this documentation
+ * to obtain info about module.
+ *
  * Welcome to the Numbat Developer's Guide.  This document describes various aspects 
  * of the compilation and installation of Numbat simulation software,
  * detailed description of the internal architecture, common coding practice
