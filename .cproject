@@ -24,7 +24,6 @@
 <builder id="org.omnetpp.cdt.gnu.builder.debug.1543088635" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="OMNeT++ Make Builder (opp_makemake)" superClass="org.omnetpp.cdt.gnu.builder.debug">
 <outputEntries>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name=""/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name=""/>
 </outputEntries>
 </builder>
 <tool id="cdt.managedbuild.tool.gnu.archiver.base.761050748" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
@@ -47,9 +46,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ipv6"/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="wimax"/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="util"/>
+<entry excluding="xMIPv6/tests|xMIPv6/obsolete|scripts|results|port-win32|obsolete|numbat|doc" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -375,9 +372,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ipv6"/>
-<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="wimax"/>
-<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="util"/>
+<entry excluding="xMIPv6/tests|xMIPv6/obsolete|scripts|results|port-win32|obsolete|numbat|doc" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>

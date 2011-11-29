@@ -1,6 +1,3 @@
 <buildspec version="4.0">
-<dir makemake-options="--deep --make-so -o ipv6 -O out -lutil --meta:recurse --meta:auto-include-path --meta:export-library --meta:use-exported-libs" path="ipv6" type="makemake"/>
-<dir makemake-options="--deep --make-so -o util -O out --meta:recurse --meta:auto-include-path --meta:export-library --meta:use-exported-libs" path="util" type="makemake"/>
-<dir makemake-options="--deep --make-so -o wimax -O out --meta:recurse --meta:auto-include-path --meta:export-library --meta:use-exported-libs" path="wimax" type="makemake"/>
-<dir makemake-options="--deep --nolink -O out --meta:recurse --meta:auto-include-path --meta:export-library --meta:use-exported-libs" path="." type="makemake"/>
+<dir makemake-options="--deep -O out --meta:recurse --meta:auto-include-path --meta:export-library --meta:use-exported-libs" path="." type="makemake"/>
 </buildspec>
