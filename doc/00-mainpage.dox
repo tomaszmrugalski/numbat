@@ -47,4 +47,8 @@
  * not intend to develop or fix anything on its own. Patches are more
  * than welcome, though.
  *
+ * To regenerate this documentation, please load Numbat project into OMNeT++ IDE and
+ * click "Generate NED documentation..." from Project menu. Documentation will be stored
+ * in doc/doxy and doc/neddoc directories.
+ *
  */
