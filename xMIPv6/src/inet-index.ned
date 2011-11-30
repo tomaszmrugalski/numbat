@@ -16,7 +16,7 @@
 //
 
 //
-// @titlepage
+// @page inet-title.html, INET Framework for OMNeT++/OMNEST (INET main page)
 //
 // <center><h1>INET Framework for OMNeT++/OMNEST</h1></center>
 // <center>release 2006-10-20</center>
