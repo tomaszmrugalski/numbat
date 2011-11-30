@@ -162,7 +162,7 @@ void WMaxCtrlSS::initialize() {
 //============= Adam 11-09-2011 =====================
     ift2 = InterfaceTableAccess2().get();
     Handover = 0;
-    NieaktywnoscL3Duration.setName("Czas nieaktywnosci SS dla L3");
+    InactivityL3Duration.setName("Czas nieaktywnosci SS dla L3");
 //============= Adam, end  11-09-2011==================    
     Log(Notice) << "Attaching to initial BS: " << initialBS << LogEnd;
     connectBS(initialBS);
@@ -876,7 +876,7 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType, int data)
 	char buf[16];
 	sprintf(buf, "%d", data);
         str = "Handover Start (target BS[" + string(buf) + "]";
-        NieaktywnoscL3StartTime = simTime();
+        InactivityL3StartTime = simTime();
         break;
       }
       case MIH_EVENT_HANDOVER_END:
@@ -899,8 +899,8 @@ void WMaxCtrlSS::mihNotify(MihInfo_t notifyType, int data)
                 IPv6Address temp =  ift2->getHandover_NCoA();
                 xmipv6->initiateMIPv6Protocol( ie, temp );        
             }
-            L3Gotowe = simTime();
-            NieaktywnoscL3Duration.record(simTime() - NieaktywnoscL3StartTime );
+            L3Ready = simTime();
+            InactivityL3Duration.record(simTime() - InactivityL3StartTime );
         }
         Handover = 0;
         break;

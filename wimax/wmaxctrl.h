@@ -61,7 +61,7 @@ public:
     WMaxCtrlSS();
     cModule *SS;
     xMIPv6 *xmipv6;//============= Adam 14-09-2011 =====================
-    simtime_t NieaktywnoscL3StartTime;//============= Adam 14-09-2011 =====================
+    simtime_t InactivityL3StartTime;//============= Adam 14-09-2011 =====================
     void HandoverAck(cMessage *msg);
     void initialize();
     void finish();
@@ -69,8 +69,8 @@ public:
     list<WMaxFlowSS*> serviceFlows;
     InterfaceTable* ift2;   // Adam   
     IPv6NeighbourDiscovery* IPv6ND; // Adam
-    simtime_t L3Gotowe;//============= Adam 14-09-2011 =====================
-    cOutVector NieaktywnoscL3Duration;//============= Adam 14-09-2011 =====================
+    simtime_t L3Ready;//============= Adam 14-09-2011 =====================
+    cOutVector InactivityL3Duration;//============= Adam 14-09-2011 =====================
     
     int Handover; // Adam
     // -- handover related info --

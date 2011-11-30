@@ -697,7 +697,7 @@ void xMIPv6::sendPeriodicBU(cMessage *msg)
 		if( this->getParentModule()->getParentModule()->getIndex() == 0 ){
 			wmaxctrl = WMaxCtrlSSAccess().get();
         
-			OpoznienieBUtoHA.record( simTime() - wmaxctrl->L3Gotowe );
+			OpoznienieBUtoHA.record( simTime() - wmaxctrl->L3Ready );
 		}
         //============= Adam, end  14-09-2011==================s
 		// statVectorBUtoHA.record(1);
@@ -1777,8 +1777,8 @@ void xMIPv6::initReturnRoutability(const IPv6Address& cnDest, InterfaceEntry* ie
 	{
 		if( this->getParentModule()->getParentModule()->getIndex() == 0 ){
 			wmaxctrl = WMaxCtrlSSAccess().get();
-			EV << "OpoznienieRouteOptim" << endl << "wmaxctrl->L3Gotowe = " << wmaxctrl->L3Gotowe << endl << "simTime() = " << simTime() << endl;
-			OpoznienieRouteOptim.record( simTime() - wmaxctrl->L3Gotowe );
+			EV << "OpoznienieRouteOptim" << endl << "wmaxctrl->L3Ready = " << wmaxctrl->L3Ready << endl << "simTime() = " << simTime() << endl;
+			OpoznienieRouteOptim.record( simTime() - wmaxctrl->L3Ready );
 		}
     
 		// no entry for this CN available: create Home Test Init message to be sent via HA
