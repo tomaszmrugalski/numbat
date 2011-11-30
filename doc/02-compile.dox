@@ -9,9 +9,9 @@ soon.
 
 Numbat is currently known to work with OMNeT++ 4.1 under Linux and Windows.
 Older and newer versions may work as well. Other operating systems were
-not checked.
+not checked. Numbat will definitely not work with OMNeT++ earlier than 4.0.
 
-  @section linux Linux compilation
+ @section omnet-compile OMNeT++ compilation
 
 To compile and run Numbat you will need properly installed OMNeT++
 (tested with version 4.0 and 4.1). OMNeT++ packages and installation notes are
@@ -20,9 +20,11 @@ available on the OMNeT community website: http://omnetpp.org.
 Make sure that you compile OMNeT and set your variable correctly before
 attempting Numbat compilation.
 
-After your OMNeT installation is successful, you need to obtain Numbat sources. 
-Go to project homepage located at http://klub.com.pl/numbat/. It will point you 
-to github repository:
+  @section linux-cmd Linux command-line compilation
+
+After your OMNeT installation is successful (see section @ref omnet-compile), you 
+need to obtain Numbat sources. Go to project homepage located at 
+http://klub.com.pl/numbat/. It will point you to github repository:
 
 \verbatim
 git@github.com:tomaszmrugalski/numbat.git
@@ -37,6 +39,44 @@ cd numbat
 ./rebuild-makefiles
 make
 \endverbatim
+
+  @section linux-gui GUI (IDE) compilation
+
+Numbat recently was compiled under GUI. Choose this approach if you
+like IDE available in OMNeT++. To use it, you need OMNeT++. See
+section @ref omnet-compile for details.
+
+To compile Numbat in GUI environment, you need to download Numbat sources from GIT first. 
+Depending on which GIT client you are using, your download may look slightly different,
+but it should look similar to this:
+
+\verbatim
+git clone git@github.com:tomaszmrugalski/numbat.git numbat
+omnetpp
+\endverbatim
+
+OMNeT++ IDE will start. It may ask you about your workspace directory. Please use whatever
+directory you want. You should see a page with Project Explorer tab on your left.
+
+\image html ide-import1.png "Numbat import, step 1"
+
+Please right click on it and select Import...
+
+\image html ide-import2.png "Numbat import, step 2"
+
+From new menu choose Existing Projects into Workspace and click Next.
+
+\image html ide-import3.png "Numbat import, step 3"
+
+Use Browse.. button to select root directory. Make sure you point out to a directory where 
+Numbat sources are stored. After that step is complete, you should be able to click Finish button.
+
+\image html ide-import4.png "Imported Numbat project."
+
+Now you have Numbat project imported into your OMNeT++ workspace. Now let's compile it!
+Select Project->Build All. Numbat compilation takes some time. After it is hopefully finished,
+you can start your simulation. To do that, you need to click green play button (or use Run menu).
+
 
 @section windows Windows compilation
 Note: Windows compilation has been greatly simplified since migration
