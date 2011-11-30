@@ -158,7 +158,7 @@ packet IPv6Redirect extends IPv6NDMessage
     MACAddress targetLinkLayerAddress;
         //Redirected Header Encapsulated Msg
 }
-
+//============= Adam 14-09-2011 =====================
 packet IPv6AssignAddressNotify extends IPv6NDMessage
 {
     int    AP_ID;
@@ -167,3 +167,4 @@ packet IPv6AssignAddressNotify extends IPv6NDMessage
     IPv6Address    Prefix;
     int            PrefixLength;     
 }
+//============= Adam, end  14-09-2011==================s

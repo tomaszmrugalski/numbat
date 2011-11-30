@@ -128,7 +128,6 @@ void WMaxPhySS::initialize()
 
 void WMaxPhySS::beginFrame()
 {
-    Log(Debug) << "WMaxPhySS::beginFrame_start" << LogEnd;
     while (!SendQueue.empty()) {
         cMessage * msg = (cMessage*)SendQueue.pop();
         send(msg, "rfOut");
@@ -140,12 +139,10 @@ void WMaxPhySS::beginFrame()
             info->sendEvent(x);
         }
     }
-    Log(Debug) << "WMaxPhySS::beginFrame_stop" << LogEnd;
 }
 
 void WMaxPhySS::handleMessage(cMessage *msg)
 {
-    Log(Debug) << "WMaxPhySS::handleMessage_start" << LogEnd;
     static int licz ; // test
     cGate * gate = msg->getArrivalGate();
     // uplink message
@@ -155,18 +152,15 @@ void WMaxPhySS::handleMessage(cMessage *msg)
         // deliver message immediately
         send(msg, "phyOut");
         licz=licz+1 ; //test
-        Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;
         return;
     }
 
     if (dynamic_cast<WMaxPhyDummyFrameStart*>(msg)) {
         beginFrame();
         delete msg;
-        Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;
         return;
     }
 
     // downlink message
     SendQueue.insert(msg);
-    Log(Debug) << "WMaxPhySS::handleMessage_stop" << LogEnd;    
 }

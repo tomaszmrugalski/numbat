@@ -45,15 +45,8 @@ void ssInfo::initialize() {
     hoInfo.isMobile = getParentModule()->par("wmaxIsMobile");
     hoInfo.wmax.hoOptim = getParentModule()->par("wmaxHoOptim");
 
-    hoInfo.dhcp.DadType = (DhcpDadType)(int)getParentModule()->par("dadType");
-    hoInfo.dhcp.skipInitialDelay = getParentModule()->par("dhcpSkipInitialDelay");
-    hoInfo.dhcp.pref255 = getParentModule()->par("dhcpPref255");
-    hoInfo.dhcp.rapidCommit = getParentModule()->par("dhcpRapidCommit");
     hoInfo.dhcp.remoteAutoconf = getParentModule()->par("dhcpRemoteAutoconf");
-    hoInfo.dhcp.addrParams = getParentModule()->par("dhcpAddrParams");
 
-    hoInfo.mip.remoteLocUpdate = getParentModule()->par("mipRemoteLocUpdate");
-    
     int initialBS = getParentModule()->par("initialBS");
 
     int index = getParentModule()->getIndex();
@@ -61,12 +54,8 @@ void ssInfo::initialize() {
     stringUpdate();
     Log(Notice) << "New SS[" << index << "] [802.16]: " << info.getMac() << ", hoOptim=" << hoInfo.wmax.hoOptim 
 		<< ", isMobile=" << hoInfo.isMobile << ", initialBS=" << initialBS << LogEnd;
-    Log(Notice) << "New SS[" << index << "] [IPv6]: " << info.getMac() << ", dadType=" << hoInfo.dhcp.DadType 
-		<< ", dhcpSkipInitialDelay=" << hoInfo.dhcp.skipInitialDelay << ", dhcpPref255=" << hoInfo.dhcp.pref255
-		<< ", dhcpRapidCommit=" << hoInfo.dhcp.rapidCommit 
+    Log(Notice) << "New SS[" << index << "] [IPv6]: " << info.getMac()
 		<< ", dhcpRemoteAutoconf=" << hoInfo.dhcp.remoteAutoconf 
-		<< ", dhcpAddrParams=" << hoInfo.dhcp.addrParams
-		<< ", mipRemoteLocUpdate=" << hoInfo.mip.remoteLocUpdate
 		<< LogEnd;
 
     hoPrepVector.setName("HO Preparation time");

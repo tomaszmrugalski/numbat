@@ -9,8 +9,6 @@
  *
  */
 
-#define MK_HANDOVER_NOTIFY_ACK      101 // Adam
- 
 #include <omnetpp.h>
 #include <string>
 #include "wmaxmaccs.h"
@@ -18,14 +16,14 @@
 #include "wmaxmac.h"
 #include "logger.h"
 #include "ssinfo.h"
-#include "IPv6Datagram_m.h"
-#include "RoutingTable6Access.h"
+// Adam
 
+// Adam end
 using namespace std;
 
 ostream & operator <<(ostream & s, WMaxMacCSRule &rule)
 {
-    s << "cid=" << rule.cid << ", dstAddr=" << rule.dstAddr.str(); // Adam
+    s << "cid=" << rule.cid << ", dstAddr=" << rule.dstAddr.str();
 	s << ", mac=" << MacToString(rule.macAddr);
     return s;
 }
@@ -37,7 +35,6 @@ ostream & operator <<(ostream & s, WMaxMacCSRule &rule)
 Define_Module(WMaxMacCS);
 
 void WMaxMacCS::initialize() {
-  Log(Debug) << "WMaxMacCS::initialize()_start" << LogEnd;
   WATCH_LIST(csTable);
   std::string name=getFullName();
   if (!name.find("ss")) {
@@ -46,29 +43,27 @@ void WMaxMacCS::initialize() {
       BS = true;
   }
 
+	ipv6nd = IPv6NeighbourDiscoveryAccess().get();
+
+  
     // add number prefix to the module name
     cModule * ss = getParentModule()->getParentModule();
     char buf[80];
     sprintf(buf, "%s%d", getFullName(), ss->getIndex());
     setName(buf);
-  Log(Debug) << "WMaxMacCS::initialize()_stop" << LogEnd;
 }
 
 
 void WMaxMacCS::handleMessage(cMessage *msg) {
-    Log(Debug) << "WMaxMacCS::handleMessage_start" << LogEnd;
-    // cout << endl << "WMaxMacCS::handleMessage_start" << endl;
     if (dynamic_cast<WMaxMacTerminateAllConns*>(msg)) {
         Log(Notice) << "All connections terminated." << LogEnd;
         EV << "All connections terminated." << endl;
         csTable.clear();
         delete msg;
-        Log(Debug) << "WMaxMacCS::handleMessage_stop1" << LogEnd;
         return;
     }
 
     if (WMaxMacAddConn *addconn = dynamic_cast<WMaxMacAddConn*>(msg)) {
-        // cout << "WMaxMacCS::handleMessage_2" << endl;
         WMaxMacCSRule rule = {0};
         EV << "Adding connection " << endl;
         EV << "cid = "<<addconn->getCid()<<"  dstAddr = "<<addconn->getDstAddr()<<"  macAddr = "<< addconn->getMacAddr() << endl;
@@ -80,7 +75,6 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
         csTable.push_back(rule);
         updateLog();
         delete msg;
-        Log(Debug) << "WMaxMacCS::handleMessage_stop2" << LogEnd;
         return;
     }
 
@@ -89,7 +83,6 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
         {
             // there are no CS rules for basic connections
             delete msg; 
-            Log(Debug) << "WMaxMacCS::handleMessage_stop3" << LogEnd;
             return;
         }
         list<WMaxMacCSRule>::iterator it;
@@ -100,26 +93,22 @@ void WMaxMacCS::handleMessage(cMessage *msg) {
                 Log(Notice) << "Connection cid=" << delcon->getCid() << " removed." << LogEnd;
                 updateLog();
                 delete msg;
-                Log(Debug) << "WMaxMacCS::handleMessage_stop4" << LogEnd;
                 return;
             }
         }
         EV << "Unable to delete connection with cid=" << delcon->getCid() << "." << endl;
         Log(Error) << "Unable to delete connection with cid=" << delcon->getCid() << "." << LogEnd;
         delete msg;
-        Log(Debug) << "WMaxMacCS::handleMessage_stop5" << LogEnd;
         return;
     }
 
     cGate * gate = msg->getArrivalGate();
     if(!strcmp(gate->getFullName(),"macIn")) {
         handleUlMessage(msg);
-        Log(Debug) << "WMaxMacCS::handleMessage_stop6" << LogEnd;
         return;
     }
 
     handleDlMessage(msg);
-    Log(Debug) << "WMaxMacCS::handleMessage_stop7" << LogEnd;
 }
 
 
@@ -128,23 +117,10 @@ void WMaxMacCS::handleUlMessage(cMessage *msg) {
     cMessage *ipv6packet = check_and_cast<cPacket *>(msg)->decapsulate();//MiM
     delete msg;
     send(ipv6packet, "ipOut", 0);
-    Log(Debug) << "Message send to upper layer." << LogEnd;
 }
-
-// IPv6Address WMaxMacCS::DstAddrGet(cMessage *msg)	// Adam ======================= zamione przez INETowe getDestAddress()
-// {
-    // if (dynamic_cast<IPv6*>(msg))
-    // {
-      // IPv6* ipMsg = dynamic_cast<IPv6*>(msg);
-      // return ipMsg->getDstIP();
-    // }
-    // opp_error("Non-IPv6 message is trying to sneak thru WMaxMacCS module: %s", getFullName());
-    // return IPv6Address();
-// }	// Adam =======================
 
 uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr)		//		zamienic to na jakas inna funkcje, ta jest wpisana z ipv6.h z numbata
 {
-    // cout << "MacAddrFromLinkLocal_start" << endl;
     unsigned char addr[16];
 	uint32 *ip;
 	
@@ -168,7 +144,6 @@ uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr)		//		zamienic to na jakas inn
 	addr[15] = (ip[3]<<24)>>24;
 	
     if ( (addr[0]!=0xfe) || (addr[1]!=0x80) ){	// sprawdzenie czy addr jest link-local
-        // cout << "MacAddrFromLinkLocal_stop1" << endl;
 		return 0;
     }	
 	
@@ -182,13 +157,11 @@ uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr)		//		zamienic to na jakas inn
 	+ ((uint64_t)tbl[2] << 24)
 	+ ((uint64_t)tbl[1] << 32)
 	+ ((uint64_t)tbl[0] << 40);
-    // cout << "MacAddrFromLinkLocal_stop2" << endl;
     return m;
 }
 
 void WMaxMacCS::handleDlMessage(cMessage *msg) {
-    Log(Debug) << "WMaxMacCS::handleDlMessage_start" << LogEnd;
-    RoutingTable6* RTable = RoutingTable6Access().get();   
+    RoutingTable6* RTable = RoutingTable6Access().get();   //============= Adam 14-09-2011 =====================
     
     list<WMaxMacCSRule>::iterator it;
     cGate * gate = msg->getArrivalGate();
@@ -200,8 +173,6 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
 
     Log(Debug) << "Trying to forward DL msg (" << msg->getFullName() << ") to ipv6=" << dstAddr.str();//-----------Adam ================================
     Log(Debug) << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << LogEnd;
-    // EV << "Trying to forward DL msg (" << msg->getFullName() << ") to ipv6=" << dstAddr.str();
-    // EV << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << endl;
     
     // try to find appropriate route for this dst address
     int mcastReceiversCnt = 0; // how many SSes are going to receive this message?
@@ -214,38 +185,56 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
         EV << "Unable to forward message(" << msg->getFullName() << "), no CS rules defined." << endl;
         Log(Cont)  << "Unable to forward message(" << msg->getFullName() << "), no CS rules defined." << LogEnd;
         delete msg;
-        Log(Debug) << "WMaxMacCS::handleDlMessage_stop1" << LogEnd;
         return;
     }
     for(it=csTable.begin(); it!=csTable.end(); it++) {
 	// on SS side, just use first connection available
-
-        if (BS==false) {
+        if (BS==false) {	// jesli wezel nie jest BS, czyli jest SS
             EV << "BS==false" << endl;
             dlMsgSend(msg, it->cid);
-            Log(Debug) << "WMaxMacCS::handleDlMessage_stop2" << LogEnd;
             return;
         }
+
+		//Adam
+		if( !dstAddr.isMulticast() ){
+			IPv6NeighbourDiscovery::Neighbour *nce = ipv6nd->neighbourCache.lookup(dstAddr, 101); // 101 bo if id WiMAX SS i BS = 101
+			if( nce ){
+				if( !nce->macAddress.isUnspecified() ){
+					Log(Debug) << it->macAddr << LogEnd;
+					char buf[30];
+					sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", 
+						(unsigned char)((it->macAddr >> 40) & 0xff),
+						(unsigned char)((it->macAddr >> 32) & 0xff),
+						(unsigned char)((it->macAddr >> 24) & 0xff),
+						(unsigned char)((it->macAddr >> 16) & 0xff),
+						(unsigned char)((it->macAddr >>  8) & 0xff),
+						(unsigned char)((it->macAddr )      & 0xff));
+				    char* ch = new char[ strlen(string(buf).c_str()) ];
+					strcpy (ch, string(buf).c_str());
+					MACAddress temp_mac = MACAddress(ch);
+
+					Log(Debug) << temp_mac << LogEnd;
+					Log(Debug) << nce->macAddress << LogEnd;
+					Log(Debug) << nce->macAddress.compareTo(temp_mac) << LogEnd;
+					if( nce->macAddress.equals(temp_mac) ){
+						dlMsgSend(msg, it->cid);
+						return;
+					}
+				}
+			}
+		}
+		//Adam end
+
         if (it->macAddr == macAddr){
             EV << "it->macAddr == macAddr ";
-            // found on MAC based criteria	//Adam ==========================
-            // if (dynamic_cast<DHCPv6Reply*>(msg)){
-                // DHCPv6Reply * reply = dynamic_cast<DHCPv6Reply*>(msg);
-                // EV << "DHCPv6 Reply: updating rule for CID=" << it->cid << ", MAC=" << MacToString(it->macAddr) 
-                      // << " to dstAddr=" << reply->getAddr() << endl;
-                // Log(Info) << "DHCPv6 Reply: updating rule for CID=" << it->cid << ", MAC=" << MacToString(it->macAddr) 
-                      // << " to dstAddr=" << reply->getAddr() << LogEnd;
-                // it->dstAddr = reply->getAddr();
-            // }		//Adam ================================
+            // found on MAC based criteria
             dlMsgSend(msg, it->cid);
-            Log(Debug) << "WMaxMacCS::handleDlMessage_stop3" << LogEnd;
             return;
         }
         if (it->dstAddr == dstAddr){
             // found expected IPv6 address
             EV << "it->dstAddr == dstAddr ";
             dlMsgSend(msg, it->cid);
-            Log(Debug) << "WMaxMacCS::handleDlMessage_stop4" << LogEnd;
             return;
         }
         if (dstAddr.isMulticast()) {
@@ -253,26 +242,22 @@ void WMaxMacCS::handleDlMessage(cMessage *msg) {
             mcastReceiversCnt++;
             dlMsgSend((cMessage*)msg->dup(), it->cid);
         }
-        if( RTable -> doLongestPrefixMatch( dstAddr ) ){
-            EV << "doLongestPrefixMatch ";
-            dlMsgSend(msg, it->cid);
-            Log(Debug) << "WMaxMacCS::handleDlMessage_stop5" << LogEnd;
-            return;
-        }
-
+//============= Adam 14-09-2011 =====================        
+        // if( RTable -> doLongestPrefixMatch( dstAddr ) ){
+            // EV << "doLongestPrefixMatch ";
+            // dlMsgSend(msg, it->cid);
+            // return;
+        // }
+//============= Adam, end  14-09-2011==================s
     }
 
     if (!dstAddr.isMulticast()){
-        // EV << "Unable to find a proper connection for msg(" << msg->getFullName() << ") to ipv6=" << dstAddr.str()
-                  // << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << endl;
         Log(Info) << "Unable to find a proper connection for msg(" << msg->getFullName() << ") to ipv6=" << dstAddr.str()
                   << ", MAC=" << (macAddr?MacToString(macAddr):"unknown") << ", dropped." << LogEnd;
     } else {
-        // EV << "Multicast message (" << msg->getFullName() << ") sent to " << mcastReceiversCnt << " nodes." << endl;
         Log(Debug) << "Multicast message (" << msg->getFullName() << ") sent to " << mcastReceiversCnt << " nodes." << LogEnd;
     }
     delete msg;
-    Log(Debug) << "WMaxMacCS::handleDlMessage_stop6" << LogEnd;
     return;
 }
 
@@ -285,23 +270,13 @@ void WMaxMacCS::dlMsgSend(cMessage * msg, int cid)
     wmaxmacmsg->encapsulate(check_and_cast<cPacket *>(msg)); //MiM
 
     WMaxMacHeader * hdr = new WMaxMacHeader();
-//============= Adam 10-09-2011 =====================
-    if( msg->getKind() == MK_HANDOVER_NOTIFY_ACK ){
-        hdr->cid = 1024;
-        wmaxmacmsg -> setKind( MK_HANDOVER_NOTIFY_ACK );
-    }else{
-        hdr->cid = cid;
-    }
-//============= Adam, end  10-09-2011==================s    
-    // hdr->cid = cid;   // Adam, comment
+    hdr->cid = cid;
     wmaxmacmsg->setControlInfo(hdr);
     
     send(wmaxmacmsg, "macOut");
-    Log(Debug) << "WMaxMacCS::dlMsgSend_stop" << LogEnd;
 }
 
 void WMaxMacCS::updateLog() {
-    Log(Debug) << "WMaxMacCS::updateLog()_start" << LogEnd;
     list<WMaxMacCSRule>::iterator it;
     string log;
     log = "Convergence Sublayer clasifier: ";
@@ -313,5 +288,4 @@ void WMaxMacCS::updateLog() {
         log = log + "CID=" + st_cid + " | ";
     }
     Log(Notice) << log << LogEnd;
-    Log(Debug) << "WMaxMacCS::updateLog()_stop" << LogEnd;
 }

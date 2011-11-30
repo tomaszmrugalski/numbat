@@ -25,7 +25,6 @@ void WMaxRadio::initialize()
 
 void WMaxRadio::handleMessage(cMessage *msg)
 {
-    Log(Debug) << "WMaxRadio::handleMessage_start" << LogEnd;
     // radioOut, radioIn, phyOut, phyIn
     cGate * g = msg->getArrivalGate();
     if (!strcmp(g->getFullName(),"phyIn")) {
@@ -44,13 +43,11 @@ void WMaxRadio::handleMessage(cMessage *msg)
             }
         }
         delete msg;
-        Log(Debug) << "WMaxRadio::handleMessage_stop1" << LogEnd;
         return;
     }
 
     // unicast transmission (SS -> BS)
     send(msg, "phyOut");	
-    Log(Debug) << "WMaxRadio::handleMessage_stop2" << LogEnd;
 }
 
 void WMaxRadio::connect(cModule * ss)
@@ -81,16 +78,13 @@ void WMaxRadio::connect(cModule * ss)
             ss->gate("out")->disconnect();
             ss->gate("out")->connectTo(bsGate);
             bsGate->connectTo(g);
-            Log(Debug) << "WMaxRadio::connect_stop1" << LogEnd;
             return;
         }
     }
-    Log(Debug) << "WMaxRadio::connect_stop2" << LogEnd;
 }
 
 void WMaxRadio::disconnect(cModule * ss)
 {
-    Log(Debug) << "WMaxRadio::disconnect_start" << LogEnd;
     if (!ss->gate("out")->isConnected()) {
 	return;
     }
@@ -108,5 +102,4 @@ void WMaxRadio::disconnect(cModule * ss)
 
     bs->gate("in", ind)->disconnect();
     bs->gate("out", ind)->disconnect();
-    Log(Debug) << "WMaxRadio::disconnect_stop" << LogEnd;
 }

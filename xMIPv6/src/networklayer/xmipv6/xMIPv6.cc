@@ -22,7 +22,6 @@
 
 #include "xMIPv6.h"
 #include <algorithm>
-#include "IPAddressResolver.h"  // Adam
 
 #define MK_SEND_PERIODIC_BU			1
 // 18.09.07 - CB
@@ -36,7 +35,6 @@
 #define MAX_TOKEN_LIFETIME			500		//210  // maximum valid lifetime for the tokens used in RR
 #define MAX_RR_BINDING_LIFETIME		4000	//420  // maximum valid lifetime of a binding for CNs
 #define TEST_INIT_RETRANS_FACTOR	8	 	// HoTI and CoTI will be retransmitted every MAX_RR_BINDING_LIFETIME * TEST_INIT_RETRANS_FACTOR seconds
-#define MK_HANDOVER_NOTIFY_ACK      101 // Adam
 
 // sizes of mobility messages and headers in bytes
 #define SIZE_MOBILITY_HEADER	6	// 6.1.1 mobility header = 48 bit
@@ -51,6 +49,7 @@
 #define	SIZE_COT				18	// 6.1.6 CoT = 144 bit
 #define	SIZE_BE					18	// 6.1.9 BE message = 144 bit
 #define	SIZE_BRR				2	// 6.1.2 BRR reserved = 16 bit
+#include "wmaxctrlaccess.h"//============= Adam 14-09-2011 =====================s
 
 Define_Module(xMIPv6);
 /**
@@ -78,15 +77,18 @@ xMIPv6::~xMIPv6()
 
 void xMIPv6::initialize(int stage)
 {
+
 	if (stage == 0)
 	{
     	EV << "Initializing xMIPv6 module" << endl;
 
 		nb = NotificationBoardAccess().get();
-
+        FMIPv6PrepDuration.setName("Czas od wyslania PrRtSol do otrzymania FBAck");
+        OpoznienieRouteOptim.setName("Czas od konfiguracji L3 dla SS po handoverze do rozpoczecia Route Optimization");
 		// statistic collection
-		/*statVectorBUtoHA.setName("BU to HA");
-		statVectorBUtoCN.setName("BU to CN");
+		// statVectorBUtoHA.setName("BU to HA");
+        OpoznienieBUtoHA.setName("Czas pomiêdzy konfiguracja L3 a wyslaniem BU do HA");
+		/*statVectorBUtoCN.setName("BU to CN");
 		statVectorBUtoMN.setName("BU to MN");
 		statVectorBAtoMN.setName("BA to MN");
 		statVectorBAfromHA.setName("BA from HA");
@@ -124,6 +126,7 @@ void xMIPv6::initialize(int stage)
         ift = InterfaceTableAccess().get();
         ift2 = InterfaceTableAccess2().get();
         ipv6nd = IPv6NeighbourDiscoveryAccess().get(); //Zarrar Yousaf 17.07.07
+
         if ( rt6->isMobileNode() )
         {
 			bul = BindingUpdateListAccess().get();  // Zarrar Yousaf 31.07.07
@@ -251,11 +254,6 @@ void xMIPv6::processMobilityMessage(MobilityHeader* mipv6Msg, IPv6ControlInfo* c
 		processBRRMessage( (BindingRefreshRequest*) mipv6Msg, ctrlInfo );
 	}
 //====== Adam 08-09-2011 =============================================
-	else if ( dynamic_cast<HandoverNotify*>(mipv6Msg) )
-	{
-		EV <<"Message recognised as Handover Notify" << endl;
-        CreateAndSendRtSolPr( (HandoverNotify*) mipv6Msg );
-	}
 	else if ( dynamic_cast<RouterSolicitationForProxyAdvertisement*>(mipv6Msg) )
 	{
         EV <<"Message recognised as Router Solicitation For Proxy Advertisement" << endl;
@@ -297,19 +295,21 @@ void xMIPv6::processMobilityMessage(MobilityHeader* mipv6Msg, IPv6ControlInfo* c
 
 //====== Adam 08-09-2011 =============================================
 
-void xMIPv6::CreateAndSendRtSolPr( HandoverNotify* mipv6Msg) 
+void xMIPv6::CreateAndSendRtSolPr( int BSID ) 
 {
+    Enter_Method_Silent();
     RouterSolicitationForProxyAdvertisement *RtSolPr = new RouterSolicitationForProxyAdvertisement("RtSolPr");
 
+    FMIPv6StartTime = simTime();
+    
     InterfaceEntry *ie = ift->getInterface(1);   // interface WiMAX SS
     // dziala tylko gdy SS jest w pierwotnej sieci, gdy bedzie chcial przejsc z sieci nr.2
     // do sieci nr.3 musi wyjsc do biezacego AR a nie do HA
     IPv6Address destAddrIP = ie->ipv6Data()->getHomeAgentAddress(); // POPRAWIC
     IPv6Address srcAddrIP = ie->ipv6Data()->getGlobalAddress();
-    RtSolPr->setAP_ID(  mipv6Msg->getBS_index()  );
+    RtSolPr->setAP_ID(  BSID  );
     EV << "Sending RtSolPr to destAddr = " << destAddrIP << "  srcAddr = " << srcAddrIP.str() << endl;
     sendMobilityMessageToIPv6Module( RtSolPr, destAddrIP, srcAddrIP, ie->getInterfaceId() );
-    delete mipv6Msg;
 }    
 
 void xMIPv6::CreateAndSendPrRtAdv( RouterSolicitationForProxyAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo )
@@ -341,6 +341,7 @@ void xMIPv6::processPrRtAdvMessage( ProxyRouterAdvertisement* mipv6Msg, IPv6Cont
     EV << "mipv6Msg->getPrefixLength() = " << mipv6Msg->getPrefixLength() << endl;
 
     // ustawienie AP_Info po stronie SS
+    
     ift2 -> setAP_Info( mipv6Msg->getAP_ID() ,mipv6Msg->getL2_Addr() ,mipv6Msg->getL3_Addr() ,mipv6Msg->getPrefix() ,mipv6Msg->getPrefixLength() );
     // ustalic NCoA
     InterfaceEntry *ie = ift->getInterface(1); // interface WiMAX SS
@@ -408,7 +409,8 @@ void xMIPv6::processHAckMessage( HandoverAcknowledge* mipv6Msg, IPv6ControlInfo*
     FBack -> setHandover_accepted( mipv6Msg->getHandover_accepted() );
     
     IPv6Address srcAddr = ie -> ipv6Data() -> getPreferredAddress();
-    IPv6Address destAddr = IPAddressResolver().resolve("SS[0]").get6(); // adres PCoA WiMAX SS
+    // IPv6Address destAddr = IPAddressResolver().resolve("SS[0]").get6(); // adres PCoA WiMAX SS
+	IPv6Address destAddr = mipv6Msg->getPCoA();
     EV << "Sending HI to destAddr = " << destAddr.str() << "  srcAddr = " << srcAddr.str()<< endl;
     sendMobilityMessageToIPv6Module( FBack, destAddr, srcAddr, ie->getInterfaceId() );
     
@@ -438,10 +440,14 @@ void xMIPv6::processFBAMessage( FastBindingAcknowledge* mipv6Msg, IPv6ControlInf
         // inna obsluga przez MN i NAR    
         if( this->getParentModule()->getParentModule()->getSubmodule("ssInfo") ){    // obluga MN
             EV << "obluga MN" << endl;
-            HandoverNotifyAcknowledge *HNAck = new HandoverNotifyAcknowledge("HandoverNotifyAcknowledge");
-            HNAck->setKind(MK_HANDOVER_NOTIFY_ACK);
-      // HNAck wyslane z xMIPv6 do WMaxCtrl 
-            sendMobilityMessageToIPv6Module( HNAck, ctrlInfo->getDestAddr(), ctrlInfo->getSrcAddr(), ctrlInfo->getInterfaceId() );
+            EV << "FMIPv6PrepDuration" << endl << "simTime() = " << simTime() << endl << "FMIPv6StartTime = " << FMIPv6StartTime << endl;
+            FMIPv6PrepDuration.record(simTime() - FMIPv6StartTime );
+            // ss->xmipv6->CreateAndSendRtSolPr( nearestBS );
+            // cMessage *msg = check_and_cast<cMessage*>(mipv6Msg) );
+            if( this->getParentModule()->getParentModule()->getIndex() == 0 ){
+                wmaxctrl = WMaxCtrlSSAccess().get();
+                wmaxctrl -> HandoverAck(mipv6Msg);
+            }
             // ustala swoj nowy adres CoA = NCoA, tworzy binding cache entry?
             tunneling->createTunnel(IPv6Tunneling::NORMAL ,mipv6Msg->getNCoA() ,ctrlInfo->getSrcAddr() ,IPv6Address::UNSPECIFIED_ADDRESS );
 
@@ -687,7 +693,14 @@ void xMIPv6::sendPeriodicBU(cMessage *msg)
 		createAndSendBUMessage(buDest, ie, buIfEntry->buSequenceNumber, buIfEntry->lifeTime);
 
 		// statistic collection
-		/*statVectorBUtoHA.record(1);*/
+        //============= Adam 14-09-2011 =====================
+		if( this->getParentModule()->getParentModule()->getIndex() == 0 ){
+			wmaxctrl = WMaxCtrlSSAccess().get();
+        
+			OpoznienieBUtoHA.record( simTime() - wmaxctrl->L3Gotowe );
+		}
+        //============= Adam, end  14-09-2011==================s
+		// statVectorBUtoHA.record(1);
 	}
 
 	/*if ( buIfEntry->ackTimeout < ie->ipv6()->_maxBindAckTimeout() ) // update comparison operator, 12.9.07 - CB
@@ -1660,6 +1673,7 @@ bool xMIPv6::validateBAck(const BindingAcknowledgement& ba, const IPv6ControlInf
   */
 void xMIPv6::triggerRouteOptimization(const IPv6Address& destAddress, const IPv6Address& HoA, InterfaceEntry* ie)
 {
+    
 	if ( bul->getMobilityState(destAddress) == BindingUpdateList::NONE)
 		bul->setMobilityState(destAddress, BindingUpdateList::RR);
 
@@ -1697,6 +1711,7 @@ void xMIPv6::triggerRouteOptimization(const IPv6Address& destAddress, const IPv6
 
 void xMIPv6::initReturnRoutability(const IPv6Address& cnDest, InterfaceEntry* ie)
 {
+
 	EV <<"Initiating Return Routability..." << endl;
 	Enter_Method("initReturnRoutability()");
 
@@ -1760,6 +1775,12 @@ void xMIPv6::initReturnRoutability(const IPv6Address& cnDest, InterfaceEntry* ie
     EV << "recentlySentHOTI = " << bul->recentlySentHOTI(cnDest, ie) << endl;
 	if ( sendHoTI && !bul->recentlySentHOTI(cnDest, ie) )
 	{
+		if( this->getParentModule()->getParentModule()->getIndex() == 0 ){
+			wmaxctrl = WMaxCtrlSSAccess().get();
+			EV << "OpoznienieRouteOptim" << endl << "wmaxctrl->L3Gotowe = " << wmaxctrl->L3Gotowe << endl << "simTime() = " << simTime() << endl;
+			OpoznienieRouteOptim.record( simTime() - wmaxctrl->L3Gotowe );
+		}
+    
 		// no entry for this CN available: create Home Test Init message to be sent via HA
 		createAndSendHoTIMessage(cnDest, ie);
 	}

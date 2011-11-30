@@ -66,6 +66,8 @@ class INET_API ICMPv6 : public cSimpleModule
     virtual ICMPv6Message *createPacketTooBigMsg(int mtu);
     virtual ICMPv6Message *createTimeExceededMsg(int code);
     virtual ICMPv6Message *createParamProblemMsg(int code);//TODO:Section 3.4 describes a pointer. What is it?
+    cOutVector CNtoSSVectorRTT;//============= Adam 14-09-2011 =====================
+    cOutVector SStoCNVectorRTT;//============= Adam 14-09-2011 =====================
 
   protected:
     /**

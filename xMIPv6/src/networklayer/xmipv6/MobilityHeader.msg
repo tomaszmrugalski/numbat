@@ -50,12 +50,12 @@ enum MobilityHeaderType
     BINDING_UPDATE = 5;
     BINDING_ACKNOWLEDGEMENT = 6;
     BINDING_ERROR = 7;
-    HANDOVER_NOTIFY = 8;
-    ROUTER_SOLICITATION_FOR_PROXY_ADVERTISEMENT = 9;
-    FAST_BINDING_UPDATE = 10;
-    FAST_BINDING_ACKNOWLEDGE = 11;
-    HANDOVER_INITIATE = 12;
-    HANDOVER_ACKNOWLEDGE = 13;
+    //============= Adam 14-09-2011 =====================
+    ROUTER_SOLICITATION_FOR_PROXY_ADVERTISEMENT = 8;
+    FAST_BINDING_UPDATE = 9;
+    FAST_BINDING_ACKNOWLEDGE = 10;
+    HANDOVER_INITIATE = 11;
+    //============= Adam, end  14-09-2011==================
 }
 
 packet MobilityHeader // extends IPv6ExtensionHeader // TODO check how to define MobilityHeader as subclass of IPv6ExtensionHeader
@@ -184,14 +184,6 @@ packet HomeAddressOption extends IPv6DestinationOptionsHeader
     IPv6Address homeAddress;
 }
 //==== Adam 07-09-2011 ======================================================
-packet HandoverNotify extends MobilityHeader
-{
-    int BS_index;    // should be AP-ID, BSID
-}
-
-packet HandoverNotifyAcknowledge extends MobilityHeader
-{
-}
 
 packet RouterSolicitationForProxyAdvertisement extends MobilityHeader
 {

@@ -16,6 +16,11 @@
 #include "Portable.h"
 //#include "ipv6msg_m.h"	//Adam
 #include "IPv6Address.h"	//Adam
+#include "IPv6NeighbourDiscoveryAccess.h"	// Adam
+#include "IPv6Datagram_m.h"// Adam
+#include "RoutingTable6Access.h"// Adam
+#include "IPv6NeighbourCache.h"
+
 
 using namespace std;
 
@@ -35,10 +40,11 @@ typedef struct {
 /**************************************************************/
 /*** MODULE DEFINITIONS STRUCTURES ****************************/
 /**************************************************************/
-uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr);	
+uint64_t MacAddrFromLinkLocal(IPv6Address IN_addr);	    //============= Adam 14-09-2011 =====================
 
 class WMaxMacCS : public cSimpleModule {
 public:
+	IPv6NeighbourDiscovery* ipv6nd;	// Adam
 protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);

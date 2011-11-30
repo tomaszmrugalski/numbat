@@ -47,8 +47,7 @@ namespace logger {
 	if (curLogEntry <= logLevel) {
 	    // log on the console
 	    if (echo)
-        // EV << buffer.str() << endl;
-		std::cout << buffer.str() << std::endl; // Adam
+		std::cout << buffer.str() << std::endl;
 
 	    // log to the file
 	    if (logFileMode)

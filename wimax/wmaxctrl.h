@@ -60,13 +60,18 @@ class WMaxCtrlSS : public Fsm
 public:
     WMaxCtrlSS();
     cModule *SS;
-    xMIPv6 *xmipv6;
+    xMIPv6 *xmipv6;//============= Adam 14-09-2011 =====================
+    simtime_t NieaktywnoscL3StartTime;//============= Adam 14-09-2011 =====================
+    void HandoverAck(cMessage *msg);
     void initialize();
     void finish();
     void handleMessage(cMessage *msg);
     list<WMaxFlowSS*> serviceFlows;
     InterfaceTable* ift2;   // Adam   
     IPv6NeighbourDiscovery* IPv6ND; // Adam
+    simtime_t L3Gotowe;//============= Adam 14-09-2011 =====================
+    cOutVector NieaktywnoscL3Duration;//============= Adam 14-09-2011 =====================
+    
     int Handover; // Adam
     // -- handover related info --
     HoInfo_t * hoInfo;
@@ -100,9 +105,9 @@ public:
 	/// @todo - implement scanning
 
 	// handover
-//============= Adam 10-09-2011 =====================    
-    STATE_WAIT_HANDOVER_ACK,
-//============= Adam, end  10-09-2011==================s    
+    
+    STATE_WAIT_HANDOVER_ACK,//============= Adam 14-09-2011 =====================
+    
 	STATE_SEND_MSHO_REQ,              // send MSHO-REQ
 	STATE_WAIT_BSHO_RSP,              // wait for BSHO-RSP
 	STATE_SEND_HO_IND,                // send HO-IND
@@ -129,7 +134,7 @@ public:
 	EVENT_UCD,
 	EVENT_CDMA_CODE,
 	EVENT_MOB_SCN_RSP_RECEIVED,
-    EVENT_HANDOVER_ACK_RECEIVED,
+    EVENT_HANDOVER_ACK_RECEIVED,//============= Adam 14-09-2011 =====================s
 	EVENT_BSHO_RSP_RECEIVED,
 	EVENT_HO_CDMA_CODE,
 	EVENT_RNG_RSP_RECEIVED,
@@ -156,6 +161,7 @@ public:
     cStdDev hoActionTimeData;
 protected:
     void fsmInit();
+  
   
     void connectNextBS();
     void connectBS(int x); // connect (i.e. make Omnet connections) to BS[x]
@@ -211,10 +217,8 @@ protected:
     // wait for MOB_SCN-RSP
     static FsmStateType onEventState_WaitForMobScnRsp(Fsm * fsm, FsmEventType e, cMessage *msg);
 
-//============= Adam 10-09-2011 =====================
     // wait for HANDOVER_ACK
-    static FsmStateType onEventState_WaitForHandoverAck(Fsm * fsm, FsmEventType e, cMessage *msg);
-//============= Adam, end  10-09-2011==================s
+    static FsmStateType onEventState_WaitForHandoverAck(Fsm * fsm, FsmEventType e, cMessage *msg);//============= Adam 14-09-2011 =====================
     // send MSHO-REQ state
     static FsmStateType onEnterState_SendMshoReq(Fsm *fsm);
 
@@ -243,8 +247,6 @@ protected:
     static FsmStateType onEventState_PowerDown(Fsm * fsm, FsmEventType e, cMessage *msg);
 
     FsmStateType onEvent_CdmaCode(cMessage *msg);
-    // sending msg to xMIPv6 about handover
-    void CreateAndSendHandoverNotify(int nearestBS, WMaxCtrlSS *ss);
     // --- TIMERS ---
     TIMER_DEF(Handover);
     TIMER_DEF(NetworkEntry);

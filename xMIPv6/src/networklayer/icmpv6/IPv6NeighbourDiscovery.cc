@@ -30,7 +30,7 @@
 #define MK_RD_TIMEOUT 5
 #define MK_NUD_TIMEOUT 6
 #define MK_AR_TIMEOUT 7
-#define MK_AR_ASSIGN_GLOBAL_ADDRESS_WIMAX 8
+#define MK_AR_ASSIGN_GLOBAL_ADDRESS_WIMAX 8 // Adam
 
 Define_Module(IPv6NeighbourDiscovery);
 

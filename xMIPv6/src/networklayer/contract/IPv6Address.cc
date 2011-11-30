@@ -42,15 +42,6 @@ const IPv6Address IPv6Address::ALL_ROUTERS_5("FF05::2");
 const IPv6Address IPv6Address::SOLICITED_NODE_PREFIX("FF02:0:0:0:0:1:FF00:0");
 const IPv6Address IPv6Address::LINKLOCAL_PREFIX("FE80::");
 
-//konstruktor numbat Adam
-// IPv6Address::IPv6Address(const char * a, bool plain)
-// {
-    // if (!plain)
-	// memcpy(addr, a, 16);
-    // else
-    // inet_pton6(a, (char*)addr);
-// }
-
 // returns numOctals; advances s just over the last hex digit converted
 // FIXME "octal" appears to be a bad name
 static int parseOctals(const char *&s, int *octals)

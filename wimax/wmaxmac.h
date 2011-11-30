@@ -12,6 +12,7 @@
 #include <vector>
 #include "Portable.h"
 #include "wmaxmsg_m.h"
+#include "ssinfoaccess.h"
 
 using namespace std;
 
@@ -204,6 +205,7 @@ class WMaxMac : public cSimpleModule
     virtual void printUlMap(WMaxMsgUlMap * ulmap);
     virtual void stringUpdate();
     int queuedMsgsCnt;
+    cOutVector WMaxMACQueueCnt;
 
     WMaxStatsSS Stats;
 };
@@ -217,7 +219,7 @@ class WMaxMacBS: public WMaxMac
     virtual void handleMessage(cMessage *msg);
     //void handleUlMessage(cMessage* msg);
     void handleRxMessage(cMessage* msg);
-    virtual void registerInterface(double txrate);
+    virtual void registerInterface(double txrate);  //============= Adam 14-09-2011 =====================s
     void schedule();
     void scheduleBcastMessages(); // prepare broadcast messages sent periodically (DCD, UCD, Neighbor-Advertisements)
     WMaxMsgDlMap * scheduleDL(int symbols);
@@ -249,7 +251,8 @@ class WMaxMacBS: public WMaxMac
 
 class WMaxMacSS: public WMaxMac
 {
-
+public:
+	ssInfo* ssinfo_access;
  protected:
     void setInitialPosition();
     void changePosition();
@@ -257,7 +260,7 @@ class WMaxMacSS: public WMaxMac
     virtual void handleMessage(cMessage* msg);
     virtual void finish();
     
-    virtual void registerInterface(double txrate);
+    virtual void registerInterface(double txrate);//============= Adam 14-09-2011 =====================s
     list<WMaxMacCDMA> CDMAlist; //WMaxMac::cdmaQueue is used instead
     int BEpoint;
     float radian;

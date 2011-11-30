@@ -54,6 +54,8 @@
 #include "IPv6TunnelingAccess.h"
 // 14.01.08 - CB
 #include "NotificationBoard.h"
+#include "IPAddressResolver.h"  // Adam
+#include "wmaxctrl.h"//============= Adam 14-09-2011 =====================s
 
 // 13.9.07
 // Keys for timer list (=message type)
@@ -83,10 +85,16 @@ class INET_API xMIPv6 : public cSimpleModule
 {
   public:
 	  virtual ~xMIPv6();
-
+    simtime_t FMIPv6StartTime;//============= Adam 14-09-2011 =====================
   protected:
 	IInterfaceTable* ift;
+//============= Adam 14-09-2011 =====================
     InterfaceTable* ift2;
+    WMaxCtrlSS* wmaxctrl;
+    cOutVector FMIPv6PrepDuration;
+    cOutVector OpoznienieRouteOptim;
+    cOutVector OpoznienieBUtoHA;
+//============= Adam, end  16-09-2011==================
 	RoutingTable6* rt6;
 	BindingUpdateList* bul; //31.07.07
 	BindingCache* bc; //31.07.07
@@ -315,6 +323,8 @@ class INET_API xMIPv6 : public cSimpleModule
 	  *  The following method is used for triggering RO to a CN.
 	  */
 	virtual void triggerRouteOptimization(const IPv6Address& destAddress, const IPv6Address& HoA, InterfaceEntry* ie);
+    
+    void CreateAndSendRtSolPr( int BSID );   // beginning of Fast Handover process//============= Adam 14-09-2011 =====================
 
   protected:
 	/**
@@ -544,7 +554,6 @@ protected:
 	void createCareOfTokenEntryExpiryTimer(IPv6Address& cnAddr, InterfaceEntry* ie, simtime_t scheduledTime) { createTokenEntryExpiryTimer(cnAddr, ie, scheduledTime, KEY_CTOKEN_EXP); };
 
     //====== Adam 08-08-2011 ==================================================
-    void CreateAndSendRtSolPr( HandoverNotify* mipv6Msg);   // beginning of Fast Handover process
     void CreateAndSendPrRtAdv( RouterSolicitationForProxyAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo );
     void processPrRtAdvMessage( ProxyRouterAdvertisement* mipv6Msg, IPv6ControlInfo* ctrlInfo );
     void processFBUMessage( FastBindingUpdate* mipv6Msg, IPv6ControlInfo* ctrlInfo );

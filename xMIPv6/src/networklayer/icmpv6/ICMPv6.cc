@@ -25,6 +25,8 @@ Define_Module(ICMPv6);
 
 void ICMPv6::initialize()
 {
+    CNtoSSVectorRTT.setName("Trip time from CN to SS");
+    SStoCNVectorRTT.setName("Trip time from SS to CN");
 }
 
 void ICMPv6::handleMessage(cMessage *msg)
@@ -102,6 +104,8 @@ void ICMPv6::processEchoRequest(ICMPv6EchoRequestMsg *request)
     //set Msg's dest addr as the source addr of request msg.
     replyCtrl->setDestAddr(ctrl->getSrcAddr());
     reply->setControlInfo(replyCtrl);
+    
+    CNtoSSVectorRTT.record(simTime() - request->getCreationTime());//============= Adam 14-10-2011 =====================
 
     delete request;
     sendToIP(reply);
@@ -112,6 +116,7 @@ void ICMPv6::processEchoReply(ICMPv6EchoReplyMsg *reply)
     IPv6ControlInfo *ctrl = check_and_cast<IPv6ControlInfo*>(reply->removeControlInfo());
     cPacket *payload = reply->decapsulate();
     payload->setControlInfo(ctrl);
+    SStoCNVectorRTT.record(simTime() - reply->getCreationTime()); //============= Adam 14-09-2011 =====================
     delete reply;
     send(payload, "pingOut");
 }

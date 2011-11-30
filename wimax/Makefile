@@ -1,40 +1,59 @@
 #
-# OMNeT++/OMNEST Makefile for wimax
+# OMNeT++/OMNEST Makefile for libwimax
 #
 # This file was generated with the command:
-#  opp_makemake -f -lutil -lipv6 -L../util/out/gcc-debug -L../ipv6/out/gcc-debug -I../util -I../ipv6
+#  opp_makemake -f --deep --make-so -o wimax -O out -I../xMIPv6/src/transport/sctp -I../xMIPv6/src/networklayer/arp -I../util -I../xMIPv6/src/networklayer/ted -I../xMIPv6/src/networklayer/common -I../xMIPv6/src/networklayer/ipv4 -I../xMIPv6/src/networklayer/mpls -I../xMIPv6/src/transport/contract -I../xMIPv6/src/util -I../xMIPv6/src/util/headerserializers -I../xMIPv6/src/networklayer/rsvp_te -I../xMIPv6/src/linklayer/mfcore -I../xMIPv6/src/linklayer/contract -I../xMIPv6/src/applications/pingapp -I../xMIPv6/src/networklayer/contract -I../xMIPv6/src/networklayer/xmipv6 -I../xMIPv6/src/base -I../xMIPv6/src/networklayer/ipv6 -I../xMIPv6/src/transport/udp -I../xMIPv6/src/world -I../xMIPv6/src/transport/tcp -I../xMIPv6/src/networklayer/ldp -I../xMIPv6/src/networklayer/icmpv6 -L../out/$(CONFIGNAME)/util -L../out/$(CONFIGNAME)/ipv6
 #
 
 # Name of target to be created (-o option)
-TARGET = wimax$(EXE_SUFFIX)
-
-# User interface (uncomment one) (-u option)
-USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
-#USERIF_LIBS = $(CMDENV_LIBS)
-#USERIF_LIBS = $(TKENV_LIBS)
+TARGET = libwimax$(SHARED_LIB_SUFFIX)
 
 # C++ include paths (with -I)
-INCLUDE_PATH = -I../util -I../ipv6 -I.
+INCLUDE_PATH = \
+    -I../xMIPv6/src/transport/sctp \
+    -I../xMIPv6/src/networklayer/arp \
+    -I../util \
+    -I../xMIPv6/src/networklayer/ted \
+    -I../xMIPv6/src/networklayer/common \
+    -I../xMIPv6/src/networklayer/ipv4 \
+    -I../xMIPv6/src/networklayer/mpls \
+    -I../xMIPv6/src/transport/contract \
+    -I../xMIPv6/src/util \
+    -I../xMIPv6/src/util/headerserializers \
+    -I../xMIPv6/src/networklayer/rsvp_te \
+    -I../xMIPv6/src/linklayer/mfcore \
+    -I../xMIPv6/src/linklayer/contract \
+    -I../xMIPv6/src/applications/pingapp \
+    -I../xMIPv6/src/networklayer/contract \
+    -I../xMIPv6/src/networklayer/xmipv6 \
+    -I../xMIPv6/src/base \
+    -I../xMIPv6/src/networklayer/ipv6 \
+    -I../xMIPv6/src/transport/udp \
+    -I../xMIPv6/src/world \
+    -I../xMIPv6/src/transport/tcp \
+    -I../xMIPv6/src/networklayer/ldp \
+    -I../xMIPv6/src/networklayer/icmpv6 \
+    -I.
 
 # Additional object and library files to link with
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS = -L../util/out/gcc-debug -L../ipv6/out/gcc-debug  -lutil -lipv6
-LIBS += -Wl,-rpath,`abspath ../util/out/gcc-debug` -Wl,-rpath,`abspath ../ipv6/out/gcc-debug`
+LIBS = -L../out/$(CONFIGNAME)/util -L../out/$(CONFIGNAME)/ipv6
+LIBS += -Wl,-rpath,`abspath ../out/$(CONFIGNAME)/util` -Wl,-rpath,`abspath ../out/$(CONFIGNAME)/ipv6`
 
 # Output directory
-PROJECT_OUTPUT_DIR = out
-PROJECTRELATIVE_PATH =
+PROJECT_OUTPUT_DIR = ../out
+PROJECTRELATIVE_PATH = wimax
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc and .msg files
 OBJS = \
-    $O/wmaxctrl.o \
-    $O/wmaxmac.o \
-    $O/wmaxmaccs.o \
     $O/wmaxphy.o \
     $O/wmaxradio.o \
+    $O/wmaxmaccs.o \
+    $O/wmaxctrl.o \
+    $O/wmaxmac.o \
     $O/wmaxmsg_m.o
 
 # Message files
@@ -63,7 +82,7 @@ include $(CONFIGFILE)
 
 # Simulation kernel and user interface libraries
 OMNETPP_LIB_SUBDIR = $(OMNETPP_LIB_DIR)/$(TOOLCHAIN_NAME)
-OMNETPP_LIBS = -L"$(OMNETPP_LIB_SUBDIR)" -L"$(OMNETPP_LIB_DIR)" $(USERIF_LIBS) $(KERNEL_LIBS) $(SYS_LIBS)
+OMNETPP_LIBS = -L"$(OMNETPP_LIB_SUBDIR)" -L"$(OMNETPP_LIB_DIR)" -loppenvir$D $(KERNEL_LIBS) $(SYS_LIBS)
 
 COPTS = $(CFLAGS)  $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
 MSGCOPTS = $(INCLUDE_PATH)
@@ -78,18 +97,19 @@ MSGCOPTS = $(INCLUDE_PATH)
 all: $(TARGET)
 
 $(TARGET) : $O/$(TARGET)
-	ln -s -f $O/$(TARGET) .
+	$(LN) $O/$(TARGET) .
 
 $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile
-	@mkdir -p $O
-	$(CXX) $(LDFLAGS) -o $O/$(TARGET)  $(OBJS) $(EXTRA_OBJS) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS)
+	@$(MKPATH) $O
+	$(SHLIB_LD) -o $O/$(TARGET)  $(OBJS) $(EXTRA_OBJS) $(LIBS) $(OMNETPP_LIBS) $(LDFLAGS)
+	$(SHLIB_POSTPROCESS) $O/$(TARGET)
 
 .PHONY:
 
 .SUFFIXES: .cc
 
 $O/%.o: %.cc
-	@mkdir -p $(dir $@)
+	@$(MKPATH) $(dir $@)
 	$(CXX) -c $(COPTS) -o $@ $<
 
 %_m.cc %_m.h: %.msg
@@ -109,52 +129,172 @@ depend:
 	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-$O/wmaxctrl.o: wmaxctrl.cc \
-  ../util/Portable.h \
-  ../util/hoinfo.h \
-  ../util/ipv6.h \
-  ../util/mih_m.h \
-  ./wmaxmsg_m.h \
-  ../util/logger.h \
-  ./wmaxmsg.h \
-  ./wmaxmac.h \
-  ../util/ssinfo.h \
-  ./wmaxradio.h \
-  ./wmaxctrl.h \
-  ../util/fsm.h
-$O/wmaxmac.o: wmaxmac.cc \
-  ../util/Portable.h \
-  ../util/hoinfo.h \
-  ../util/ipv6.h \
-  ./wmaxmsg_m.h \
-  ../util/logger.h \
-  ./wmaxmsg.h \
-  ../util/ssinfo.h \
-  ./wmaxmac.h \
-  ./wmaxctrl.h \
-  ../util/fsm.h
-$O/wmaxmaccs.o: wmaxmaccs.cc \
-  ../util/Portable.h \
-  ../util/hoinfo.h \
-  ./wmaxmaccs.h \
-  ../util/ipv6.h \
-  ./wmaxmsg_m.h \
-  ../util/logger.h \
-  ./wmaxmsg.h \
-  ../util/ssinfo.h \
-  ./wmaxmac.h \
-  ../ipv6/ipv6msg_m.h
-$O/wmaxphy.o: wmaxphy.cc \
-  ../util/Portable.h \
-  ./wmaxphy.h \
-  ../util/hoinfo.h \
-  ../util/ipv6.h \
-  ../util/mih_m.h \
-  ./wmaxmsg_m.h \
-  ../util/logger.h \
-  ./wmaxmsg.h \
-  ../util/ssinfo.h
 $O/wmaxradio.o: wmaxradio.cc \
-  ../util/logger.h \
-  ./wmaxradio.h \
-  ../util/fsm.h
+	../util/fsm.h \
+	wmaxradio.h \
+	../util/logger.h
+$O/wmaxphy.o: wmaxphy.cc \
+	../util/Portable.h \
+	wmaxmsg.h \
+	../util/ssinfo.h \
+	../util/mih_m.h \
+	../util/hoinfo.h \
+	../xMIPv6/src/base/INETDefs.h \
+	wmaxmsg_m.h \
+	../xMIPv6/src/networklayer/contract/IPv6Address.h \
+	../util/logger.h \
+	wmaxphy.h
+$O/wmaxmaccs.o: wmaxmaccs.cc \
+	../xMIPv6/src/base/NotificationBoard.h \
+	../util/Portable.h \
+	wmaxmsg.h \
+	../xMIPv6/src/networklayer/xmipv6/MobilityHeader_m.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo_m.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6Access.h \
+	../util/logger.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscovery.h \
+	../xMIPv6/src/base/ModuleAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders_m.h \
+	../xMIPv6/src/networklayer/common/InterfaceToken.h \
+	../xMIPv6/src/linklayer/contract/MACAddress.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Message_m.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Access.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscoveryAccess.h \
+	wmaxmac.h \
+	../xMIPv6/src/networklayer/common/InterfaceEntry.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6InterfaceData.h \
+	../util/hoinfo.h \
+	../xMIPv6/src/networklayer/common/InterfaceTableAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram.h \
+	../xMIPv6/src/networklayer/contract/IPv6Address.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram_m.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourCache.h \
+	../xMIPv6/src/base/NotifierConsts.h \
+	wmaxmaccs.h \
+	wmaxmsg_m.h \
+	../xMIPv6/src/base/INETDefs.h \
+	../xMIPv6/src/networklayer/common/InterfaceTable.h \
+	../xMIPv6/src/networklayer/common/IInterfaceTable.h \
+	../xMIPv6/src/base/INotifiable.h \
+	../util/ssinfoaccess.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NDMessage_m.h \
+	../util/ssinfo.h \
+	../xMIPv6/src/networklayer/contract/IPProtocolId_m.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders.h
+$O/wmaxmsg_m.o: wmaxmsg_m.cc \
+	../util/Portable.h \
+	wmaxmsg.h \
+	../xMIPv6/src/base/INETDefs.h \
+	wmaxmsg_m.h \
+	../xMIPv6/src/networklayer/contract/IPv6Address.h
+$O/wmaxctrl.o: wmaxctrl.cc \
+	wmaxmsg.h \
+	../xMIPv6/src/networklayer/contract/IPAddress.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6TunnelingAccess.h \
+	../xMIPv6/src/networklayer/xmipv6/xMIPv6.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6Access.h \
+	../util/logger.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscovery.h \
+	../xMIPv6/src/base/ModuleAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders_m.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscoveryAccess.h \
+	wmaxmac.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Access.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingCache.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6InterfaceData.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram_m.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourCache.h \
+	../xMIPv6/src/base/NotifierConsts.h \
+	../xMIPv6/src/networklayer/contract/IPvXAddress.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Tunneling.h \
+	../util/mih_m.h \
+	../xMIPv6/src/networklayer/xmipv6/MobilityHeader.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NDMessage_m.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6.h \
+	../xMIPv6/src/networklayer/contract/IPProtocolId_m.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingUpdateList.h \
+	wmaxradio.h \
+	wmaxctrl.h \
+	../xMIPv6/src/base/NotificationBoard.h \
+	../util/Portable.h \
+	../xMIPv6/src/networklayer/xmipv6/MobilityHeader_m.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo_m.h \
+	../util/fsm.h \
+	../xMIPv6/src/networklayer/common/InterfaceToken.h \
+	../xMIPv6/src/linklayer/contract/MACAddress.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Message_m.h \
+	../xMIPv6/src/networklayer/common/InterfaceEntry.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6.h \
+	../util/hoinfo.h \
+	../xMIPv6/src/networklayer/common/InterfaceTableAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram.h \
+	../xMIPv6/src/networklayer/contract/IPv6Address.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingCacheAccess.h \
+	../xMIPv6/src/base/INETDefs.h \
+	wmaxmsg_m.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingUpdateListAccess.h \
+	../xMIPv6/src/networklayer/common/InterfaceTable.h \
+	../xMIPv6/src/base/INotifiable.h \
+	../xMIPv6/src/networklayer/common/IInterfaceTable.h \
+	../util/ssinfoaccess.h \
+	../util/ssinfo.h \
+	../xMIPv6/src/networklayer/xmipv6/xMIPv6Access.h \
+	../xMIPv6/src/networklayer/contract/IPAddressResolver.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders.h
+$O/wmaxmac.o: wmaxmac.cc \
+	wmaxmsg.h \
+	../xMIPv6/src/networklayer/contract/IPAddress.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6TunnelingAccess.h \
+	../xMIPv6/src/networklayer/xmipv6/xMIPv6.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6Access.h \
+	../util/logger.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscovery.h \
+	../xMIPv6/src/base/ModuleAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders_m.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourDiscoveryAccess.h \
+	wmaxmac.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Access.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingCache.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6InterfaceData.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram_m.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NeighbourCache.h \
+	../xMIPv6/src/base/NotifierConsts.h \
+	../xMIPv6/src/networklayer/contract/IPvXAddress.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Tunneling.h \
+	../xMIPv6/src/networklayer/xmipv6/MobilityHeader.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6.h \
+	../xMIPv6/src/networklayer/icmpv6/IPv6NDMessage_m.h \
+	../xMIPv6/src/networklayer/contract/IPProtocolId_m.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingUpdateList.h \
+	wmaxctrl.h \
+	../xMIPv6/src/base/NotificationBoard.h \
+	../util/Portable.h \
+	../xMIPv6/src/networklayer/xmipv6/MobilityHeader_m.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo_m.h \
+	../util/fsm.h \
+	../xMIPv6/src/linklayer/contract/MACAddress.h \
+	../xMIPv6/src/networklayer/common/InterfaceToken.h \
+	../xMIPv6/src/networklayer/icmpv6/ICMPv6Message_m.h \
+	../xMIPv6/src/networklayer/common/InterfaceEntry.h \
+	../xMIPv6/src/networklayer/contract/IPv6ControlInfo.h \
+	../xMIPv6/src/networklayer/ipv6/RoutingTable6.h \
+	../util/hoinfo.h \
+	../xMIPv6/src/networklayer/common/InterfaceTableAccess.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6Datagram.h \
+	../xMIPv6/src/networklayer/contract/IPv6Address.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingCacheAccess.h \
+	wmaxmsg_m.h \
+	../xMIPv6/src/base/INETDefs.h \
+	../xMIPv6/src/networklayer/xmipv6/BindingUpdateListAccess.h \
+	../xMIPv6/src/networklayer/common/InterfaceTable.h \
+	../xMIPv6/src/base/INotifiable.h \
+	../xMIPv6/src/networklayer/common/IInterfaceTable.h \
+	../util/ssinfoaccess.h \
+	../util/ssinfo.h \
+	../xMIPv6/src/networklayer/contract/IPAddressResolver.h \
+	../xMIPv6/src/networklayer/ipv6/IPv6ExtensionHeaders.h
+

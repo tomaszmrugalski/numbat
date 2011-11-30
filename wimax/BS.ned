@@ -6,12 +6,13 @@
 //import inet.networklayer.ipv6.IPv6;
 import inet.nodes.xmipv6.MobileIPLayer6;
 // import numbat.wimax.MAC;
+//============= Adam 14-09-2011 =====================
 import inet.networklayer.common.InterfaceTable;
 import inet.networklayer.ipv6.RoutingTable6;
 import inet.base.NotificationBoard;
 import inet.networklayer.xmipv6.BindingCache;
 import inet.linklayer.ethernet.EthernetInterface;
-
+//============= Adam, end  14-09-2011==================s
 //ssPhy
 simple WMaxPhyBS
 {
@@ -43,6 +44,7 @@ module BS
     gates:
         output out[];
         input in[];
+//============= Adam 14-09-2011 =====================        
         input ethIn;
         output ethOut;
     submodules:
@@ -63,6 +65,7 @@ module BS
             parameters:
                 @display("p=63,308;i=old/harddisk");
         }    
+//============= Adam, end  14-09-2011==================s
         bsPhy: WMaxPhyBS {
             parameters:
                 @display("i=abstract/accesspoint,#40e221;p=232,72;q=SendQueue");

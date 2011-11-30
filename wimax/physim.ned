@@ -2,11 +2,13 @@
 import SS;
 import BS;
 //import numbat.ipv6.IPv6; //MiM
+import numbat.wimax.Internet;
+//============= Adam 14-09-2011 =====================
 import inet.networklayer.ipv6.IPv6;
 import inet.nodes.xmipv6.CorrespondentNode6;
-import numbat.wimax.Internet;
 import inet.nodes.ipv6.Router6;
 import inet.networklayer.autorouting.FlatNetworkConfigurator6;
+//============= Adam, end  14-09-2011==================
 // import inet.world.ChannelControl;
 
 simple AirDummy
@@ -23,13 +25,6 @@ module CorrNode6 extends CorrespondentNode6
         string prefix;
 }
 
-// module Internet extends Router6
-// {
-    // parameters:
-        // volatile double MinDelay;
-        // volatile double MaxDelay;
-// }
-
 module Physim
 {
     parameters:
@@ -38,19 +33,15 @@ module Physim
         int numSS; //volatile double
 
         @display("bgb=0,0");
-    submodules:
-        // channelcontrol: ChannelControl {
-            // parameters:
-                // numChannels = 5;
-                // @display("p=753,123");
-        // }    
+    submodules:  
         BS[numBS]: BS {
             parameters:
-                @display("p=100,200,r,200;i=device/antennatower_l");
+                @display("p=100,200,r,100;i=device/antennatower_l");
             gates:
                 in[numSS];
                 out[numSS];
         }    
+//============= Adam 14-09-2011 =====================
         internet: Router6 {
             parameters:
                 @display("p=150,280;i=misc/cloud");
@@ -61,12 +52,13 @@ module Physim
         }
         SS[numSS]: SS {
             parameters:
-                @display("p=50,50,r,50;i=device/pc_s");
+                @display("p=50,50,r,100;i=device/pc_s");
         }        
         configurator: FlatNetworkConfigurator6 {
             parameters:
-                @display("p=763,53");
+                @display("p=463,53");
         }
+//============= Adam, end  14-09-2011==================s        
         connections allowunconnected:
 
         for i=1..numSS {

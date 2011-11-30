@@ -26,8 +26,6 @@
 #include "IPControlInfo.h"
 #include "IPv6ControlInfo.h"
 
-using std::cout;
-
 Define_Module(PingApp);
 
 void PingApp::initialize()
