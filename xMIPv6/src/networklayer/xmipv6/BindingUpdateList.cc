@@ -417,6 +417,8 @@ bool BindingUpdateList::recentlySentCOTI(const IPv6Address& dest, InterfaceEntry
 	BindingUpdateList::BindingUpdateListEntry* entry = lookup(dest);
 
 	ASSERT(entry!=NULL);
+	if (entry->sentCoTI==0.0f)
+		return false;
 	return entry->sentCoTI + ie->ipv6Data()->_maxTokenLifeTime() / 3 > simTime();
 }
 
@@ -426,6 +428,8 @@ bool BindingUpdateList::recentlySentHOTI(const IPv6Address& dest, InterfaceEntry
 	BindingUpdateList::BindingUpdateListEntry* entry = lookup(dest);
 
 	ASSERT(entry!=NULL);
+	if (entry->sentHoTI==0.0f)
+		return false;
 	return entry->sentHoTI + ie->ipv6Data()->_maxTokenLifeTime() / 3 > simTime();
 }
 
