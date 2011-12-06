@@ -37,6 +37,11 @@ namespace INETFw // load headers into a namespace, to avoid conflicts with platf
 //#include <arpa/inet.h>
 #endif
 
+// required for htonl, ntohl, ... on WIN32 (OMNeT++-4.2)
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
 using namespace INETFw;
 
 int TCPSerializer::serialize(const TCPSegment *tcpseg,

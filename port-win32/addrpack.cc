@@ -13,6 +13,8 @@
  * $Id: addrpack.c,v 1.12 2008-10-12 11:28:21 thomson Exp $
  */
 
+#ifdef WIN32
+
 #include "Portable.h"
 #include <stdio.h>
 #include <string.h>
@@ -253,62 +255,6 @@ void truncatePrefixFromConfig( char * src,  char * dst, char length){
 	    sprintf(dst+strlen(dst), ":");
 }
 
-/** 
- * converts packed address to a reverse string used in DNS Updates
- * 
- * @param src - packed address
- * @param dst - output buffer (e.g. 1.2.3.0.0.0.0.0.0.0.0.0.0.e.f.f.3.ip6.arpa)
- */
-void doRevDnsAddress( char * src,  char * dst){
-	int i=0;
-	dst[0]=0;
-	
-	for(i=15;i>=0;i--) {
-	    sprintf(dst + strlen(dst), "%x.%x.", (src[i] & 0x0f), ( (src[i] & 0xf0 ) >> 4 ) );
-	}
-	sprintf(dst + strlen(dst), "ip6.arpa.");
-}
-
-/** 
- * function converts address to a DNS zone root with specified length
- * 
- * @param src - packed address, e.g. 3ffe::123
- * @param dst - dns zone root, e.g. 0.0.0.0.e.f.f.3.ip6.arpa
- * @param length - zone length, e.g. 96
- */
-void doRevDnsZoneRoot( char * src,  char * dst, int length){
-    int i=0;
-    dst[0]=0;
-
-    i = 15 - length/8; /* skip whole bytes */
-    /* FIXME: what to do with prefixes which do not divide by 4? */
-    switch (length%8) {
-    case 1:
-	break;
-    case 2:
-	break;
-    case 3:
-	break;
-    case 4:
-	sprintf(dst + strlen(dst), "%x.", (src[i]&0xf0) >> 4);
-	break;
-    case 5:
-	break;
-    case 6:
-	break;
-    case 7:
-    default:
-	break;
-    }
-    if (length%8) i--;
-    
-    /* print the rest */
-    for(; i>=0 ; i--) {
-	sprintf(dst + strlen(dst), "%x.%x.", (src[i] & 0x0f), ( (src[i] & 0xf0 ) >> 4 ) );
-    }
-    sprintf(dst + strlen(dst), "ip6.arpa.");
-}
-
 void print_packed(char * addr)
 {
     int i=0;
@@ -335,3 +281,5 @@ uint64_t ntohll(uint64_t n) {
     return (((uint64_t)ntohl(n)) << 32) + ntohl(n >> 32);
 #endif
 }
+
+#endif // WIN32

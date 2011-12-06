@@ -26,6 +26,7 @@
 #define MAX_MTU_SIZE 4000
 #endif
 
+#include <platdep/sockets.h>
 #include <omnetpp.h>
 #include "ExtFrame_m.h"
 #include "cSocketRTScheduler.h"

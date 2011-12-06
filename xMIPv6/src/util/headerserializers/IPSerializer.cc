@@ -41,6 +41,11 @@ namespace INETFw // load headers into a namespace, to avoid conflicts with platf
 #include <netinet/in.h>  // htonl, ntohl, ...
 #endif
 
+// required for htonl, ntohl, ... on WIN32 (OMNeT++-4.2)
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
 #ifndef IP_PROT_SCTP    //I.R.
 #define IP_PROT_SCTP 132
 #endif

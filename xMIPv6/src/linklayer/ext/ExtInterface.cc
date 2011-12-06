@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <platdep/sockets.h>
 #include <omnetpp.h>
 #include "InterfaceTable.h"
 #include "InterfaceTableAccess.h"

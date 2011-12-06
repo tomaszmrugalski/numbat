@@ -4,6 +4,10 @@
 #include "Portable.h"
 #include "logger.h"
 
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
 using namespace std;
 
 #if 0
@@ -29,7 +33,7 @@ IPv6Addr::IPv6Addr(const char * a, bool plain)
     if (!plain)
 	memcpy(addr, a, 16);
     else
-    inet_pton(AF_INET6, a, (char*)addr);
+    inet_pton6(a, (char*)addr);
 }
 
 IPv6Addr::IPv6Addr(unsigned int a, unsigned int b, unsigned int c, unsigned int d) 
@@ -45,7 +49,7 @@ string IPv6Addr::plain()
 {
     char buf[80];
     //inet_ntop(AF_INET6, addr, buf, 80);
-    inet_ntop(AF_INET6, (const char*)addr, buf, 80);
+    inet_ntop6((const char*)addr, buf, 80);
     return string(buf);
 }
 
@@ -92,7 +96,7 @@ ostream & operator <<(ostream & s, IPv6Addr a)
 {
     char buf[80];
     // inet_ntop(AF_INET6, a.addr, buf, 80);
-    inet_ntop(AF_INET6, (const char*)a.addr, buf, 80);
+    inet_ntop6((const char*)a.addr, buf, 80);
     s << string(buf);
 
     return s;
