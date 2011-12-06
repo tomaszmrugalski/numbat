@@ -34,7 +34,7 @@ import inet.networklayer.ipv6.RoutingTable6;
 module Router6
 {
     parameters:
-        @node();
+        @node();    // needed by FlatNetworkConfigurator6
         @labels(node,ethernet-node);
         @display("i=abstract/router");
     gates:

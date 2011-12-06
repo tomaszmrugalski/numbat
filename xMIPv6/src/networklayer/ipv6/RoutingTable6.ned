@@ -26,7 +26,7 @@ package inet.networklayer.ipv6;
 simple RoutingTable6
 {
     parameters:
-        xml routingTableFile;
-        bool isRouter;
+        xml routingTableFile;   // defines xml configuration file of particular node, this parameter must be set even if there is "empty.xml"
+        bool isRouter;  // defines if node adds routable prefixes to routing table and if RoutingAdvertisement is sent from node
         @display("i=block/table");
 }

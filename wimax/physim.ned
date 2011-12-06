@@ -20,17 +20,14 @@ simple AirDummy
 module CorrNode6 extends CorrespondentNode6
 {
     parameters:
-        string myIP;
-        string corrIP;
-        string prefix;
 }
 
 module Physim
 {
     parameters:
         int LogLevel; //was volatile double (MiM)
-        int numBS; //volatile double
-        int numSS; //volatile double
+        int numBS; //volatile double - number of BSs
+        int numSS; //volatile double - number of SSs
 
         @display("bgb=0,0");
     submodules:  

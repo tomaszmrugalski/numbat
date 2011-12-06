@@ -41,11 +41,11 @@ import inet.transport.udp.UDP;
 module CorrespondentNode6
 {
     parameters:
-        @node();
-        double numTcpApps;
-        double numUdpApps;
-        string tcpAppType;
-        string udpAppType;
+        @node();    // needed by FlatNetworkConfigurator6
+        double numTcpApps;  // number od TCP applications
+        double numUdpApps;  // number od UDP applications
+        string tcpAppType;  // type of TCP applications
+        string udpAppType;  // type of UDP applications
         @display("bgb=385,410;i=device/pc2");
     gates:
            //in: in[];

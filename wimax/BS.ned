@@ -36,11 +36,10 @@ simple WMaxRadio
 module BS
 {
     parameters:
-        @node();
+        @node();    // needed by FlatNetworkConfigurator6
         volatile double x;
         volatile double y;
         @display("bgb=360,360");
-        string prefix;
     gates:
         output out[];
         input in[];
