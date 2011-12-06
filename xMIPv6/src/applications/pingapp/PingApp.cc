@@ -61,6 +61,7 @@ void PingApp::initialize()
     pingTx = 0;
     pingRx = 0;
 
+    EV << "PING app: " << getFullName() << " start=" << startTime << endl;
 
     // schedule first ping (use empty destAddr or stopTime<=startTime to disable)
     if (par("destAddr").stringValue()[0] && (stopTime==0 || stopTime>=startTime))
@@ -78,6 +79,20 @@ void PingApp::handleMessage(cMessage *msg)
 
         if (destAddr.isUnspecified())
         {
+            std::string myname = getFullPath();
+
+            // check if destination has address assigned at all
+            IPvXAddress result;
+            bool resolvedok = IPAddressResolver().tryResolve(par("destAddr"), result);
+            if (!resolvedok) {
+                EV << "PingApp(" << myname << ") failed: Unable to resolve " << par("destAddr").stringValue() << ", retrying in 1 second." << endl;
+                // It is possible that destination is now during handover and its address is tentative
+                // now, so we can't get its name resolved
+                // let's try resolving it again in 1 second
+                scheduleAt(simTime()+1.0f, msg);
+                return;
+            }
+
             destAddr = IPAddressResolver().resolve(par("destAddr"));
             ASSERT(!destAddr.isUnspecified());
             srcAddr = IPAddressResolver().resolve(par("srcAddr"));
