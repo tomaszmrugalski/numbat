@@ -17,6 +17,13 @@ To compile and run Numbat you will need properly installed OMNeT++
 (tested with version 4.0 and 4.1). OMNeT++ packages and installation notes are
 available on the OMNeT community website: http://omnetpp.org.
 
+If you have the following error occurred during Numbat simulation start up, please make sure you have libxml2-dev installed:
+
+\verbatim
+<!> Error in module (RoutingTable6) physim.BS[0].routingTable6 (id=16) during network setup: Error reading `empty.xml': Parse error: failed to load external entity "empty.xml"
+at line (null):0.
+\endverbatim
+
 Make sure that you compile OMNeT and set your variable correctly before
 attempting Numbat compilation.
 
