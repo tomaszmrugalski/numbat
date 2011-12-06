@@ -13,8 +13,6 @@
  * $Id: addrpack.c,v 1.12 2008-10-12 11:28:21 thomson Exp $
  */
 
-#ifdef WIN32
-
 #include "Portable.h"
 #include <stdio.h>
 #include <string.h>
@@ -281,5 +279,3 @@ uint64_t ntohll(uint64_t n) {
     return (((uint64_t)ntohl(n)) << 32) + ntohl(n >> 32);
 #endif
 }
-
-#endif // WIN32

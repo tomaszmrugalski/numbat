@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>numbat</name>
+	<name>numbat-git</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -21,7 +21,7 @@
 			<arguments>
 				<dictionary>
 					<key>?children?</key>
-					<value>?name?=outputEntries\|?children?=?name?=entry\\\\\\\|\\\|?name?=entry\\\\\\\|\\\|\||</value>
+					<value>?name?=outputEntries\|?children?=?name?=entry\\\\\\\|\\\|\||</value>
 				</dictionary>
 				<dictionary>
 					<key>?name?</key>
