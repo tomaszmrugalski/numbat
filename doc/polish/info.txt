@@ -1,0 +1,9 @@
+This directory contains additional files that are in Polish. As Numbat is being developed
+primarily at Gdansk University of Technology, many students involved are Poles. Some of
+them wrote documents that are in Polish. Those documents will be eventuall translated to
+English and most probably included into Numbat Developer's Guide. Unfortunately, there
+is nobody who is willing to take this task at this time.
+
+instrukcja_NUMBAT.doc - Installation and main parameter modification, by Adam Jastrzebski
+
+
