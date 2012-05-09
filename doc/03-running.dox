@@ -1,0 +1,21 @@
+/**
+ * @page running Running simulations
+
+ @section runningGui Running simulation from GUI
+
+ @todo See doc/instalacja_NUMBAT.bat (in Polish)
+
+ @section runningCli Running simulation from command-line
+
+ @todo See doc/instalacja_NUMBAT.bat (in Polish)
+
+ @section runningAkaroa Running simulation under Akaroa
+
+ @todo Support for Akaroa is being currently investigated. Please
+as on mailing list if you want to join the effort.
+
+ @section analysis Simulation results analysis
+
+ @todo See doc/instalacja_NUMBAT.bat (in Polish)
+
+ */

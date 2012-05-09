@@ -7,15 +7,10 @@ LATEXOPTS=-file-line-error -halt-on-error
 
 all: numbat-user.pdf
 
-numbat-user.pdf: *.tex
-	@echo "[LATEX  ] $(SUBDIR)/$@"
-	$(LATEX) $(LATEXOPTS) numbat-user.tex >numbat-user-1st_pass.log
-	if [ "$(PASS3)"=="YES" ]; then                                       \
-	  echo "[LATEX  ] $(SUBDIR)/$@";                                     \
-	  $(LATEX) $(LATEXOPTS) numbat-user.tex >numbat-user-2nd_pass.log; \
-	  echo "[LATEX  ] $(SUBDIR)/$@";                                     \
-	  $(LATEX) $(LATEXOPTS) numbat-user.tex >numbat-user-3rd_pass.log; \
-	fi
+devel:
+	mkdir -p html/
+	cd .. && doxygen doxy.cfg > doc/html/doxygen.log 2>doc/html/doxygen-error.log
+	echo `grep -i ": warning:" html/doxygen-error.log | wc -l` warnings detected.
 
 version.tex:
 	@echo "[GREP   ] $(SUBDIR)/$@"
@@ -32,4 +27,4 @@ clean:
 clobber: clean
 	@rm -f *.pdf
 
-.PHONY: version.tex
+.PHONY: version.tex devel

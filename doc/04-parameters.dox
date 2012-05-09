@@ -1,0 +1,58 @@
+/**
+ * @page parameters Simulation modifications
+
+Source code is provided for both Numbat, INET and OMNeT++ itself, so
+you can modify the simulation in any way you want. The only limits are
+your skills and amount of time you can dedicate. From that
+perspective, any question "Can X be done in Numbat?" should be
+answered with "yes".
+
+Unfortunately, people usually are time and skill limited, but they
+still want to modify existing simulation. The easiest way to do it is
+to tweak already defined parameters. This requires just modification
+of configuration (text) files, which is relatively simple.
+
+If that is not enough, you may want to define new network
+topologies. Connections between modules that form more complex modules
+and eventually a network is done by editing NED files. This requires
+better understanding of dependencies between modules, but is still
+doable without any coding skills. For example you can add additional
+base station that way.
+
+The final, most powerful and most difficult way of modification is
+to modify modules source code. Simple modules are written in C++. "Simple"
+word used in OMNeT++ context mean that they are not compound (i.e. are
+not defined as an interconnection of simpler modules) and not to their
+complexity. In fact, some of the "simple" modules can be very complex.
+
+ @section majorParams Most significant parameters
+Parameters are specified in omnetpp.ini (or other ini file). The most
+important parameters are:
+
+\li description - a description used during network configuration selection
+\li sim-time-limit - length of the similated period (in seconds). This is not
+ a real-time. More complex simulations run slower than real-time. It is quite
+ common that simulating 60 seconds takes 15 minutes or more.
+\li cpu-time-limit - this is a real-time limit. Simulation will be aborted
+ after that time. Expressed in seconds.
+\li warmup-period - 
+\li LogLevel - defines verbosity level of Numbat modules. Allowed values are from 1(most quiet) to 8(most verbose)
+\li FMIP - enables or disables Fast Handover for Mobile IPv6. Defined only for SS nodes. Allowed values: true/false
+\li startTime - after that period CN will start sending pings to SS
+\li interval - defines intervals between consecutive pings to CN
+\li packetSize - defines payload size of a ping
+\li wmaxHoOptim - defines WiMAX optimization. It is a direct equivalent of HO Optimization HO Process Optimization, an option sent in RNG-RSP. If you are interested in details, TLV type is 21. See Table 367 in IEEE 802.16-2005. It is a bitmask with bits 0-13 controlling various aspects of network reentry optimizations. Most useful bitmasks are 16383 (max. optimized), 16254:(SBC-REQ, REG-REQ enabled), 0 (full network entry)
+\li HandoverTime - interval between consecutive handovers if wmaxIsMobile is 0 or 3.
+\li numSS - number of SSes
+\li numBS - number of BSes
+\li wmaxIsMobile - defines SS mobility type. Defined values are: 0 (fixed station), 1 (station does not physically move, but handovers after specified time. BSes are selected iteratively), 2 (station is moving, mobility is defined with movementType parameter, handovers are dependent on proximity and signal strengths of nearby BSes), 3 (station does not physically move, but handovers after specified time. BSes are selected randomly)
+\li movementType - defines type of SS movement, if mobility type is 2 (see wmaxIsMobile). 0 means that station moves right, 1 means that station moves around circle.
+
+ @todo - Need to describe remaining parameters. See doc/instalacja_NUMBAT.bat 
+ (in Polish) and also comments in omnetpp.ini
+
+ @section exampleScenarios Example scenarios
+
+ @todo
+
+ */
