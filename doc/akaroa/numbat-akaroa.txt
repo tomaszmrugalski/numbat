@@ -1,0 +1,135 @@
+Numbat with Akaroa integration
+by Aniela Mrugalska
+
+Installation instructions for Ubuntu 12.04.2 LTS 64bit
+
+Akaroa 2.7.11
+=============
+
+Downloaded from: http://www.akaroa.canterbury.ac.nz/doWnlOAd.chtml
+
+tar zxvf akaroa-2.7.11.tar.gz
+
+Apply patches 1 and 2:
+
+cd akaroa-2.7.11
+./configure
+make
+
+# This step generates PDF documentation
+cd src/doc
+make
+ps2pdf manual.ps
+
+sudo make install
+export PATH=/usr/local/akaroa/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH
+
+After those steps are completed, it is possible to run akaroa:
+akmaster (in first console)
+akslave (in second console)
+
+This step is optional
+akgui (in third console)
+
+OMNeT++ 4.2.2
+=============
+
+Software needed for integration:
+OMNeT++ 4.2.2, downloaded from www.omnetpp.org
+
+Install prerequisites from Ubuntu packages:
+tck8.5 tck8.5-dev tk8.5 tk8.5-dev and others
+
+tar zxvf omnetpp-4.2.2-src.tgz
+cd omnetpp-4.2.2
+. setenv
+export TCL_LIBRARY=/usr/share/tcltk/tcl8.5
+export PATH=/home/aniela/devel/omnetpp-4.2.2/bin:$PATH
+export LD_LIBRARY_PATH=/home/aniela/devel/omnetpp-4.2.2/lib
+
+./configure
+make
+
+To start omnet, type omnetpp
+
+Numbat
+======
+
+There are at least 2 numbat versions:
+
+a) original version: http://klub.com.pl/numbat/
+
+b) version with better QoS:
+https://github.com/urban-1/numbat.git
+
+Version a) was used.
+
+Compilation is described in Numbat User's Guide:
+http://klub.com.pl/numbat/doxygen/index.html
+then click Installation and usage
+
+Import project into namespace...
+Right click numbat->xMIPv6/src/linklayer/ext ->
+-> properties... -> Exclude resource from build
+
+Project-> Build all
+
+Running Numbat under Akaroa
+===========================
+
+Select numbat-git in Project Explorer
+Run -> Run -> OMNeT++ Simulation
+
+Edit numbat-akaroa.ini to select which vector (or vectors) should
+be exported to Akaroa. Make sure that you export only small number
+of parameters (preferably just 1). Otherwise your simulation will take
+a very long time to complete. Here is an example:
+
+# Let's specify which output vectors should be under Akaroa control
+# To get a full list of available vector names, see akaroa.vec file
+physim.BS[0].bsMac.WMaxMACqueue.with-akaroa = true
+
+Select init and config:
+numbat-akaroa.ini
+
+Click run, then express run to see that the simulation is
+working properly. Simulation should stop eventuall with parameters
+similar to this one:
+
+Param    Estimate       Delta  Conf         Var   Count   Trans
+    1     1.03818   0.0337501  0.95 0.000203607    4950     550
+
+This gui run is awkward to use and do not allow to specify any
+Akaroa parameters. It is much better to run it from command-line:
+
+akrun -n 1 ./numbat-git numbat-akaroa.ini
+
+Additional parameters may be specified:
+akrun -n 1 -D Confidence=0.90 ./numbat-git numbat-akaroa.ini
+
+Note that achieving Confidence level 0.98 takes much longer than 0.90.
+akrun -n 1 -D Confidence=0.98 ./numbat-git numbat-akaroa.ini
+
+Misc notes
+==========
+
+See Chapter 4 from Akaroa 2.8 User's Manual (src/doc/manual.ps
+in akaroa sources) for details. It is also possible to create
+Akaroa file that contains specified parameters.
+
+akgui may be used to monitor simulation run (graphical).
+
+akstats -L may be used to monitor simulation run (text).
+
+omnetpp-4.2.2/src/envir/akoutvectormgr.cc is a class that is
+responsible for exporting data from Numbat (or any other OMNeT++
+simulation) to Akaroa. registerVector() method is called for
+each vector once. record() is called every time a new data is
+recorded in vector, even in vectors that are not sent to Akaroa.
+
+It is useful to export data to *.vec file (akaroa.vec by default).
+It contains all recorded values for all vectors. Those vectors
+can be plotted using OMNeT++ IDE.
+
+
