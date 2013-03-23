@@ -2643,6 +2643,10 @@ void IPv6NeighbourDiscovery::processRAPrefixInfoForAddrAutoConf(IPv6NDPrefixInfo
 				// nothing to do more wrt managing addresses, as we are at home and a HoA is
 				// already existing at the interface
 
+				// @todo: Fix this properly
+				if (CoA.isUnspecified()) {
+				    return;
+				}
 				// initiate the returning home procedure
 				ASSERT( !CoA.isUnspecified() );
 				mipv6->returningHome(CoA, ie);
