@@ -65,7 +65,8 @@ void ssMAC::updateString() {
     sprintf(buf, "%s%d", getFullName(), SS->getIndex());
     cModule *ctrlSS = getSubmodule(buf);
     char buf1[80];
-    sprintf(buf1, "%s\n%s", (macSS->getDisplayString()).getTagArg("t",0), (ctrlSS->getDisplayString()).getTagArg("t",0));
+    sprintf(buf1, "%s\n%s", (macSS->getDisplayString()).getTagArg("t",0),
+	    (ctrlSS->getDisplayString()).getTagArg("t",0));
     getDisplayString().setTagArg("t",0, buf1);
 }
 
@@ -82,10 +83,10 @@ void ssMAC::initialize()
 /********************************************************************************/
 WMaxMac::WMaxMac()
 {
-    WMaxMACQueueCnt.setName("Kolejka w WMaxMAC");
+    WMaxMACQueueCnt.setName("WMaxMACqueue");
     GateIndex = 0;
     queuedMsgsCnt = 0;
-    WMaxMACQueueCnt.record(queuedMsgsCnt);
+    //WMaxMACQueueCnt.record(queuedMsgsCnt);
     this->CDMAQueue = new cQueue("CDMAQueue");
 
     WATCH_LIST(Conns);
