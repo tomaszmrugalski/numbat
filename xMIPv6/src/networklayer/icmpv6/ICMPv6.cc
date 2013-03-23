@@ -25,8 +25,8 @@ Define_Module(ICMPv6);
 
 void ICMPv6::initialize()
 {
-    CNtoSSVectorRTT.setName("Trip time from CN to SS");
-    SStoCNVectorRTT.setName("Trip time from SS to CN");
+    CNtoSSVectorRTT.setName("CNtoSSTripTime");
+    SStoCNVectorRTT.setName("SStoCNTripTime");
 }
 
 void ICMPv6::handleMessage(cMessage *msg)
