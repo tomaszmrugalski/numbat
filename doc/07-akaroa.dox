@@ -1,0 +1,72 @@
+/**
+ * @page akaroa Akaroa installation and usage
+
+This section describes how to install Akaroa and how to integrate with Numbat under OMNeT++.
+
+At first, to download Akaroa please use the following link:
+http://www.akaroa.canterbury.ac.nz/doWnlOAd.chtml
+The prefer version is the latest one - 2.7.11.
+
+After download try to unpack downloaded file by using
+\verbatim
+tar -xcvf akaroa-2.7.11.tar.gz
+\endverbatim
+
+And go to new created directory:
+\verbatim
+cd akaroa-2.7.11
+\endverbatim
+
+We need to install two patches which are stored in numbat repository.
+Try to use the following command:
+\verbatim
+patch -p1 < ../numbat/doc/akaroa/akaroa-2.7.11-makefile.patch
+patch -p1 < ../numbat/doc/akaroa/akaroa-2.7.11-python-path.patch
+\endverbatim
+Ensure there was no error during those patching.
+
+From akaroa-2.7.11 directory we will install the Akaroa:
+\verbatim
+cd akaroa-2.7.11
+./configure
+make
+sudo make install
+\endverbatim
+
+Perhaps you will need to install also python-dev by using in case you will see the error during installation that you don't have Python.h file.
+\verbatim
+apt-get install python-dev
+\endverbatim
+
+We need also to set two variables:
+\verbatim
+export PATH=/usr/local/akaroa/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH
+\endverbatim
+
+There is another way to do this to have this veriables set constantly:
+\verbatim
+echo 'export PATH=/usr/local/akaroa/bin:$PATH' >> $HOME/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH' >> $HOME/.bashrc
+\endverbatim
+
+After those steps are completed, it is possible to run Akaroa:
+\verbatim
+akmaster
+\endverbatim
+And under the second console:
+\verbatim
+akslave
+\endverbatim
+You may also use this optional step to execute the gui (from the third console):
+\verbatim
+akgui
+\endverbatim
+
+Please ensure you have already installed also OMNeT++ and Numbat.
+The detailed description for that you can find at @ref omnet-compile.  
+
+
+
+
+ */
