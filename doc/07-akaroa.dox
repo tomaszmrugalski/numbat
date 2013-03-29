@@ -5,8 +5,10 @@ This section describes how to install Akaroa and how to integrate with Numbat un
 
 At first, to download Akaroa please use the following link:
 http://www.akaroa.canterbury.ac.nz/doWnlOAd.chtml
+\n
 The prefer version is the latest one - 2.7.11.
 
+@section installation Akaroa installation and patching
 After download try to unpack downloaded file by using
 \verbatim
 tar -xcvf akaroa-2.7.11.tar.gz
@@ -50,6 +52,7 @@ echo 'export PATH=/usr/local/akaroa/bin:$PATH' >> $HOME/.bashrc
 echo 'export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH' >> $HOME/.bashrc
 \endverbatim
 
+@section execution Akaroa execution
 After those steps are completed, it is possible to run Akaroa:
 \verbatim
 akmaster
@@ -63,10 +66,20 @@ You may also use this optional step to execute the gui (from the third console):
 akgui
 \endverbatim
 
-Please ensure you have already installed also OMNeT++ and Numbat.
+@section related Checking the related packages
+Please ensure you have already installed OMNeT++ and Numbat also.
+The software you need for integration is OMNeT++ 4.2.2. You can download it from http:/www.omnetpp.org
+
+You may need to install some the prerequisites from Ubuntu packages:
+\verbatim
+apt-get install tck8.5 tck8.5-dev tk8.5 tk8.5-dev
+\endverbatim
+
 The detailed description for that you can find at @ref omnet-compile.  
 
+Now we are ready to run Numbat under Akaroa
 
-
+Please select numbat-git under Project Explorer
+(work in progress.. )
 
  */

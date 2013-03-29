@@ -17,6 +17,19 @@ To compile and run Numbat you will need properly installed OMNeT++
 (tested with version 4.0 and 4.1). OMNeT++ packages and installation notes are
 available on the OMNeT community website: http://omnetpp.org.
 
+Just in case, the installation of OMNeT++ looks as follows:
+\verbatim
+tar zxvf omnetpp-4.2.2-src.tgz
+cd omnetpp-4.2.2
+. setenv
+export TCL_LIBRARY=/usr/share/tcltk/tcl8.5
+export PATH=/home/aniela/devel/omnetpp-4.2.2/bin:$PATH
+export LD_LIBRARY_PATH=/home/aniela/devel/omnetpp-4.2.2/lib
+./configure
+make
+\endverbatim
+
+
 If you have the following error occurred during Numbat simulation start up, please make sure you have libxml2-dev installed:
 
 \verbatim
