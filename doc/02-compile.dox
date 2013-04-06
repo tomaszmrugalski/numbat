@@ -40,6 +40,11 @@ at line (null):0.
 Make sure that you compile OMNeT and set your variable correctly before
 attempting Numbat compilation.
 
+You may also need to install some additional packages:
+\verbatim
+sudo apt-get install libx11-dev tcl-dev tk-dev
+\endverbatim
+
   @section linux-cmd Linux command-line compilation
 
 After your OMNeT installation is successful (see section @ref omnet-compile), you 
@@ -54,7 +59,7 @@ Your exact compilation may look a bit different, but in general it should look
 somewhat similar to this:
 
 \verbatim
-git clone git@github.com:tomaszmrugalski/numbat.git numbat
+git clone git://git@github.com:tomaszmrugalski/numbat.git 
 cd numbat
 ./rebuild-makefiles
 make

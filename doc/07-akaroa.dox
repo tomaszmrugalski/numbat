@@ -3,7 +3,7 @@
 
 This section describes how to install Akaroa and how to integrate with Numbat under OMNeT++.
 
-At first, to download Akaroa please use the following link:
+At first please download Akaroa with using the following link:
 http://www.akaroa.canterbury.ac.nz/doWnlOAd.chtml
 \n
 The prefer version is the latest one - 2.7.11.
@@ -11,15 +11,15 @@ The prefer version is the latest one - 2.7.11.
 @section installation Akaroa installation and patching
 After download try to unpack downloaded file by using
 \verbatim
-tar -xcvf akaroa-2.7.11.tar.gz
+tar -zxvf akaroa-2.7.11.tar.gz
 \endverbatim
 
-And go to new created directory:
+And go to the new created directory:
 \verbatim
 cd akaroa-2.7.11
 \endverbatim
 
-We need to install two patches which are stored in numbat repository.
+We need to install two patches which are stored in Numbat repository.
 Try to use the following command:
 \verbatim
 patch -p1 < ../numbat/doc/akaroa/akaroa-2.7.11-makefile.patch
@@ -35,9 +35,18 @@ make
 sudo make install
 \endverbatim
 
-Perhaps you will need to install also python-dev by using in case you will see the error during installation that you don't have Python.h file.
+Perhaps the following error will occur after 'make' executed:
 \verbatim
-apt-get install python-dev
+make[1]: Entering directory `/home/ania/devel/akaroa-2.7.11/src'
+Makefile.dependencies:1: *** missing separator.  Stop.
+make[1]: Leaving directory `/home/ania/devel/akaroa-2.7.11/src'
+make: *** [default_dirs] Error 2
+\endverbatim
+In this case the solution will be delete all from file and leave them empty.  
+
+You may also need to install also python-dev in case you will see the error during installation that you don't have Python.h file.
+\verbatim
+sudo apt-get install python-dev
 \endverbatim
 
 We need also to set two variables:
@@ -46,14 +55,14 @@ export PATH=/usr/local/akaroa/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH
 \endverbatim
 
-There is another way to do this to have this veriables set constantly:
+There is also another way - you can define this variables to have them set constantly:
 \verbatim
 echo 'export PATH=/usr/local/akaroa/bin:$PATH' >> $HOME/.bashrc
 echo 'export LD_LIBRARY_PATH=/usr/local/akaroa/lib:$LD_LIBRARY_PATH' >> $HOME/.bashrc
 \endverbatim
 
 @section execution Akaroa execution
-After those steps are completed, it is possible to run Akaroa:
+After those steps are completed it should be possible to run Akaroa:
 \verbatim
 akmaster
 \endverbatim
@@ -68,18 +77,72 @@ akgui
 
 @section related Checking the related packages
 Please ensure you have already installed OMNeT++ and Numbat also.
-The software you need for integration is OMNeT++ 4.2.2. You can download it from http:/www.omnetpp.org
+The software you need for integration is OMNeT++ in version 4.2.2. You can download it from http:/www.omnetpp.org.
+It should work properly also with the newest OMNeT++ version, but it wasn't tested during this help creating.
 
-You may need to install some the prerequisites from Ubuntu packages:
+The detailed decription about installing OMNeT++ you can find at @ref omnet-compile.
+You may also need to install some of the prerequisites from Ubuntu packages:
 \verbatim
 apt-get install tck8.5 tck8.5-dev tk8.5 tk8.5-dev
 \endverbatim
 
-The detailed description for that you can find at @ref omnet-compile.  
+Now we are ready to run Numbat under Akaroa.
 
-Now we are ready to run Numbat under Akaroa
+Please select numbat-git under Project Explorer in OMNeT++ at the left.
+Then choose the following path at the top: Run -> Run As -> OMNeT++ Simulation.
 
-Please select numbat-git under Project Explorer
-(work in progress.. )
+\image html akaroa01.png "Running the simulation"
+
+Try to edit numbat-akaroa.ini file to select which vectors should be exported to Akaroa. Please make sure that you exported only a small number of parameters.
+At first preferably would be just 1. Otherwise your simulation can take a very long time until complete. 
+Here you can find an example:
+
+# Let's specify which output vectors should be under Akaroa control.
+# To get the full list of available vector names, see akaroa.vec file
+physim.BS[0].bcMac/WMaxMACqueue.with-akaroa = true
+
+Select init and config:
+numbat-akaroa.ini
+#picture
+
+Click run and then express run to see that the simulation is working properly.
+Simulation should stop eventuall with parametrs similar to those one:
+
+\verbatim
+Param    Estimate       Delta  Conf         Var   Count   Trans
+    1     1.03818   0.0337501  0.95 0.000203607    4950     550
+\endverbatim
+
+This gui run is awkward to use and do not allow to specify any Akaroa parametrs.
+It is much better to run it from the command-line:
+
+\verbatim
+akrun -n 1 ./numbat-git numbat-akaroa.ini
+\endverbatim
+
+You may also specified some additional parameters:
+\verbatim
+akrun -n 1 -D Confidence=0.90 ./numbat-git numbat-akaroa.ini
+\endverbatim
+
+Please note that achieving Confidence level to 0.98 will takes much longer than 0.90.
+\verbatim
+akrun -n 1 -D Confidence=0.98 ./numbat-git numbat-akaroa.ini
+\endverbatim
+
+@section Misc An additional notes
+
+You may also like to see the chapter 4 from Akaroa 2.8 User's Manual for some details: src/doc/manual.ps in Akaroa sources.
+It is also possible to create the Akaroa file that contains specified parameters.
+akgui may be use to monitor simulation run in graphical mode.\n
+akstats -L can be used to monitor simulation run in text mode.\n
+
+There should be mentioned also about omnetpp-4.2.2/src/envir/akoutvectormgr.cc file. It is a class that is responsible for exporting data from Numbat, or any other OMNeT++ simulation into Akaroa. \n
+The registerVector() method is called for each vector once.\n
+The record() function is called every time when the new data is recorded in vector even if those vectors are not sent to Akaroa. \n
+
+It may be useful to export data to *.vec files. By default it will be akaroa.vec.
+This file will contains all recorded values for every vectors. Those vectors can be plotted using OMNeT++ IDE function is called every time when the new data is recorded in vector even if those vectors are not sent to Akaroa. 
+
 
  */
