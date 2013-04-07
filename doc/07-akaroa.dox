@@ -120,6 +120,14 @@ It is much better to run it from the command-line:
 akrun -n 1 ./numbat-git numbat-akaroa.ini
 \endverbatim
 
+Akaroa execution can be monitored using akgui command:
+
+\image html numbat-akaroa-overview.png "akgui: Graphical Akaroa monitor"
+
+Specific simulation can be clicked to obtain more detailed information:
+
+\image html numbat-akaroa-details.png "akgui: Inspecting simulation details"
+
 You may also specified some additional parameters:
 \verbatim
 akrun -n 1 -D Confidence=0.90 ./numbat-git numbat-akaroa.ini
