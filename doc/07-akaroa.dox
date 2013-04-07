@@ -103,6 +103,7 @@ physim.BS[0].bcMac/WMaxMACqueue.with-akaroa = true
 
 Select init and config:
 numbat-akaroa.ini
+
 #picture
 
 Click run and then express run to see that the simulation is working properly.
@@ -113,7 +114,15 @@ Param    Estimate       Delta  Conf         Var   Count   Trans
     1     1.03818   0.0337501  0.95 0.000203607    4950     550
 \endverbatim
 
-This gui run is awkward to use and do not allow to specify any Akaroa parametrs.
+The following quote from Akaroa User's Guide, section 2.3 explains meaning of those
+parameters: Estimate is Akaroa’s estimate of the mean value of the parameter, Delta is the half-
+width of the confidence interval, Conf is the confidence level, and Var is the variance of the
+estimate. Count is the total number of observations collected, and Trans is the number of
+observations that were discarded during the transient phase, before the system settled down
+into a steady state.
+
+
+This OMNeT++ GUI run is awkward to use and do not allow to specify any Akaroa parametrs.
 It is much better to run it from the command-line:
 
 \verbatim
@@ -138,11 +147,30 @@ Please note that achieving Confidence level to 0.98 will takes much longer than 
 akrun -n 1 -D Confidence=0.98 ./numbat-git numbat-akaroa.ini
 \endverbatim
 
+Section 4.2 of Akaroa User's Guide lists all possible statistical properties that
+are supported by Akaroa. The following partial list is mentioned here only as
+convenience to the reader:
+
+\li \b RelError = 0.05 - maximum acceptable relative error. If this is
+    set to zero, no relative error criterion is tested against
+\li \b AbsError = 0.0 - Maximum acceptable absolute error. If this is set
+    to zero, no absolute error criterion is tested against
+\li \b Confidence = 0.95 - Confidence level.
+\li \b TransientMethod = Schruben - Method of finding the length of the
+    transient period. In the current ver- sion of Akaroa, only one method
+    is available, based on the the Schruben test
+\li \b AnalysisMethod = Spectral Method of estimating variance. In the
+    current version of Akaroa, two methods are available: Spectral and
+    BatchMeans
+
 @section Misc An additional notes
 
 You may also like to see the chapter 4 from Akaroa 2.8 User's Manual for some details: src/doc/manual.ps in Akaroa sources.
+
 It is also possible to create the Akaroa file that contains specified parameters.
-akgui may be use to monitor simulation run in graphical mode.\n
+
+akgui may be used to monitor simulation run in graphical mode.\n
+
 akstats -L can be used to monitor simulation run in text mode.\n
 
 There should be mentioned also about omnetpp-4.2.2/src/envir/akoutvectormgr.cc file. It is a class that is responsible for exporting data from Numbat, or any other OMNeT++ simulation into Akaroa. \n
@@ -151,6 +179,5 @@ The record() function is called every time when the new data is recorded in vect
 
 It may be useful to export data to *.vec files. By default it will be akaroa.vec.
 This file will contains all recorded values for every vectors. Those vectors can be plotted using OMNeT++ IDE function is called every time when the new data is recorded in vector even if those vectors are not sent to Akaroa. 
-
 
  */
