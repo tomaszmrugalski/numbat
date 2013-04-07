@@ -97,9 +97,11 @@ Try to edit numbat-akaroa.ini file to select which vectors should be exported to
 At first preferably would be just 1. Otherwise your simulation can take a very long time until complete. 
 Here you can find an example:
 
+\verbatim
 # Let's specify which output vectors should be under Akaroa control.
 # To get the full list of available vector names, see akaroa.vec file
-physim.BS[0].bcMac/WMaxMACqueue.with-akaroa = true
+physim.BS[0].bcMac.WMaxMACqueue.with-akaroa = true
+\endverbatim
 
 Select init and config:
 numbat-akaroa.ini
